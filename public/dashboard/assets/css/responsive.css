@@ -1,0 +1,180 @@
+/* ==========================================================
+   TeamoTrack Responsive Styles
+   responsive.css
+   ========================================================== */
+
+/* ---------------------------------
+   Large Desktop
+---------------------------------- */
+
+@media (min-width: 1400px) {
+
+    .dashboard-content {
+        padding: 36px;
+    }
+
+    .header-search input {
+        width: 360px;
+    }
+
+}
+
+/* ---------------------------------
+   Laptop
+---------------------------------- */
+
+@media (max-width: 1200px) {
+
+    .header-search input {
+        width: 220px;
+    }
+
+    .dashboard-content {
+        padding: 24px;
+    }
+
+}
+
+/* ---------------------------------
+   Tablet
+---------------------------------- */
+
+@media (max-width: 992px) {
+
+    .sidebar {
+        transform: translateX(-100%);
+        transition: transform .35s ease;
+        box-shadow: var(--shadow-lg);
+    }
+
+    .dashboard-main {
+        margin-left: 0;
+    }
+
+    body.sidebar-open .sidebar {
+        transform: translateX(0);
+    }
+
+    body.sidebar-collapsed .dashboard-main {
+        margin-left: 0;
+    }
+
+    .header-search {
+        display: none;
+    }
+
+    .page-title p {
+        display: none;
+    }
+
+    .dashboard-content {
+        padding: 22px;
+    }
+
+}
+
+/* ---------------------------------
+   Mobile
+---------------------------------- */
+
+@media (max-width: 768px) {
+
+    .dashboard-header {
+        padding: 0 16px;
+    }
+
+    .dashboard-content {
+        padding: 18px;
+    }
+
+    .welcome-card {
+        padding: 28px 22px;
+    }
+
+    .welcome-card h2 {
+        font-size: 26px;
+    }
+
+    .welcome-card p {
+        font-size: 15px;
+    }
+
+    .profile-info {
+        display: none;
+    }
+
+    .header-divider {
+        display: none;
+    }
+
+    .header-right {
+        gap: 10px;
+    }
+
+    .header-btn,
+    .sidebar-toggle {
+        width: 42px;
+        height: 42px;
+    }
+
+}
+
+/* ---------------------------------
+   Small Mobile
+---------------------------------- */
+
+@media (max-width: 576px) {
+
+    .dashboard-header {
+        height: 64px;
+    }
+
+    .page-title h3 {
+        font-size: 18px;
+    }
+
+    .dashboard-content {
+        padding: 15px;
+    }
+
+    .welcome-card {
+        border-radius: var(--radius-md);
+    }
+
+    .welcome-card h2 {
+        font-size: 22px;
+    }
+
+    .welcome-card p {
+        font-size: 14px;
+    }
+
+    .sidebar {
+        width: 280px;
+    }
+
+}
+
+/* ---------------------------------
+   Overlay (Mobile Drawer)
+---------------------------------- */
+
+.sidebar-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, .45);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+
+    opacity: 0;
+    visibility: hidden;
+
+    transition: .3s ease;
+
+    z-index: calc(var(--z-sidebar) - 1);
+}
+
+body.sidebar-open .sidebar-overlay {
+    opacity: 1;
+    visibility: visible;
+}

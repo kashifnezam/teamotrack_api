@@ -1,0 +1,160 @@
+/* ==========================================================
+   TeamoTrack Design System
+   variables.css
+   ========================================================== */
+
+:root {
+
+    /* ===========================
+       Brand Colors
+    =========================== */
+
+    --primary: #2563eb;
+    --primary-dark: #1d4ed8;
+    --primary-light: #60a5fa;
+
+    --secondary: #38bdf8;
+
+    --success: #22c55e;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+
+    /* ===========================
+       Background
+    =========================== */
+
+    --bg-color: #f5f8fc;
+    --surface: #ffffff;
+    --surface-soft: #f8fafc;
+
+    --sidebar-bg: #ffffff;
+    --header-bg: rgba(255,255,255,.82);
+
+    /* ===========================
+       Text
+    =========================== */
+
+    --text-primary: #1e293b;
+    --text-secondary: #64748b;
+    --text-muted: #94a3b8;
+
+    /* ===========================
+       Borders
+    =========================== */
+
+    --border-color: #e2e8f0;
+
+    /* ===========================
+       Gradient
+    =========================== */
+
+    --primary-gradient: linear-gradient(
+        135deg,
+        #2563eb 0%,
+        #3b82f6 45%,
+        #60a5fa 100%
+    );
+
+    --glass-gradient: linear-gradient(
+        135deg,
+        rgba(255,255,255,.65),
+        rgba(255,255,255,.35)
+    );
+
+    /* ===========================
+       Glass Effect
+    =========================== */
+
+    --glass-bg: rgba(255,255,255,.70);
+
+    --glass-border: rgba(255,255,255,.45);
+
+    --backdrop-blur: blur(18px);
+
+    /* ===========================
+       Radius
+    =========================== */
+
+    --radius-xs: 6px;
+    --radius-sm: 10px;
+    --radius-md: 14px;
+    --radius-lg: 18px;
+    --radius-xl: 24px;
+
+    /* ===========================
+       Sidebar
+    =========================== */
+
+    --sidebar-width: 280px;
+    --sidebar-collapse: 88px;
+
+    /* ===========================
+       Header
+    =========================== */
+
+    --header-height: 72px;
+
+    /* ===========================
+       Layout
+    =========================== */
+
+    --container-padding: 30px;
+    --section-gap: 24px;
+
+    /* ===========================
+       Shadows
+    =========================== */
+
+    --shadow-sm:
+        0 4px 10px rgba(15, 23, 42, .05);
+
+    --shadow-md:
+        0 10px 25px rgba(15, 23, 42, .08);
+
+    --shadow-lg:
+        0 20px 45px rgba(15, 23, 42, .12);
+
+    --shadow-hover:
+        0 18px 40px rgba(37, 99, 235, .18);
+
+    /* ===========================
+       Typography
+    =========================== */
+
+    --font-family:
+        "Inter",
+        "Segoe UI",
+        Roboto,
+        Helvetica,
+        Arial,
+        sans-serif;
+
+    --font-xs: 12px;
+    --font-sm: 14px;
+    --font-md: 15px;
+    --font-lg: 18px;
+    --font-xl: 24px;
+    --font-xxl: 32px;
+
+    --fw-medium: 500;
+    --fw-semibold: 600;
+    --fw-bold: 700;
+
+    /* ===========================
+       Animation
+    =========================== */
+
+    --transition-fast: .2s ease;
+    --transition: .3s ease;
+    --transition-slow: .45s ease;
+
+    /* ===========================
+       Z-Index
+    =========================== */
+
+    --z-sidebar: 1040;
+    --z-header: 1030;
+    --z-overlay: 1050;
+    --z-modal: 1080;
+
+}

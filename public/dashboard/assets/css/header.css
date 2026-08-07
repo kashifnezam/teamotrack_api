@@ -1,0 +1,238 @@
+/* ==========================================================
+   TeamoTrack Header
+   header.css
+   ========================================================== */
+
+/* -----------------------------
+   Header
+------------------------------ */
+
+.dashboard-header {
+    position: sticky;
+    top: 0;
+    z-index: var(--z-header);
+    height: var(--header-height);
+    background: var(--header-bg);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border-color);
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    padding: 0 28px;
+}
+
+/* -----------------------------
+   Left Section
+------------------------------ */
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+}
+
+.sidebar-toggle {
+    width: 46px;
+    height: 46px;
+    border: none;
+    border-radius: var(--radius-md);
+    background: var(--surface);
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow-sm);
+    transition: var(--transition);
+    cursor: pointer;
+}
+
+.sidebar-toggle:hover {
+    background: var(--primary);
+    color: #ffffff;
+    box-shadow: var(--shadow-hover);
+}
+
+.sidebar-toggle i {
+    font-size: 22px;
+}
+
+.page-title h3 {
+    margin: 0;
+    font-size: 22px;
+    font-weight: var(--fw-bold);
+    color: var(--text-primary);
+}
+
+.page-title p {
+    margin: 3px 0 0;
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+/* -----------------------------
+   Right Section
+------------------------------ */
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+/* -----------------------------
+   Search
+------------------------------ */
+
+.header-search {
+    position: relative;
+}
+
+.header-search input {
+    width: 300px;
+    height: 46px;
+
+    border: 1px solid var(--border-color);
+    border-radius: 50px;
+
+    background: var(--surface);
+
+    padding: 0 18px 0 48px;
+
+    outline: none;
+
+    transition: var(--transition);
+}
+
+.header-search input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, .12);
+}
+
+.header-search i {
+    position: absolute;
+    left: 18px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-secondary);
+}
+
+/* -----------------------------
+   Header Buttons
+------------------------------ */
+
+.header-btn {
+    width: 46px;
+    height: 46px;
+
+    border: none;
+    border-radius: 50%;
+
+    background: var(--surface);
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    cursor: pointer;
+
+    box-shadow: var(--shadow-sm);
+
+    transition: var(--transition);
+
+    position: relative;
+}
+
+.header-btn:hover {
+    background: var(--primary);
+    color: #ffffff;
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-hover);
+}
+
+.header-btn i {
+    font-size: 20px;
+}
+
+/* -----------------------------
+   Notification Badge
+------------------------------ */
+
+.notification-badge {
+    position: absolute;
+    top: 7px;
+    right: 8px;
+
+    width: 10px;
+    height: 10px;
+
+    border-radius: 50%;
+    background: var(--danger);
+    border: 2px solid #ffffff;
+}
+
+/* -----------------------------
+   User Profile
+------------------------------ */
+
+.header-profile {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    padding: 6px 10px 6px 6px;
+
+    border-radius: 50px;
+
+    background: var(--surface);
+
+    cursor: pointer;
+
+    transition: var(--transition);
+
+    box-shadow: var(--shadow-sm);
+}
+
+.header-profile:hover {
+    box-shadow: var(--shadow-hover);
+}
+
+.profile-avatar {
+    width: 44px;
+    height: 44px;
+
+    border-radius: 50%;
+
+    background: var(--primary-gradient);
+
+    color: #ffffff;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    font-weight: var(--fw-bold);
+}
+
+.profile-info h6 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: var(--fw-semibold);
+}
+
+.profile-info small {
+    color: var(--text-secondary);
+    font-size: 12px;
+}
+
+/* -----------------------------
+   Header Divider
+------------------------------ */
+
+.header-divider {
+    width: 1px;
+    height: 36px;
+    background: var(--border-color);
+}

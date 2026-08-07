@@ -1,0 +1,262 @@
+/* ==========================================================
+   TeamoTrack Animations
+   animations.css
+   ========================================================== */
+
+/* ---------------------------------
+   Fade In
+---------------------------------- */
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+.fade-in {
+    animation: fadeIn .4s ease forwards;
+}
+
+/* ---------------------------------
+   Fade Up
+---------------------------------- */
+
+@keyframes fadeUp {
+
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+}
+
+.fade-up {
+    animation: fadeUp .5s ease forwards;
+}
+
+/* ---------------------------------
+   Slide Left
+---------------------------------- */
+
+@keyframes slideLeft {
+
+    from {
+        opacity: 0;
+        transform: translateX(30px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+
+}
+
+.slide-left {
+    animation: slideLeft .45s ease forwards;
+}
+
+/* ---------------------------------
+   Slide Right
+---------------------------------- */
+
+@keyframes slideRight {
+
+    from {
+        opacity: 0;
+        transform: translateX(-30px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+
+}
+
+.slide-right {
+    animation: slideRight .45s ease forwards;
+}
+
+/* ---------------------------------
+   Zoom In
+---------------------------------- */
+
+@keyframes zoomIn {
+
+    from {
+        opacity: 0;
+        transform: scale(.92);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+}
+
+.zoom-in {
+    animation: zoomIn .35s ease forwards;
+}
+
+/* ---------------------------------
+   Float
+---------------------------------- */
+
+@keyframes floating {
+
+    0% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-6px);
+    }
+
+    100% {
+        transform: translateY(0);
+    }
+
+}
+
+.floating {
+    animation: floating 3s ease-in-out infinite;
+}
+
+/* ---------------------------------
+   Pulse
+---------------------------------- */
+
+@keyframes pulse {
+
+    0% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.06);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+
+}
+
+.pulse {
+    animation: pulse 2s infinite;
+}
+
+/* ---------------------------------
+   Rotation
+---------------------------------- */
+
+@keyframes rotate360 {
+
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+
+}
+
+.rotate {
+    animation: rotate360 1.2s linear infinite;
+}
+
+/* ---------------------------------
+   Notification Ping
+---------------------------------- */
+
+@keyframes ping {
+
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+
+    75% {
+        transform: scale(1.8);
+        opacity: 0;
+    }
+
+    100% {
+        transform: scale(2);
+        opacity: 0;
+    }
+
+}
+
+.notification-badge::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: inherit;
+    animation: ping 1.8s infinite;
+}
+
+/* ---------------------------------
+   Hover Lift
+---------------------------------- */
+
+.hover-lift {
+    transition: transform .25s ease,
+                box-shadow .25s ease;
+}
+
+.hover-lift:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-hover);
+}
+
+/* ---------------------------------
+   Ripple Effect
+---------------------------------- */
+
+.ripple {
+    position: relative;
+    overflow: hidden;
+}
+
+.ripple::after {
+    content: "";
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background: rgba(255,255,255,.45);
+    border-radius: 50%;
+    transform: scale(0);
+    opacity: 0;
+}
+
+.ripple:active::after {
+    animation: ripple .45s ease;
+}
+
+@keyframes ripple {
+
+    from {
+        transform: scale(0);
+        opacity: .6;
+    }
+
+    to {
+        transform: scale(18);
+        opacity: 0;
+    }
+
+}

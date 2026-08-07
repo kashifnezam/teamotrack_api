@@ -1,0 +1,311 @@
+.theme-color{
+   color: #02BBDF;
+}
+
+.login-form{
+    height: 650px;
+    width: 500px;
+    border: 1px solid gainsboro;
+    border-radius: 8px;
+}
+
+.login-page {
+    background-image: url("../images/bg.png"); /* Adjust path as needed */
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    min-height: 100vh;
+}
+
+.logo-img {
+    background-image: url("../images/logo.png"); /* Adjust path as needed */
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    width: 75px;
+    height: 75px;
+}
+
+.icon-box{
+    width: 50px;
+    height: 50px;
+    padding: 10px;
+    background-color: whitesmoke;
+    box-shadow: rgba(60, 64, 67, 0.3) 0px 1px 2px 0px, rgba(60, 64, 67, 0.15) 0px 1px 3px 1px;
+}
+
+.dash-img {
+    top: 150px;
+    position: relative;
+    background-image: url("../images/desk-dash.png"); /* Adjust path as needed */
+    background-size: cover;
+    background-repeat: no-repeat;
+    width: 475px;
+    height: 475px;
+}
+
+.login-form{
+    width:430px;
+    background:#fff;
+    border-radius:16px;
+    padding:55px 45px;
+    box-shadow:0 10px 35px rgba(0,0,0,.08);
+}
+
+.login-form h1{
+    font-size:48px;
+    color:#081B5B;
+}
+
+.theme-color{
+    color:#00AEEF;
+}
+
+.form-label{
+    color:#081B5B;
+    margin-bottom:12px;
+}
+
+.custom-input .form-control,
+.custom-input .input-group-text{
+    height:58px;
+    border-color:#D7DDEE;
+}
+
+.custom-input .form-control{
+    box-shadow:none;
+    font-size:16px;
+}
+
+.custom-input .form-control:focus{
+    border-color:#00AEEF;
+    box-shadow:none;
+}
+
+.custom-input .input-group-text{
+    color:#6C7293;
+}
+
+.login-btn{
+    height:58px;
+    border:none;
+    border-radius:8px;
+    background:#08A8E5;
+    color:#fff;
+    font-size:22px;
+    font-weight:600;
+}
+
+.login-btn:hover{
+    background:#0898cf;
+}
+
+.form-check-label{
+    color:#6C7293;
+}
+
+/* ===========================================
+   RESPONSIVE DESIGN
+   (Keep Desktop Unchanged)
+=========================================== */
+
+/* Large Laptop */
+@media (max-width: 1400px) {
+
+    .dash-img {
+        width: 420px;
+        height: 420px;
+    }
+
+    .login-form {
+        width: 400px;
+        padding: 45px 35px;
+    }
+}
+
+/* Laptop */
+@media (max-width: 1200px) {
+
+    .company-overview {
+        font-size: 2rem !important;
+    }
+
+    .desc {
+        width: 320px !important;
+    }
+
+    .dash-img {
+        width: 360px;
+        height: 360px;
+        top: 180px;
+    }
+
+    .login-form {
+        width: 380px;
+        padding: 40px 30px;
+    }
+
+    .login-form h1 {
+        font-size: 40px;
+    }
+}
+
+/* Tablet */
+@media (max-width: 992px) {
+
+    .login-page {
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 40px 20px;
+    }
+
+    .login-page>div:first-child {
+        width: 100%;
+        padding: 0 !important;
+    }
+
+    .logo {
+        justify-content: center;
+    }
+
+    .company-overview {
+        text-align: center;
+        padding-left: 0 !important;
+    }
+
+    .desc {
+        width: 100% !important;
+        max-width: 500px;
+        margin: auto;
+        text-align: center;
+    }
+
+    .login-page .d-flex.justify-content-around {
+        justify-content: center !important;
+    }
+
+    .login-page .d-flex:last-child {
+        flex-direction: column;
+        align-items: center;
+        margin-top: 30px;
+        width: 100%;
+    }
+
+    .dash-img {
+        position: static;
+        width: 420px;
+        height: 420px;
+        margin-bottom: 30px;
+    }
+
+    .login-form {
+        width: 100%;
+        max-width: 500px;
+        margin: 0 !important;
+    }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+
+    .login-page {
+        padding: 20px 15px;
+    }
+
+    .logo {
+        justify-content: center;
+    }
+
+    .logo-img {
+        width: 60px;
+        height: 60px;
+    }
+
+    .company-overview {
+        font-size: 32px !important;
+        text-align: center;
+    }
+
+    .desc {
+        font-size: 15px;
+        padding: 20px !important;
+    }
+
+    /* Feature cards */
+
+    .login-page .ps-4.m-3 {
+        padding-left: 0 !important;
+        margin: 18px 0 !important;
+    }
+
+    .login-page .ps-3 {
+        width: calc(100% - 65px);
+    }
+
+    .login-page .text-wrap {
+        width: auto !important;
+    }
+
+    .dash-img {
+        width: 100%;
+        max-width: 330px;
+        height: 330px;
+        margin-bottom: 25px;
+    }
+
+    .login-form {
+        width: 100%;
+        padding: 35px 22px;
+        border-radius: 14px;
+    }
+
+    .login-form h1 {
+        font-size: 34px;
+    }
+
+    .login-btn {
+        font-size: 18px;
+    }
+}
+
+/* Small Mobile */
+@media (max-width: 480px) {
+
+    .login-page {
+        padding: 15px;
+    }
+
+    .logo-img {
+        width: 52px;
+        height: 52px;
+    }
+
+    .company-overview {
+        font-size: 28px !important;
+    }
+
+    .desc {
+        font-size: 14px;
+        padding: 15px !important;
+    }
+
+    .dash-img {
+        max-width: 260px;
+        height: 260px;
+    }
+
+    .login-form {
+        padding: 28px 18px;
+    }
+
+    .login-form h1 {
+        font-size: 30px;
+    }
+
+    .custom-input .form-control,
+    .custom-input .input-group-text,
+    .login-btn {
+        height: 52px;
+    }
+}

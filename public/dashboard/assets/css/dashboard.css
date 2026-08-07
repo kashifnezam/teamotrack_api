@@ -1,0 +1,205 @@
+/* ==========================================================
+   TeamoTrack Dashboard
+   dashboard.css
+   ========================================================== */
+
+/* -----------------------------
+   Reset
+------------------------------ */
+
+*,
+*::before,
+*::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html,
+body {
+    width: 100%;
+    min-height: 100%;
+}
+
+body {
+    font-family: var(--font-family);
+    font-size: var(--font-md);
+    background: var(--bg-color);
+    color: var(--text-primary);
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* -----------------------------
+   Links
+------------------------------ */
+
+a {
+    text-decoration: none;
+    color: inherit;
+}
+
+img {
+    max-width: 100%;
+    display: block;
+}
+
+/* -----------------------------
+   Layout
+------------------------------ */
+
+.dashboard-wrapper {
+    display: flex;
+    min-height: 100vh;
+    background: var(--bg-color);
+}
+
+.dashboard-main {
+    flex: 1;
+    min-height: 100vh;
+    margin-left: var(--sidebar-width);
+    display: flex;
+    flex-direction: column;
+    transition: margin-left var(--transition);
+}
+
+.dashboard-content {
+    flex: 1;
+    padding: var(--container-padding);
+}
+
+/* Sidebar collapsed */
+
+body.sidebar-collapsed .dashboard-main {
+    margin-left: var(--sidebar-collapse);
+}
+
+/* -----------------------------
+   Cards
+------------------------------ */
+
+.card-ui,
+.welcome-card {
+    background: var(--surface);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    transition: all var(--transition);
+}
+
+.card-ui:hover,
+.welcome-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-hover);
+}
+
+/* -----------------------------
+   Welcome Card
+------------------------------ */
+
+.welcome-card {
+    padding: 40px;
+    background: var(--primary-gradient);
+    color: #ffffff;
+    overflow: hidden;
+    position: relative;
+}
+
+.welcome-card::before {
+    content: "";
+    position: absolute;
+    width: 260px;
+    height: 260px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, .08);
+    top: -120px;
+    right: -80px;
+}
+
+.welcome-card::after {
+    content: "";
+    position: absolute;
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, .05);
+    bottom: -70px;
+    left: -50px;
+}
+
+.welcome-card h2 {
+    position: relative;
+    z-index: 2;
+    font-size: var(--font-xxl);
+    font-weight: var(--fw-bold);
+    margin-bottom: 12px;
+}
+
+.welcome-card h2 span {
+    color: #ffffff;
+}
+
+.welcome-card p {
+    position: relative;
+    z-index: 2;
+    font-size: var(--font-lg);
+    opacity: .95;
+    margin: 0;
+}
+
+/* -----------------------------
+   Generic Dashboard Section
+------------------------------ */
+
+.dashboard-section {
+    margin-top: var(--section-gap);
+}
+
+.section-title {
+    font-size: 20px;
+    font-weight: var(--fw-semibold);
+    color: var(--text-primary);
+    margin-bottom: 18px;
+}
+
+/* -----------------------------
+   Utility
+------------------------------ */
+
+.glass-card {
+    background: var(--glass-bg);
+    backdrop-filter: var(--backdrop-blur);
+    -webkit-backdrop-filter: var(--backdrop-blur);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+}
+
+.rounded-xl {
+    border-radius: var(--radius-xl);
+}
+
+.shadow-hover {
+    transition: var(--transition);
+}
+
+.shadow-hover:hover {
+    box-shadow: var(--shadow-hover);
+}
+
+.text-muted-custom {
+    color: var(--text-secondary);
+}
+
+#employeeMap{
+    width:100%;
+    height:260px;          /* Same height as your previous iframe */
+    border-radius:14px;
+    overflow:hidden;
+}
+
+.leaflet-container{
+    width:100%;
+    height:100%;
+    border-radius:14px;
+}
