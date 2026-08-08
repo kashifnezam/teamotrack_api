@@ -13,31 +13,36 @@ form.addEventListener("submit", async function (e) {
 
     try {
 
+        console.log("Sending login request...");
+
         const result = await Api.post("/auth/login", {
             email: email.value.trim(),
             password: password.value
         });
 
+        console.log("Login response:", result);
+
         if (result.token) {
 
             localStorage.setItem("token", result.token);
 
-            window.location.href = "/dashboard/pages/dashboard.html";
+            window.location.href = "/dashboard";
 
         } else {
 
-            errorMessage.innerText = result.message;
+            errorMessage.innerText =
+                result.message || "Login failed.";
 
             errorMessage.classList.remove("d-none");
-
         }
 
     } catch (e) {
 
-        errorMessage.innerText = "Unable to connect to server.";
+        console.error("LOGIN ERROR:", e);
+
+        errorMessage.innerText =
+            e?.message || "Unable to connect to server.";
 
         errorMessage.classList.remove("d-none");
-
     }
-
 });

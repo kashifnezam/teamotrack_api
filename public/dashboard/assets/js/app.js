@@ -8,12 +8,12 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     await loadComponent(
         "sidebar-container",
-        "../components/sidebar.html"
+        "../dashboard/components/sidebar.html"
     );
 
     await loadComponent(
         "header-container",
-        "../components/header.html"
+        "../dashboard/components/header.html"
     );
     initializeSidebar();
 

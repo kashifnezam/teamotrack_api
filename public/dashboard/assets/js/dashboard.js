@@ -3,6 +3,36 @@
    dashboard.js
 ========================================================== */
 
+document.addEventListener("DOMContentLoaded", async () => {
+
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+        window.location.href = "/login";
+        return;
+    }
+
+    try {
+
+        const result = await Api.get("/dashboard/me", {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        });
+
+        console.log("Dashboard User:", result);
+
+        // Example
+        document.getElementById("userEmail").innerText =
+            result.email;
+
+    } catch (error) {
+
+        console.error("Dashboard authentication failed:", error);
+
+    }
+});
+
 function initializeDashboard() {
 
     highlightCurrentMenu();

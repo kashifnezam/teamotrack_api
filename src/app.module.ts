@@ -7,6 +7,7 @@ import { ConfigModule } from '@nestjs/config';
 import { WebModule } from './web/web.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
+import { DashboardModule } from './dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -19,7 +20,7 @@ import { join } from 'path';
       rootPath: join(process.cwd(), 'public'),
     }),
 
-    FirebaseModule, AuthModule, WebModule
+    FirebaseModule, AuthModule, WebModule, DashboardModule
   ],
   controllers: [AppController],
   // providers: [AppService],

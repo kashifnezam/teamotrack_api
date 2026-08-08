@@ -6,13 +6,25 @@ const Api = {
 
         const response = await fetch(API_BASE + url, {
             method: "POST",
+
             headers: {
                 "Content-Type": "application/json"
             },
+
             body: JSON.stringify(body)
         });
 
-        return response.json();
+        const data = await response.json();
+
+        console.log("POST:", API_BASE + url);
+        console.log("Status:", response.status);
+        console.log("Response:", data);
+
+        if (!response.ok) {
+            throw data;
+        }
+
+        return data;
     },
 
     async get(url) {
@@ -20,11 +32,23 @@ const Api = {
         const token = localStorage.getItem("token");
 
         const response = await fetch(API_BASE + url, {
+            method: "GET",
+
             headers: {
                 "Authorization": `Bearer ${token}`
             }
         });
 
-        return response.json();
+        const data = await response.json();
+
+        console.log("GET:", API_BASE + url);
+        console.log("Status:", response.status);
+        console.log("Response:", data);
+
+        if (!response.ok) {
+            throw data;
+        }
+
+        return data;
     }
 };

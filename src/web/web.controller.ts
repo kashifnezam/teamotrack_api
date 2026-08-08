@@ -14,9 +14,4 @@ export class WebController {
   login(@Res() res: Response) {
     return res.sendFile(join(process.cwd(), 'public', 'login.html'));
   }
-
-  @Get('dashboard')
-  dashboard(@Res() res: Response) {
-    return res.sendFile(join(process.cwd(), 'public', 'dashboard.html'));
-  }
 }
