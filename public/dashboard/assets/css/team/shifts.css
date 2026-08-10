@@ -1,0 +1,156 @@
+.shifts-page {
+    padding: 24px 0;
+}
+
+.page-header {
+    margin-bottom: 16px;
+}
+
+.filter-card,
+.shift-card {
+    background: var(--surface);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+}
+
+.filter-card {
+    padding: 16px;
+    margin-bottom: 16px;
+}
+
+.search-box {
+    position: relative;
+}
+
+.search-box i {
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+}
+
+.search-box input {
+    padding-left: 42px;
+}
+
+.shift-count {
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+.shift-count strong {
+    color: var(--text-primary);
+}
+
+.shift-card {
+    overflow: hidden;
+}
+
+.shift-card-header {
+    padding: 16px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.shift-card .table {
+    min-width: 800px;
+}
+
+.shift-card th {
+    background: var(--surface-soft);
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: var(--fw-semibold);
+    white-space: nowrap;
+}
+
+.shift-card td {
+    color: var(--text-primary);
+    font-size: 14px;
+}
+
+.shift-name {
+    font-weight: var(--fw-semibold);
+}
+
+.shift-time {
+    white-space: nowrap;
+}
+
+.weekly-badge {
+    display: inline-block;
+    padding: 5px 9px;
+    border-radius: 20px;
+    background: rgba(37, 99, 235, .08);
+    color: var(--primary);
+    font-size: 12px;
+}
+
+.no-off {
+    color: var(--text-muted);
+}
+
+.action-btn {
+    width: 34px;
+    height: 34px;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: var(--surface-soft);
+    color: var(--text-secondary);
+    margin-left: 4px;
+    transition: var(--transition-fast);
+}
+
+.action-btn:hover {
+    background: rgba(37, 99, 235, .1);
+    color: var(--primary);
+}
+
+.weekly-off {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.weekly-off label {
+    cursor: pointer;
+    padding: 7px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.weekly-off input {
+    margin-right: 4px;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 40px !important;
+    color: var(--text-muted);
+}
+
+@media (max-width: 576px) {
+
+    .shifts-page {
+        padding: 15px 0;
+    }
+
+    .filter-card {
+        padding: 12px;
+    }
+
+    .shift-card-header {
+        padding: 14px;
+    }
+
+    .weekly-off {
+        gap: 5px;
+    }
+
+}

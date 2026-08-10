@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Tasks | TeamoTrack</title>
+
+    <link rel="stylesheet" href="../assets/css/common.css">
+    <link rel="stylesheet" href="/dashboard/assets/css/task/tasks.css">
+
+    <!-- Leaflet -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+
+</head>
+
+<body>
+
+    <div class="dashboard-wrapper">
+
+        <aside id="sidebar-container"></aside>
+
+        <main class="dashboard-main">
+
+            <header id="header-container"></header>
+
+            <section class="tasks-page">
+
+                <div class="container-fluid">
+
+                    <!-- Header -->
+                    <div class="page-header">
+
+                        <h4 class="mb-0">
+                            Tasks
+                        </h4>
+
+                    </div>
+
+
+                    <!-- Filters -->
+                    <div class="filter-card">
+
+                        <div class="row g-2 align-items-center">
+
+                            <div class="col-lg-4 col-md-6">
+
+                                <div class="search-box">
+
+                                    <i class="bi bi-search"></i>
+
+                                    <input id="searchInput" type="search" class="form-control"
+                                        placeholder="Search tasks...">
+
+                                </div>
+
+                            </div>
+
+
+                            <div class="col-lg-2 col-md-6">
+
+                                <select id="statusFilter" class="form-select">
+
+                                    <option value="">
+                                        All Tasks
+                                    </option>
+
+                                    <option value="pending">
+                                        Unassigned
+                                    </option>
+
+                                    <option value="assigned">
+                                        Assigned
+                                    </option>
+
+                                    <option value="completed">
+                                        Completed
+                                    </option>
+
+                                    <option value="cancelled">
+                                        Cancelled
+                                    </option>
+
+                                    <option value="failed">
+                                        Failed
+                                    </option>
+
+                                </select>
+
+                            </div>
+
+
+                            <div class="col-lg-2 col-md-6">
+
+                                <input id="monthFilter" type="month" class="form-control">
+
+                            </div>
+
+
+                            <div class="col-lg-4 text-lg-end">
+
+                                <span class="task-count">
+
+                                    <strong id="taskCount">
+                                        0
+                                    </strong>
+
+                                    Tasks
+
+                                </span>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- Task Card -->
+                    <div class="task-card">
+
+                        <div class="task-card-header">
+
+                            <h6 class="mb-0">
+                                Task List
+                            </h6>
+
+                            <div class="task-actions">
+
+                                <button type="button" class="btn btn-light btn-sm" onclick="downloadTemplate()">
+
+                                    <i class="bi bi-download me-1"></i>
+                                    Template
+
+                                </button>
+
+                                <button type="button" class="btn btn-outline-primary btn-sm"
+                                    onclick="openImportModal()">
+
+                                    <i class="bi bi-file-earmark-excel me-1"></i>
+                                    Bulk Upload
+
+                                </button>
+
+                                <button type="button" class="btn btn-primary btn-sm" onclick="openTaskModal()">
+
+                                    <i class="bi bi-plus-lg me-1"></i>
+                                    Add Task
+
+                                </button>
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="table-responsive">
+
+                            <table class="table align-middle mb-0">
+
+                                <thead>
+
+                                    <tr>
+
+                                        <th>Task</th>
+                                        <th>Executive</th>
+                                        <th>Schedule</th>
+                                        <th>Priority</th>
+                                        <th>Location</th>
+                                        <th>Status</th>
+
+                                        <th class="text-end">
+                                            Action
+                                        </th>
+
+                                    </tr>
+
+                                </thead>
+
+
+                                <tbody id="taskTable">
+
+                                    <tr>
+
+                                        <td colspan="7" class="empty-state">
+
+                                            Loading tasks...
+
+                                        </td>
+
+                                    </tr>
+
+                                </tbody>
+
+                            </table>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+        </main>
+
+    </div>
+
+
+    <!-- =========================================================
+     TASK MODAL
+========================================================= -->
+
+    <div class="modal fade" id="taskModal" tabindex="-1">
+
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+
+            <div class="modal-content">
+
+                <div class="modal-header">
+
+                    <h5 class="modal-title" id="modalTitle">
+
+                        Add Task
+
+                    </h5>
+
+                    <button type="button" class="btn-close" data-bs-dismiss="modal">
+                    </button>
+
+                </div>
+
+
+                <div class="modal-body">
+
+                    <input type="hidden" id="taskId">
+
+
+                    <div class="row g-3">
+
+                        <div class="col-md-8">
+
+                            <label class="form-label">
+                                Title
+                            </label>
+
+                            <input id="taskTitle" class="form-control" placeholder="Task title">
+
+                        </div>
+
+
+                        <div class="col-md-4">
+
+                            <label class="form-label">
+                                Priority
+                            </label>
+
+                            <select id="priority" class="form-select">
+
+                                <option value="Low">
+                                    Low
+                                </option>
+
+                                <option value="Medium" selected>
+                                    Medium
+                                </option>
+
+                                <option value="High">
+                                    High
+                                </option>
+
+                            </select>
+
+                        </div>
+
+
+                        <div class="col-12">
+
+                            <label class="form-label">
+                                Description
+                            </label>
+
+                            <textarea id="description" class="form-control" rows="3" placeholder="Task description">
+                        </textarea>
+
+                        </div>
+
+
+                        <div class="col-md-6">
+
+                            <label class="form-label">
+                                Start
+                            </label>
+
+                            <input id="startDate" type="datetime-local" class="form-control">
+
+                        </div>
+
+
+                        <div class="col-md-6">
+
+                            <label class="form-label">
+                                End
+                            </label>
+
+                            <input id="endDate" type="datetime-local" class="form-control">
+
+                        </div>
+
+
+                        <div class="col-12">
+
+                            <label class="form-label">
+                                Assign Executive
+                            </label>
+
+                            <select id="assignedTo" class="form-select">
+
+                                <option value="">
+                                    Unassigned
+                                </option>
+
+                            </select>
+
+                        </div>
+
+
+                        <div class="col-12">
+
+                            <div class="form-check form-switch">
+
+                                <input id="isGeofence" class="form-check-input" type="checkbox">
+
+                                <label class="form-check-label">
+                                    Enable Geofence
+                                </label>
+
+                            </div>
+
+                        </div>
+
+
+                        <div id="locationSection" class="col-12 d-none">
+
+                            <label class="form-label">
+                                Start Location
+                            </label>
+
+                            <div id="startMap" class="task-map">
+                            </div>
+
+                            <input type="hidden" id="startLat">
+
+                            <input type="hidden" id="startLng">
+
+                            <input id="startAddress" class="form-control mt-2" placeholder="Start address">
+
+
+                            <label class="form-label mt-3">
+                                End Location
+                            </label>
+
+                            <div id="endMap" class="task-map">
+                            </div>
+
+                            <input type="hidden" id="endLat">
+
+                            <input type="hidden" id="endLng">
+
+                            <input id="endAddress" class="form-control mt-2" placeholder="End address">
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <div class="modal-footer">
+
+                    <button class="btn btn-light" data-bs-dismiss="modal">
+
+                        Cancel
+
+                    </button>
+
+                    <button class="btn btn-primary" id="saveTaskBtn" onclick="saveTask()">
+
+                        Save Task
+
+                    </button>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================================================
+     IMPORT MODAL
+========================================================= -->
+
+    <div class="modal fade" id="importModal" tabindex="-1">
+
+        <div class="modal-dialog modal-xl modal-dialog-centered">
+
+            <div class="modal-content">
+
+                <div class="modal-header">
+
+                    <h5 class="modal-title">
+                        Bulk Task Upload
+                    </h5>
+
+                    <button type="button" class="btn-close" data-bs-dismiss="modal">
+                    </button>
+
+                </div>
+
+
+                <div class="modal-body">
+
+                    <div class="upload-box">
+
+                        <i class="bi bi-file-earmark-excel"></i>
+
+                        <h6>
+                            Upload Task Excel File
+                        </h6>
+
+                        <p>
+                            Upload the completed task template to verify
+                            and edit tasks before importing.
+                        </p>
+
+                        <input id="excelFile" type="file" accept=".xlsx" class="form-control">
+
+                    </div>
+
+
+                    <div id="importPreview" class="import-preview d-none">
+
+                        <div class="d-flex justify-content-between mb-3">
+
+                            <strong>
+                                Verification
+                            </strong>
+
+                            <span id="importSummary">
+                            </span>
+
+                        </div>
+
+
+                        <div class="table-responsive">
+
+                            <table class="table table-sm align-middle">
+
+                                <thead>
+
+                                    <tr>
+
+                                        <th>Row</th>
+                                        <th>Email</th>
+                                        <th>Title</th>
+                                        <th>Priority</th>
+                                        <th>Start</th>
+                                        <th>End</th>
+                                        <th>Location</th>
+                                        <th>Status</th>
+                                        <th>Action</th>
+
+                                    </tr>
+
+                                </thead>
+
+                                <tbody id="importTable"></tbody>
+
+                            </table>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <div class="modal-footer">
+
+                    <button class="btn btn-light" data-bs-dismiss="modal">
+
+                        Cancel
+
+                    </button>
+
+                    <button class="btn btn-primary" id="importTasksBtn" onclick="importTasks()" disabled>
+
+                        Import Valid Tasks
+
+                    </button>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <script src="/assets/js/common.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="/dashboard/assets/js/task/tasks.js"></script>
+   
+
+</body>
+
+</html>

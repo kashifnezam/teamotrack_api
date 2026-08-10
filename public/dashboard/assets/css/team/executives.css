@@ -1,0 +1,347 @@
+/* ==========================================================
+   TeamoTrack Executives
+========================================================== */
+
+.executives-page {
+    padding: 24px;
+    min-height: calc(100vh - var(--header-height));
+    background: var(--bg-color);
+}
+
+
+/* =========================
+   Header
+========================= */
+
+.page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+    margin-bottom: 18px;
+}
+
+.page-header h4 {
+    margin: 0;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+
+/* =========================
+   Filters
+========================= */
+
+.filter-card {
+    background: var(--surface);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 14px;
+    margin-bottom: 14px;
+    box-shadow: var(--shadow-sm);
+}
+
+.search-box {
+    position: relative;
+}
+
+.search-box i {
+    position: absolute;
+    left: 13px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    z-index: 2;
+}
+
+.search-box input {
+    padding-left: 38px;
+}
+
+
+/* =========================
+   Table
+========================= */
+
+.executive-card {
+    background: var(--surface);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+}
+
+.executive-card .table-responsive {
+    max-height: calc(100vh - 245px);
+}
+
+.table {
+    margin: 0;
+}
+
+.table th {
+    background: var(--surface-soft);
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.table td {
+    color: var(--text-primary);
+    font-size: 14px;
+    vertical-align: middle;
+}
+
+.table td,
+.table th {
+    padding: 13px 15px;
+}
+
+
+/* =========================
+   Executive
+========================= */
+
+.exec-name {
+    font-weight: 600;
+}
+
+.exec-email {
+    color: var(--text-muted);
+    font-size: 12px;
+    margin-top: 2px;
+}
+
+
+/* =========================
+   Badges
+========================= */
+
+.status-badge,
+.tracking-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 5px 9px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.status-active {
+    color: #15803d;
+    background: #dcfce7;
+}
+
+.status-inactive {
+    color: #dc2626;
+    background: #fee2e2;
+}
+
+.tracking-on {
+    color: #1d4ed8;
+    background: #dbeafe;
+}
+
+.tracking-off {
+    color: #64748b;
+    background: #f1f5f9;
+}
+
+
+/* =========================
+   Action
+========================= */
+
+.action-btn {
+    width: 34px;
+    height: 34px;
+    border: 0;
+    border-radius: 8px;
+    background: var(--surface-soft);
+    color: var(--text-secondary);
+    transition: var(--transition-fast);
+}
+
+.action-btn:hover {
+    background: rgba(37, 99, 235, .10);
+    color: var(--primary);
+}
+
+
+/* =========================
+   Empty
+========================= */
+
+.empty-state {
+    padding: 50px 20px !important;
+    text-align: center;
+    color: var(--text-muted);
+}
+
+
+/* =========================
+   Modal
+========================= */
+
+.modal-content {
+    border: 0;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+}
+
+.modal-header {
+    border-bottom: 1px solid var(--border-color);
+}
+
+.modal-footer {
+    border-top: 1px solid var(--border-color);
+}
+
+.modal-body label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+
+/* ==========================================================
+   Tablet
+========================================================== */
+
+@media (max-width: 992px) {
+
+    .executives-page {
+        padding: 20px;
+    }
+
+    .executive-card .table-responsive {
+        max-height: calc(100vh - 260px);
+    }
+
+}
+
+
+/* ==========================================================
+   Mobile
+========================================================== */
+
+@media (max-width: 768px) {
+
+    .executives-page {
+        padding: 15px;
+    }
+
+    .page-header {
+        align-items: flex-start;
+    }
+
+    .page-header h4 {
+        font-size: 18px;
+    }
+
+    .page-header small {
+        font-size: 12px;
+    }
+
+    .page-header .btn {
+        padding: 8px 11px;
+        font-size: 13px;
+        white-space: nowrap;
+    }
+
+    .filter-card {
+        padding: 12px;
+    }
+
+    .executive-card .table-responsive {
+        max-height: none;
+    }
+
+    .table {
+        min-width: 700px;
+    }
+
+}
+
+
+/* ==========================================================
+   Small Mobile
+========================================================== */
+
+@media (max-width: 576px) {
+
+    .executives-page {
+        padding: 12px;
+    }
+
+    .page-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .page-header .btn {
+        width: 100%;
+    }
+
+    .filter-card .row > div {
+        width: 100%;
+    }
+
+    .executive-count {
+        display: block;
+        text-align: left !important;
+        padding: 4px 0;
+    }
+
+    .modal-dialog {
+        margin: 10px;
+    }
+
+    .modal-body {
+        padding: 15px;
+    }
+
+}
+
+/* =========================
+   Executive Card Header
+========================= */
+
+.executive-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+
+    padding: 14px 16px;
+
+    border-bottom: 1px solid var(--border-color);
+}
+
+.executive-card-header h6 {
+    color: var(--text-primary);
+    font-weight: var(--fw-semibold);
+}
+
+
+/* =========================
+   Mobile
+========================= */
+
+@media (max-width: 576px) {
+
+    .executive-card-header {
+        padding: 12px;
+    }
+
+    .executive-card-header .btn {
+        white-space: nowrap;
+    }
+
+}

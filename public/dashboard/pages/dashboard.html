@@ -9,20 +9,11 @@
 
     <title>Dashboard | TeamoTrack</title>
 
-    <!-- Bootstrap -->
-    <link rel="stylesheet" href="./../../assets/css/bootstrap.min.css">
-    <link rel="stylesheet" href="./../../assets/css/bootstrap-icons.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css"
-        integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw=="
-        crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
     <!-- CSS -->
-    <link rel="stylesheet" href="../dashboard/assets/css/variables.css">
-    <link rel="stylesheet" href="../dashboard/assets/css/animations.css">
-    <link rel="stylesheet" href="../dashboard/assets/css/sidebar.css">
-    <link rel="stylesheet" href="../dashboard/assets/css/header.css">
-    <link rel="stylesheet" href="../dashboard/assets/css/dashboard.css">
-    <link rel="stylesheet" href="../dashboard/assets/css/responsive.css">
+    <link rel="stylesheet" href="../assets/css/common.css">
+    
+    <!-- Bootstrap -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 
 </head>
 
@@ -48,7 +39,10 @@
                     <div class="welcome-card mb-4">
                         <div class="d-flex justify-content-between align-items-center flex-wrap">
                             <div>
-                                <h2>Welcome Back, <span>Kashif 👋</span></h2>
+                                <h2>
+                                    Welcome Back,
+                                    <span id="userName"></span> 👋
+                                </h2>
                                 <p class="mb-0">Friday, 8 August 2026 • Monitor your workforce in real time.</p>
                             </div>
 
@@ -66,8 +60,8 @@
                             <div class="card-ui p-3">
                                 <div class="d-flex justify-content-between">
                                     <div>
-                                        <small class="text-muted">Employees</small>
-                                        <h3 class="mt-2 mb-0">248</h3>
+                                        <small class="text-muted">Executives</small>
+                                        <h3 class="mt-2 mb-0" id="totalExecutives">0</h3>
                                     </div>
                                     <i class="bi bi-people-fill fs-2 text-primary"></i>
                                 </div>
@@ -79,7 +73,7 @@
                                 <div class="d-flex justify-content-between">
                                     <div>
                                         <small class="text-muted">Present</small>
-                                        <h3 class="mt-2 mb-0 text-success">233</h3>
+                                        <h3 class="mt-2 mb-0 text-success" id="presentCount">0</h3>
                                     </div>
                                     <i class="bi bi-check-circle-fill fs-2 text-success"></i>
                                 </div>
@@ -91,7 +85,7 @@
                                 <div class="d-flex justify-content-between">
                                     <div>
                                         <small class="text-muted">Leave</small>
-                                        <h3 class="mt-2 mb-0 text-warning">8</h3>
+                                        <h3 class="mt-2 mb-0 text-warning" id="leaveCount">0</h3>
                                     </div>
                                     <i class="bi bi-calendar-x-fill fs-2 text-warning"></i>
                                 </div>
@@ -103,7 +97,7 @@
                                 <div class="d-flex justify-content-between">
                                     <div>
                                         <small class="text-muted">Late</small>
-                                        <h3 class="mt-2 mb-0 text-danger">7</h3>
+                                        <h3 class="mt-2 mb-0 text-danger" id="lateCount">0</h3>
                                     </div>
                                     <i class="bi bi-clock-fill fs-2 text-danger"></i>
                                 </div>
@@ -122,7 +116,7 @@
 
                                 <div class="d-flex justify-content-between align-items-center mb-3">
                                     <h5 class="mb-0">Attendance</h5>
-                                    <span class="badge bg-success">94%</span>
+                                    <span class="badge bg-success" id="attendancePercent">0%</span>
                                 </div>
 
                                 <div class="text-center mb-4">
@@ -131,7 +125,7 @@
                                         style="width:120px;height:120px;">
 
                                         <div>
-                                            <h2 class="mb-0">94</h2>
+                                            <h2 class="mb-0" id="attendanceCircle">0</h2>
                                             <small>%</small>
                                         </div>
 
@@ -141,24 +135,24 @@
 
                                 <div class="d-flex justify-content-between mb-2">
                                     <span>Present</span>
-                                    <strong>233</strong>
+                                    <strong id="attendancePresent">0</strong>
                                 </div>
 
                                 <div class="d-flex justify-content-between mb-2">
                                     <span>Absent</span>
-                                    <strong>15</strong>
+                                    <strong id="attendanceAbsent">0</strong>
                                 </div>
 
                                 <div class="d-flex justify-content-between">
                                     <span>Leave</span>
-                                    <strong>8</strong>
+                                    <strong id="attendanceLeave">0</strong>
                                 </div>
 
                             </div>
 
                         </div>
 
-                         <!-- Live Map -->
+                        <!-- Live Map -->
                         <div class="col-lg-5">
 
                             <div class="card-ui p-3 h-100">
@@ -166,16 +160,14 @@
                                 <div class="d-flex justify-content-between align-items-center mb-3">
 
                                     <h5 class="mb-0">
-                                        Live Employee Tracking
+                                        Live executive Tracking
                                     </h5>
 
-                                    <span class="badge bg-primary">
-                                        18 Online
-                                    </span>
+                                    <span class="badge bg-primary" id="onlineCount">0 Online</span>
 
                                 </div>
 
-                                       <div id="employeeMap"></div>
+                                <div id="employeeMap"></div>
 
 
                             </div>
@@ -226,17 +218,9 @@
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-    <!-- Bootstrap -->
-    <script src="/assets/js/bootstrap.min.js"></script>
-
-    <!-- JavaScript -->
-    <script src="../assets/js/api.js"></script>
-    <script src="../dashboard/assets/js/theme.js"></script>
-    <script src="../dashboard/assets/js/sidebar.js"></script>
+    <script src="../assets/js/common.js"></script>
     <script src="../dashboard/assets/js/dashboard.js"></script>
-    <script src="../dashboard/assets/js/loader.js"></script>
-    <script src="../dashboard/assets/js/app.js"></script>
+
 
 </body>
 

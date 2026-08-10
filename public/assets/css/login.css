@@ -309,3 +309,15 @@
         height: 52px;
     }
 }
+
+.swal2-container {
+    z-index: 999999 !important;
+}
+
+.swal2-backdrop-show {
+    background: rgba(0, 0, 0, 0.55) !important;
+}
+
+.swal2-popup {
+    z-index: 1000000 !important;
+}

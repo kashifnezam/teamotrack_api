@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Executives | TeamoTrack</title>
+
+    <link rel="stylesheet" href="../assets/css/common.css">
+    <link rel="stylesheet" href="/dashboard/assets/css/team/executives.css">
+
+</head>
+
+<body>
+
+    <div class="dashboard-wrapper">
+
+        <!-- SIDEBAR -->
+        <aside id="sidebar-container"></aside>
+
+
+        <!-- MAIN -->
+        <main class="dashboard-main">
+
+            <!-- HEADER -->
+            <header id="header-container"></header>
+
+
+            <!-- PAGE CONTENT -->
+            <section class="executives-page">
+
+                <div class="container-fluid">
+
+                    <!-- Page Header -->
+                    <div class="page-header">
+
+                        <h4 class="mb-0">
+                            Executives
+                        </h4>
+
+                    </div>
+
+
+                    <!-- FILTER -->
+                    <div class="filter-card">
+
+                        <div class="row g-2 align-items-center">
+
+                            <div class="col-lg-5 col-md-6">
+
+                                <form autocomplete="off">
+
+                                    <div class="search-box">
+
+                                        <i class="bi bi-search"></i>
+
+                                        <input id="searchInput" type="search" name="executiveSearch"
+                                            class="form-control" placeholder="Search executive...">
+
+                                    </div>
+
+                                </form>
+
+                            </div>
+
+
+                            <div class="col-lg-3 col-md-6">
+
+                                <select id="teamFilter" class="form-select">
+
+                                    <option value="">
+                                        All Teams
+                                    </option>
+
+                                </select>
+
+                            </div>
+
+
+                            <div class="col-lg-4">
+
+                                <span class="executive-count">
+
+                                    <strong id="executiveCount">
+                                        0
+                                    </strong>
+
+                                    Executives
+
+                                </span>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- EXECUTIVE TABLE -->
+                    <div class="executive-card">
+
+                        <!-- Table Header -->
+                        <div class="executive-card-header">
+
+                            <div>
+                                <h6 class="mb-0">
+                                    Executive List
+                                </h6>
+                            </div>
+
+                            <button type="button" class="btn btn-primary btn-sm" onclick="openExecutiveModal()">
+
+                                <i class="bi bi-person-plus me-1"></i>
+                                Add Executive
+
+                            </button>
+
+                        </div>
+
+
+                        <!-- Table -->
+                        <div class="table-responsive">
+
+                            <table class="table align-middle mb-0">
+
+                                <thead>
+
+                                    <tr>
+
+                                        <th>Executive</th>
+                                        <th>Mobile</th>
+                                        <th>Team</th>
+                                        <th>Tracking</th>
+                                        <th>Status</th>
+
+                                        <th class="text-end">
+                                            Action
+                                        </th>
+
+                                    </tr>
+
+                                </thead>
+
+
+                                <tbody id="executiveTable">
+
+                                    <tr>
+
+                                        <td colspan="6" class="empty-state">
+
+                                            Loading executives...
+
+                                        </td>
+
+                                    </tr>
+
+                                </tbody>
+
+                            </table>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+        </main>
+
+    </div>
+
+
+    <!-- MODAL -->
+
+    <div class="modal fade" id="executiveModal" tabindex="-1">
+
+        <div class="modal-dialog modal-dialog-centered">
+
+            <div class="modal-content">
+
+                <div class="modal-header">
+
+                    <h5 class="modal-title" id="modalTitle">
+
+                        Add Executive
+
+                    </h5>
+
+                    <button type="button" class="btn-close" data-bs-dismiss="modal">
+                    </button>
+
+                </div>
+
+
+                <div class="modal-body">
+
+                    <input type="hidden" id="executiveId">
+
+
+                    <div class="row g-3">
+
+                        <div class="col-12">
+
+                            <label>Full Name</label>
+
+                            <input id="fullName" class="form-control" type="text">
+
+                        </div>
+
+
+                        <div class="col-md-6">
+
+                            <label>Mobile</label>
+
+                            <input id="mobile" class="form-control" type="text">
+
+                        </div>
+
+
+                        <div class="col-md-6">
+
+                            <label>Email</label>
+
+                            <input id="email" class="form-control" type="email">
+
+                        </div>
+
+
+                        <div class="col-md-6">
+
+                            <label for="password" class="form-label">
+                                Password
+                            </label>
+
+                            <div class="input-group">
+
+                                <input id="password" class="form-control" type="password" autocomplete="new-password">
+
+                                <button type="button" class="btn btn-outline-secondary" id="togglePassword"
+                                    title="Show password" aria-label="Show password">
+
+                                    <i class="bi bi-eye"></i>
+
+                                </button>
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="col-md-6">
+
+                            <label>Team</label>
+
+                            <select id="teamId" class="form-select">
+
+                                <option value="">
+                                    Select Team
+                                </option>
+
+                            </select>
+
+                        </div>
+
+
+                        <div class="col-md-6">
+
+                            <label>GPS Priority</label>
+
+                            <select id="gpsPriority" class="form-select">
+
+                                <option value="low">
+                                    Low
+                                </option>
+
+                                <option value="high">
+                                    High
+                                </option>
+
+                            </select>
+
+                        </div>
+
+
+                        <div class="col-md-3">
+
+                            <label>Active</label>
+
+                            <div class="form-check form-switch">
+
+                                <input id="isActive" class="form-check-input" type="checkbox" checked>
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="col-md-3">
+
+                            <label>Tracking</label>
+
+                            <div class="form-check form-switch">
+
+                                <input id="isTrackingEnable" class="form-check-input" type="checkbox">
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <div class="modal-footer">
+
+                    <button class="btn btn-light" data-bs-dismiss="modal">
+
+                        Cancel
+
+                    </button>
+
+                    <button class="btn btn-primary" id="saveExecutiveBtn" onclick="saveExecutive()">
+
+                        Save Executive
+
+                    </button>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <script src="/assets/js/common.js"></script>
+
+    <script src="/dashboard/assets/js/team/executives.js"></script>
+
+</body>
+
+</html>

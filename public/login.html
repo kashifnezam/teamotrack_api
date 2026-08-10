@@ -5,7 +5,9 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Bootstrap demo</title>
-    <link rel="stylesheet" href="./assets/css/bootstrap.min.css">
+    <link rel="stylesheet" href="assets/css/bootstrap.min.css">
+    <link rel="stylesheet" href="vendor/sweetalert2/sweetalert2.min.css">
+
     <link rel="stylesheet" href="assets/css/login.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css"
         integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw=="
@@ -75,10 +77,7 @@
         </div>
 
         <div class="d-flex">
-            <div class="dash-img">
-                <div id="errorMessage" class="alert alert-danger d-none">
-                </div>
-            </div>
+            <div class="dash-img"></div>
             <div class="login-form shadow mt-4 me-5">
                 <h1 class="fw-bold mb-3">Welcome back!</h1>
 
@@ -87,54 +86,78 @@
                 </p>
 
                 <form id="loginForm">
+
                     <!-- Email -->
                     <div class="mb-4">
-                        <label class="form-label fw-semibold">Email Address</label>
+
+                        <label class="form-label fw-semibold">
+                            Email Address
+                        </label>
 
                         <div class="input-group custom-input">
+
                             <span class="input-group-text bg-white border-end-0">
                                 <i class="bi bi-envelope"></i>
                             </span>
 
                             <input id="email" type="email" class="form-control border-start-0"
-                                placeholder="Enter your email address">
+                                placeholder="Enter your email address" required>
+
                         </div>
+
                     </div>
+
 
                     <!-- Password -->
                     <div class="mb-4">
 
                         <div class="d-flex justify-content-between">
-                            <label class="form-label fw-semibold">Password</label>
+
+                            <label class="form-label fw-semibold">
+                                Password
+                            </label>
 
                             <a href="#" class="theme-color text-decoration-none fw-semibold">
                                 Forgot Password?
                             </a>
+
                         </div>
 
                         <div class="input-group custom-input">
+
                             <span class="input-group-text bg-white border-end-0">
                                 <i class="bi bi-lock"></i>
                             </span>
 
                             <input id="password" type="password" class="form-control border-start-0 border-end-0"
-                                placeholder="Enter your password">
-                            <span class="input-group-text bg-white border-start-0">
+                                placeholder="Enter your password" required>
+
+                            <span id="togglePassword" class="input-group-text bg-white border-start-0"
+                                style="cursor: pointer;">
                                 <i class="bi bi-eye-slash"></i>
                             </span>
+
                         </div>
 
                     </div>
 
+
                     <!-- Remember -->
                     <div class="form-check mb-5">
+
                         <input id="remember" class="form-check-input" type="checkbox">
+
                         <label class="form-check-label">
                             Remember me
                         </label>
+
                     </div>
-                    <button id="loginBtn" class="btn login-btn w-100"> Login
+
+
+                    <button id="loginBtn" type="submit" class="btn login-btn w-100">
+                        Login
                     </button>
+
                 </form>
             </div>
 
@@ -142,8 +165,19 @@
     </div>
 
     </div>
+
     <script src="./assets/js/bootstrap.min.js"></script>
+
+    <!-- SweetAlert2 must load first -->
+    <script src="./vendor/sweetalert2/sweetalert2.min.js"></script>
+
+    <!-- Then AppAlert -->
+    <script src="./assets/js/alert.js"></script>
+
+    <!-- API -->
     <script src="./assets/js/api.js"></script>
+
+    <!-- Login -->
     <script src="./assets/js/login.js"></script>
 </body>
 

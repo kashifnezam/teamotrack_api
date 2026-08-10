@@ -1,48 +1,307 @@
-const form = document.getElementById("loginForm");
+/* ==========================================================
+   TeamoTrack
+   login.js
+   Login Page
+   ========================================================== */
 
-const email = document.getElementById("email");
-const password = document.getElementById("password");
+console.log("Login.js loaded");
 
-const errorMessage = document.getElementById("errorMessage");
 
-form.addEventListener("submit", async function (e) {
+/* ==========================================================
+   Login Initialization
+   ========================================================== */
 
-    e.preventDefault();
+function initializeLogin() {
 
-    errorMessage.classList.add("d-none");
+    console.log(
+        "Login page initialized"
+    );
 
-    try {
 
-        console.log("Sending login request...");
+    const form =
+        document.getElementById("loginForm");
 
-        const result = await Api.post("/auth/login", {
-            email: email.value.trim(),
-            password: password.value
-        });
+    const email =
+        document.getElementById("email");
 
-        console.log("Login response:", result);
+    const password =
+        document.getElementById("password");
 
-        if (result.token) {
+    const loginBtn =
+        document.getElementById("loginBtn");
 
-            localStorage.setItem("token", result.token);
 
-            window.location.href = "/dashboard";
+    /* ======================================================
+       Validate Elements
+       ====================================================== */
 
-        } else {
+    if (
+        !form ||
+        !email ||
+        !password ||
+        !loginBtn
+    ) {
 
-            errorMessage.innerText =
-                result.message || "Login failed.";
+        console.error(
+            "Login form elements not found.",
+            {
+                form,
+                email,
+                password,
+                loginBtn
+            }
+        );
 
-            errorMessage.classList.remove("d-none");
-        }
-
-    } catch (e) {
-
-        console.error("LOGIN ERROR:", e);
-
-        errorMessage.innerText =
-            e?.message || "Unable to connect to server.";
-
-        errorMessage.classList.remove("d-none");
+        return;
     }
-});
+
+
+    console.log(
+        "Login form found"
+    );
+
+
+    /* ======================================================
+       Dashboard Redirect Alert
+       ====================================================== */
+
+    const loginAlert =
+        sessionStorage.getItem(
+            "loginAlert"
+        );
+
+
+    if (loginAlert) {
+
+        AppAlert.warning(
+            loginAlert,
+            "Login Required"
+        );
+
+
+        sessionStorage.removeItem(
+            "loginAlert"
+        );
+
+    }
+
+
+    /* ======================================================
+       Login Submit
+       ====================================================== */
+
+    form.addEventListener(
+        "submit",
+        async function (e) {
+
+            e.preventDefault();
+
+
+            console.log(
+                "Login form submitted"
+            );
+
+
+            loginBtn.disabled = true;
+
+
+            loginBtn.innerHTML = `
+                <span
+                    class="spinner-border spinner-border-sm me-2"
+                    aria-hidden="true"
+                ></span>
+                Signing in...
+            `;
+
+
+            try {
+
+                console.log(
+                    "Sending login request..."
+                );
+
+
+                const response = await fetch(
+                "/auth/login",
+                {
+                    method: "POST",
+
+                    credentials: "include",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body: JSON.stringify({
+                        email:
+                            email.value.trim(),
+
+                        password:
+                            password.value
+                    })
+                }
+            );
+
+
+            const result =
+                await response.json();
+
+
+            console.log(
+                "Login response:",
+                result
+            );
+
+
+            if (!response.ok) {
+
+                throw new Error(
+                    result?.message ||
+                    "Invalid email or password."
+                );
+            }
+
+
+            if (result?.success) {
+
+                console.log(
+                    "Login successful"
+                );
+
+                // Store user information only.
+                // DO NOT store the authentication token.
+                if (result.user) {
+
+                    localStorage.setItem(
+                        "userData",
+                        JSON.stringify(result.user)
+                    );
+
+                }
+
+
+                await AppAlert.success(
+                    "Login successful. Welcome back!",
+                    "Welcome!"
+                );
+
+
+                window.location.href =
+                    "/dashboard";
+
+
+                return;
+            }
+
+
+            throw new Error(
+                result?.message ||
+                "Login failed."
+            );
+
+
+            } catch (error) {
+
+                console.error(
+                    "LOGIN ERROR:",
+                    error
+                );
+
+
+                await AppAlert.error(
+                    error?.message ||
+                    "Unable to connect to server. Please try again.",
+                    "Login Failed"
+                );
+
+
+            } finally {
+
+                loginBtn.disabled =
+                    false;
+
+
+                loginBtn.innerHTML =
+                    "Login";
+
+            }
+
+        }
+    );
+
+
+    /* ======================================================
+       Password Visibility
+       ====================================================== */
+
+    const togglePassword =
+        document.getElementById(
+            "togglePassword"
+        );
+
+
+    if (togglePassword) {
+
+        togglePassword.addEventListener(
+            "click",
+            () => {
+
+                const icon =
+                    togglePassword
+                        .querySelector("i");
+
+
+                if (
+                    password.type ===
+                    "password"
+                ) {
+
+                    password.type =
+                        "text";
+
+
+                    icon.classList.remove(
+                        "bi-eye-slash"
+                    );
+
+
+                    icon.classList.add(
+                        "bi-eye"
+                    );
+
+                } else {
+
+                    password.type =
+                        "password";
+
+
+                    icon.classList.remove(
+                        "bi-eye"
+                    );
+
+
+                    icon.classList.add(
+                        "bi-eye-slash"
+                    );
+
+                }
+
+            }
+        );
+
+    }
+
+
+    console.log(
+        "Login initialization completed"
+    );
+
+}
+
+
+/* ==========================================================
+   Start Login
+   ========================================================== */
+
+initializeLogin();

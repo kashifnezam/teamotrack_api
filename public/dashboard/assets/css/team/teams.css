@@ -1,0 +1,274 @@
+/* ==========================================================
+   TeamoTrack Teams
+========================================================== */
+
+.teams-page {
+    padding: 24px;
+    min-height: calc(100vh - var(--header-height));
+    background: var(--bg-color);
+}
+
+
+/* =========================
+   Page Header
+========================= */
+
+.page-header {
+    margin-bottom: 18px;
+}
+
+.page-header h4 {
+    color: var(--text-primary);
+    font-weight: var(--fw-semibold);
+}
+
+
+/* =========================
+   Filter
+========================= */
+
+.filter-card {
+    background: var(--surface);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 14px;
+    margin-bottom: 14px;
+    box-shadow: var(--shadow-sm);
+}
+
+.search-box {
+    position: relative;
+}
+
+.search-box i {
+    position: absolute;
+    left: 13px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    z-index: 2;
+}
+
+.search-box input {
+    padding-left: 38px;
+}
+
+.team-count {
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+
+/* =========================
+   Card
+========================= */
+
+.team-card {
+    background: var(--surface);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+}
+
+.team-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.team-card-header h6 {
+    color: var(--text-primary);
+    font-weight: var(--fw-semibold);
+}
+
+
+/* =========================
+   Table
+========================= */
+
+.team-card .table-responsive {
+    max-height: calc(100vh - 245px);
+}
+
+.table th {
+    background: var(--surface-soft);
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.table td,
+.table th {
+    padding: 13px 15px;
+}
+
+.table td {
+    color: var(--text-primary);
+    font-size: 14px;
+}
+
+.team-name {
+    font-weight: 600;
+}
+
+.team-meta {
+    color: var(--text-muted);
+    font-size: 12px;
+    margin-top: 2px;
+}
+
+
+/* =========================
+   Badges
+========================= */
+
+.team-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 5px 9px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.team-active {
+    color: #15803d;
+    background: #dcfce7;
+}
+
+.team-no-shift {
+    color: #b45309;
+    background: #fef3c7;
+}
+
+
+/* =========================
+   Action
+========================= */
+
+.action-btn {
+    width: 34px;
+    height: 34px;
+    border: 0;
+    border-radius: 8px;
+    background: var(--surface-soft);
+    color: var(--text-secondary);
+    transition: var(--transition-fast);
+}
+
+.action-btn:hover {
+    background: rgba(37, 99, 235, .10);
+    color: var(--primary);
+}
+
+
+/* =========================
+   Empty
+========================= */
+
+.empty-state {
+    padding: 50px 20px !important;
+    text-align: center;
+    color: var(--text-muted);
+}
+
+
+/* =========================
+   No Shift
+========================= */
+
+.no-shift-message {
+    margin-top: 10px;
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    background: #fffbeb;
+    color: #92400e;
+    font-size: 13px;
+}
+
+.no-shift-message a {
+    color: var(--primary);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.no-shift-message a:hover {
+    text-decoration: underline;
+}
+
+
+/* =========================
+   Modal
+========================= */
+
+.modal-content {
+    border: 0;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+}
+
+.modal-header {
+    border-bottom: 1px solid var(--border-color);
+}
+
+.modal-footer {
+    border-top: 1px solid var(--border-color);
+}
+
+.modal-body label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+
+/* =========================
+   Mobile
+========================= */
+
+@media (max-width: 768px) {
+
+    .teams-page {
+        padding: 15px;
+    }
+
+    .team-card .table-responsive {
+        max-height: none;
+    }
+
+    .table {
+        min-width: 700px;
+    }
+
+}
+
+@media (max-width: 576px) {
+
+    .teams-page {
+        padding: 12px;
+    }
+
+    .team-card-header {
+        padding: 12px;
+    }
+
+    .team-card-header .btn {
+        white-space: nowrap;
+    }
+
+    .modal-dialog {
+        margin: 10px;
+    }
+
+    .modal-body {
+        padding: 15px;
+    }
+
+}

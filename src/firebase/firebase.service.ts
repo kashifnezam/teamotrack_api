@@ -1,48 +1,57 @@
 import { Injectable } from '@nestjs/common';
-import { initializeApp, cert, getApps, getApp, App } from 'firebase-admin/app';
-import { getAuth, Auth } from 'firebase-admin/auth';
-import { getFirestore, Firestore } from 'firebase-admin/firestore';
-import { ServiceAccount } from 'firebase-admin';
-import * as fs from 'fs';
-import * as path from 'path';
+
+import {
+    App,
+    getApp,
+    getApps,
+    initializeApp,
+} from 'firebase-admin/app';
+
+import {
+    Auth,
+    getAuth,
+} from 'firebase-admin/auth';
+
+import {
+    Firestore,
+    getFirestore,
+} from 'firebase-admin/firestore';
+
 
 @Injectable()
 export class FirebaseService {
-  private readonly app: App;
 
-  constructor() {
-    if (getApps().length) {
-      this.app = getApp();
-      return;
+    private readonly app: App;
+    private readonly firestoreDb: Firestore;
+    private readonly authDb: Auth;
+
+
+    constructor() {
+
+        this.app = getApps().length
+            ? getApp()
+            : initializeApp();
+
+        this.firestoreDb =
+            getFirestore(this.app);
+
+        this.authDb =
+            getAuth(this.app);
+
     }
 
-    const serviceAccountPath = path.join(
-      process.cwd(),
-      'firebase-service-account.json',
-    );
 
-    if (fs.existsSync(serviceAccountPath)) {
-      console.log('🔥 Using local Firebase Service Account');
+    get firestore(): Firestore {
 
-      const serviceAccount = JSON.parse(
-        fs.readFileSync(serviceAccountPath, 'utf8'),
-      ) as ServiceAccount;
+        return this.firestoreDb;
 
-      this.app = initializeApp({
-        credential: cert(serviceAccount),
-      });
-    } else {
-      console.log('☁️ Using Cloud Run Service Account');
-
-      this.app = initializeApp();
     }
-  }
 
-  get firestore(): Firestore {
-    return getFirestore(this.app);
-  }
 
-  get auth(): Auth {
-    return getAuth(this.app);
-  }
+    get auth(): Auth {
+
+        return this.authDb;
+
+    }
+
 }

@@ -8,6 +8,11 @@ import { WebModule } from './web/web.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { ExecutivesModule } from './executives/executives.module';
+
+import { TeamsModule } from './teams/teams.module';
+import { ShiftsModule } from './shifts/shifts.module';
+import { TasksModule } from './tasks/tasks.module';
 
 @Module({
   imports: [
@@ -20,7 +25,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
       rootPath: join(process.cwd(), 'public'),
     }),
 
-    FirebaseModule, AuthModule, WebModule, DashboardModule
+    FirebaseModule, AuthModule, WebModule, DashboardModule, ExecutivesModule, TeamsModule, ShiftsModule, TasksModule
   ],
   controllers: [AppController],
   // providers: [AppService],
