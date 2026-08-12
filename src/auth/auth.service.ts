@@ -1,6 +1,6 @@
 import {
-    Injectable,
-    UnauthorizedException,
+  Injectable,
+  UnauthorizedException,
 } from '@nestjs/common';
 
 import axios from 'axios';
@@ -8,156 +8,133 @@ import axios from 'axios';
 import { FirebaseService } from '../firebase/firebase.service';
 import { LoginDto } from './dto/login.dto';
 
-
 @Injectable()
 export class AuthService {
 
-    constructor(
-        private readonly firebase: FirebaseService,
-    ) {}
+  constructor(
+    private readonly firebase: FirebaseService,
+  ) {}
+
+  async login(dto: LoginDto) {
+
+    try {
+
+      const url =
+        `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${process.env.FIREBASE_API_KEY}`;
 
 
-    async login(
-        dto: LoginDto,
-    ) {
+      const { data } =
+        await axios.post(
+          url,
+          {
+            email: dto.email,
 
-        try {
+            password: dto.password,
 
-            const url =
-                `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${process.env.FIREBASE_API_KEY}`;
-
-
-            const { data } =
-                await axios.post(
-                    url,
-                    {
-                        email:
-                            dto.email,
-
-                        password:
-                            dto.password,
-
-                        returnSecureToken:
-                            true,
-                    },
-                );
+            returnSecureToken: true,
+          },
+        );
 
 
-            /*
-             * Verify the Firebase ID token.
-             */
-            const decoded =
-                await this.firebase.auth
-                    .verifyIdToken(
-                        data.idToken,
-                    );
+      /*
+       * Firebase ID token is already a JWT.
+       *
+       * Verify it before allowing access.
+       */
+      const decoded =
+        await this.firebase.auth
+          .verifyIdToken(
+            data.idToken,
+          );
 
 
-            /*
-             * Load application user.
-             */
-            const userDoc =
-                await this.firebase.firestore
-                    .collection('user')
-                    .doc(decoded.uid)
-                    .get();
+      /*
+       * Load application user.
+       */
+      const userDoc =
+        await this.firebase.firestore
+          .collection('user')
+          .doc(decoded.uid)
+          .get();
 
 
-            if (!userDoc.exists) {
+      if (!userDoc.exists) {
 
-                throw new UnauthorizedException(
-                    'User not found',
-                );
+        throw new UnauthorizedException(
+          'User not found',
+        );
 
-            }
-
-
-            const userData =
-                userDoc.data();
+      }
 
 
-            /*
-             * Only root managers can access
-             * the dashboard.
-             */
-            if (
-                userData?.role !==
-                'root_manager'
-            ) {
-
-                throw new UnauthorizedException(
-                    'You are not authorized to access this resource',
-                );
-
-            }
+      const userData =
+        userDoc.data();
 
 
-            /*
-             * Create long-lived server session.
-             *
-             * 7 days.
-             */
-            const expiresIn =
-                1000 *
-                60 *
-                60 *
-                24 *
-                7;
+      /*
+       * Only root managers can access
+       * the dashboard.
+       */
+      if (
+        userData?.role !==
+        'root_manager'
+      ) {
+
+        throw new UnauthorizedException(
+          'You are not authorized to access this resource',
+        );
+
+      }
 
 
-            const sessionCookie =
-                await this.firebase.auth
-                    .createSessionCookie(
-                        data.idToken,
-                        {
-                            expiresIn,
-                        },
-                    );
+      /*
+       * Return Firebase ID token.
+       *
+       * This token is a JWT and will be
+       * sent using:
+       *
+       * Authorization: Bearer <token>
+       */
+      return {
+
+        token:
+          data.idToken,
+
+        expiresIn:
+          data.expiresIn,
+
+        user:
+          userData,
+
+      };
 
 
-            /*
-             * IMPORTANT:
-             *
-             * Do NOT return data.idToken.
-             *
-             * The browser receives the
-             * session cookie instead.
-             */
-            return {
+    } catch (e: any) {
 
-                sessionCookie,
-
-                user: userData,
-
-            };
+      console.error(
+        'LOGIN ERROR:',
+        e.response?.data ||
+        e,
+      );
 
 
-        } catch (e: any) {
+      if (
+        e instanceof
+        UnauthorizedException
+      ) {
 
-            console.error(
-                'LOGIN ERROR:',
-                e.response?.data ||
-                e,
-            );
+        throw e;
 
-
-            if (
-                e instanceof
-                UnauthorizedException
-            ) {
-
-                throw e;
-
-            }
+      }
 
 
-            throw new UnauthorizedException(
-                e.response?.data?.error?.message ||
-                'Login failed',
-            );
-
-        }
+      throw new UnauthorizedException(
+        e.response?.data?.error?.message ||
+        'Login failed',
+      );
 
     }
+
+  }
 
 }

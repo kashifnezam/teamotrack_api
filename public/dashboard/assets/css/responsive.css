@@ -1,11 +1,6 @@
 /* ==========================================================
-   TeamoTrack Responsive Styles
-   responsive.css
-   ========================================================== */
-
-/* ---------------------------------
-   Large Desktop
----------------------------------- */
+   TeamoTrack Responsive
+========================================================== */
 
 @media (min-width: 1400px) {
 
@@ -16,12 +11,8 @@
     .header-search input {
         width: 360px;
     }
-
 }
 
-/* ---------------------------------
-   Laptop
----------------------------------- */
 
 @media (max-width: 1200px) {
 
@@ -32,12 +23,8 @@
     .dashboard-content {
         padding: 24px;
     }
-
 }
 
-/* ---------------------------------
-   Tablet
----------------------------------- */
 
 @media (max-width: 992px) {
 
@@ -70,12 +57,8 @@
     .dashboard-content {
         padding: 22px;
     }
-
 }
 
-/* ---------------------------------
-   Mobile
----------------------------------- */
 
 @media (max-width: 768px) {
 
@@ -85,18 +68,6 @@
 
     .dashboard-content {
         padding: 18px;
-    }
-
-    .welcome-card {
-        padding: 28px 22px;
-    }
-
-    .welcome-card h2 {
-        font-size: 26px;
-    }
-
-    .welcome-card p {
-        font-size: 15px;
     }
 
     .profile-info {
@@ -117,11 +88,26 @@
         height: 42px;
     }
 
+    /* Tasks */
+
+    .tasks-page .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .tasks-page table {
+        min-width: 850px;
+    }
+
+    .tasks-page .filter-card {
+        padding: 12px;
+    }
+
+    .tasks-page .task-actions {
+        width: 100%;
+    }
 }
 
-/* ---------------------------------
-   Small Mobile
----------------------------------- */
 
 @media (max-width: 576px) {
 
@@ -137,27 +123,28 @@
         padding: 15px;
     }
 
-    .welcome-card {
-        border-radius: var(--radius-md);
-    }
-
-    .welcome-card h2 {
-        font-size: 22px;
-    }
-
-    .welcome-card p {
-        font-size: 14px;
-    }
-
     .sidebar {
         width: 280px;
     }
 
+    .tasks-page .task-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .tasks-page .task-actions .btn:last-child {
+        grid-column: 1 / -1;
+    }
+
+    .tasks-page .page-header h4 {
+        font-size: 18px;
+    }
 }
 
-/* ---------------------------------
-   Overlay (Mobile Drawer)
----------------------------------- */
+
+/* ==========================================================
+   Sidebar Overlay
+========================================================== */
 
 .sidebar-overlay {
     position: fixed;
@@ -165,12 +152,9 @@
     background: rgba(15, 23, 42, .45);
     backdrop-filter: blur(3px);
     -webkit-backdrop-filter: blur(3px);
-
     opacity: 0;
     visibility: hidden;
-
     transition: .3s ease;
-
     z-index: calc(var(--z-sidebar) - 1);
 }
 

@@ -1,5 +1,16 @@
+/* ==========================================================
+   TeamoTrack Tasks
+========================================================== */
+
 .tasks-page {
     padding: 24px 0;
+}
+
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
 }
 
 .filter-card,
@@ -13,6 +24,23 @@
 
 .filter-card {
     padding: 16px;
+}
+
+.task-card {
+    overflow: hidden;
+}
+
+.task-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.task-actions {
+    display: flex;
+    gap: 8px;
 }
 
 .search-box {
@@ -33,27 +61,11 @@
 
 .task-count {
     color: var(--text-secondary);
+    font-size: 13px;
 }
 
 .task-count strong {
     color: var(--text-primary);
-}
-
-.task-card {
-    overflow: hidden;
-}
-
-.task-card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 16px 18px;
-    border-bottom: 1px solid var(--border-color);
-}
-
-.task-actions {
-    display: flex;
-    gap: 8px;
 }
 
 .task-name {
@@ -62,9 +74,12 @@
 }
 
 .task-description {
-    max-width: 260px;
+    max-width: 300px;
     color: var(--text-secondary);
     font-size: 12px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .task-time {
@@ -185,12 +200,88 @@
     background: rgba(34, 197, 94, .04);
 }
 
+
+/* ==========================================================
+   Task Details
+========================================================== */
+
+.task-detail-subtitle {
+    color: var(--text-secondary);
+    font-size: 12px;
+}
+
+.task-detail-top {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+}
+
+.task-detail-description {
+    color: var(--text-secondary);
+    white-space: pre-line;
+    line-height: 1.6;
+    padding: 14px;
+    background: var(--surface-secondary, #f8fafc);
+    border-radius: var(--radius-md);
+}
+
+.detail-info {
+    height: 100%;
+    padding: 14px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+}
+
+.detail-info span {
+    display: block;
+    color: var(--text-secondary);
+    font-size: 12px;
+    margin-bottom: 5px;
+}
+
+.detail-info strong {
+    display: block;
+    color: var(--text-primary);
+    font-size: 13px;
+}
+
+.detail-section-title {
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+
+.task-proof-section,
+.task-location-detail {
+    margin-top: 20px;
+    padding-top: 18px;
+    border-top: 1px solid var(--border-color);
+}
+
+.task-proof {
+    display: block;
+    width: 100%;
+    max-height: 420px;
+    object-fit: contain;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+    background: #f8fafc;
+}
+
+
+/* ==========================================================
+   Mobile
+========================================================== */
+
 @media (max-width: 768px) {
 
-    .task-card-header {
+    .tasks-page {
+        padding: 16px 0;
+    }
+
+    .page-header {
         align-items: flex-start;
         flex-direction: column;
-        gap: 12px;
     }
 
     .task-actions {
@@ -198,4 +289,25 @@
         flex-wrap: wrap;
     }
 
+    .task-actions .btn {
+        flex: 1;
+    }
+
+    .task-card-header {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .task-description {
+        max-width: 180px;
+    }
+
+    .task-map {
+        height: 220px;
+    }
+
+    .task-proof {
+        max-height: 300px;
+    }
 }

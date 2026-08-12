@@ -1,227 +1,183 @@
-<!DOCTYPE html>
-<html lang="en">
+<!-- Content -->
+<section class="dashboard-content">
 
-<head>
+    <div class="container-fluid">
 
-    <meta charset="UTF-8">
+        <!-- Welcome -->
+        <div class="welcome-card mb-4">
+            <div class="d-flex justify-content-between align-items-center flex-wrap">
+                <div>
+                    <h2>
+                        Welcome Back,
+                        <span id="userName"></span> 👋
+                    </h2>
+                    <p class="mb-0">Friday, 8 August 2026 • Monitor your workforce in real time.</p>
+                </div>
 
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <div class="text-end mt-3 mt-lg-0">
+                    <h3 class="mb-0">0%</h3>
+                    <small>Today's Attendance</small>
+                </div>
+            </div>
+        </div>
 
-    <title>Dashboard | TeamoTrack</title>
+        <!-- KPI -->
+        <div class="row g-3 mb-4">
 
-    <!-- CSS -->
-    <link rel="stylesheet" href="../assets/css/common.css">
-    
-    <!-- Bootstrap -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+            <div class="col-lg-3 col-md-6">
+                <div class="card-ui p-3">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <small class="text-muted">Executives</small>
+                            <h3 class="mt-2 mb-0" id="totalExecutives">0</h3>
+                        </div>
+                        <i class="bi bi-people-fill fs-2 text-primary"></i>
+                    </div>
+                </div>
+            </div>
 
-</head>
+            <div class="col-lg-3 col-md-6">
+                <div class="card-ui p-3">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <small class="text-muted">Present</small>
+                            <h3 class="mt-2 mb-0 text-success" id="presentCount">0</h3>
+                        </div>
+                        <i class="bi bi-check-circle-fill fs-2 text-success"></i>
+                    </div>
+                </div>
+            </div>
 
-<body>
+            <div class="col-lg-3 col-md-6">
+                <div class="card-ui p-3">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <small class="text-muted">Leave</small>
+                            <h3 class="mt-2 mb-0 text-warning" id="leaveCount">0</h3>
+                        </div>
+                        <i class="bi bi-calendar-x-fill fs-2 text-warning"></i>
+                    </div>
+                </div>
+            </div>
 
-    <div class="dashboard-wrapper">
+            <div class="col-lg-3 col-md-6">
+                <div class="card-ui p-3">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <small class="text-muted">Late</small>
+                            <h3 class="mt-2 mb-0 text-danger" id="lateCount">0</h3>
+                        </div>
+                        <i class="bi bi-clock-fill fs-2 text-danger"></i>
+                    </div>
+                </div>
+            </div>
 
-        <!-- Sidebar -->
-        <aside id="sidebar-container"></aside>
+        </div>
 
         <!-- Main -->
-        <main class="dashboard-main">
+        <div class="row g-3">
 
-            <!-- Header -->
-            <header id="header-container"></header>
+            <!-- Attendance -->
+            <div class="col-lg-4">
 
-            <!-- Content -->
-            <section class="dashboard-content">
+                <div class="card-ui p-4 h-100">
 
-                <div class="container-fluid">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="mb-0">Attendance</h5>
+                        <span class="badge bg-success" id="attendancePercent">0%</span>
+                    </div>
 
-                    <!-- Welcome -->
-                    <div class="welcome-card mb-4">
-                        <div class="d-flex justify-content-between align-items-center flex-wrap">
+                    <div class="text-center mb-4">
+
+                        <div class="rounded-circle border border-4 border-primary d-inline-flex align-items-center justify-content-center"
+                            style="width:120px;height:120px;">
+
                             <div>
-                                <h2>
-                                    Welcome Back,
-                                    <span id="userName"></span> 👋
-                                </h2>
-                                <p class="mb-0">Friday, 8 August 2026 • Monitor your workforce in real time.</p>
+                                <h2 class="mb-0" id="attendanceCircle">0</h2>
+                                <small>%</small>
                             </div>
 
-                            <div class="text-end mt-3 mt-lg-0">
-                                <h3 class="mb-0">94%</h3>
-                                <small>Today's Attendance</small>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- KPI -->
-                    <div class="row g-3 mb-4">
-
-                        <div class="col-lg-3 col-md-6">
-                            <div class="card-ui p-3">
-                                <div class="d-flex justify-content-between">
-                                    <div>
-                                        <small class="text-muted">Executives</small>
-                                        <h3 class="mt-2 mb-0" id="totalExecutives">0</h3>
-                                    </div>
-                                    <i class="bi bi-people-fill fs-2 text-primary"></i>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="col-lg-3 col-md-6">
-                            <div class="card-ui p-3">
-                                <div class="d-flex justify-content-between">
-                                    <div>
-                                        <small class="text-muted">Present</small>
-                                        <h3 class="mt-2 mb-0 text-success" id="presentCount">0</h3>
-                                    </div>
-                                    <i class="bi bi-check-circle-fill fs-2 text-success"></i>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="col-lg-3 col-md-6">
-                            <div class="card-ui p-3">
-                                <div class="d-flex justify-content-between">
-                                    <div>
-                                        <small class="text-muted">Leave</small>
-                                        <h3 class="mt-2 mb-0 text-warning" id="leaveCount">0</h3>
-                                    </div>
-                                    <i class="bi bi-calendar-x-fill fs-2 text-warning"></i>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="col-lg-3 col-md-6">
-                            <div class="card-ui p-3">
-                                <div class="d-flex justify-content-between">
-                                    <div>
-                                        <small class="text-muted">Late</small>
-                                        <h3 class="mt-2 mb-0 text-danger" id="lateCount">0</h3>
-                                    </div>
-                                    <i class="bi bi-clock-fill fs-2 text-danger"></i>
-                                </div>
-                            </div>
                         </div>
 
                     </div>
 
-                    <!-- Main -->
-                    <div class="row g-3">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Present</span>
+                        <strong id="attendancePresent">0</strong>
+                    </div>
 
-                        <!-- Attendance -->
-                        <div class="col-lg-4">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Absent</span>
+                        <strong id="attendanceAbsent">0</strong>
+                    </div>
 
-                            <div class="card-ui p-4 h-100">
-
-                                <div class="d-flex justify-content-between align-items-center mb-3">
-                                    <h5 class="mb-0">Attendance</h5>
-                                    <span class="badge bg-success" id="attendancePercent">0%</span>
-                                </div>
-
-                                <div class="text-center mb-4">
-
-                                    <div class="rounded-circle border border-4 border-primary d-inline-flex align-items-center justify-content-center"
-                                        style="width:120px;height:120px;">
-
-                                        <div>
-                                            <h2 class="mb-0" id="attendanceCircle">0</h2>
-                                            <small>%</small>
-                                        </div>
-
-                                    </div>
-
-                                </div>
-
-                                <div class="d-flex justify-content-between mb-2">
-                                    <span>Present</span>
-                                    <strong id="attendancePresent">0</strong>
-                                </div>
-
-                                <div class="d-flex justify-content-between mb-2">
-                                    <span>Absent</span>
-                                    <strong id="attendanceAbsent">0</strong>
-                                </div>
-
-                                <div class="d-flex justify-content-between">
-                                    <span>Leave</span>
-                                    <strong id="attendanceLeave">0</strong>
-                                </div>
-
-                            </div>
-
-                        </div>
-
-                        <!-- Live Map -->
-                        <div class="col-lg-5">
-
-                            <div class="card-ui p-3 h-100">
-
-                                <div class="d-flex justify-content-between align-items-center mb-3">
-
-                                    <h5 class="mb-0">
-                                        Live executive Tracking
-                                    </h5>
-
-                                    <span class="badge bg-primary" id="onlineCount">0 Online</span>
-
-                                </div>
-
-                                <div id="employeeMap"></div>
-
-
-                            </div>
-
-                        </div>
-
-
-                        <!-- Requests -->
-                        <div class="col-lg-3">
-
-                            <div class="card-ui p-3 h-100">
-
-                                <h5 class="mb-3">
-                                    Pending Requests
-                                </h5>
-
-                                <div class="d-flex justify-content-between py-2 border-bottom">
-                                    <span><i class="bi bi-calendar-event text-warning"></i> Leave</span>
-                                    <strong>5</strong>
-                                </div>
-
-                                <div class="d-flex justify-content-between py-2 border-bottom">
-                                    <span><i class="bi bi-fingerprint text-primary"></i> Attendance</span>
-                                    <strong>2</strong>
-                                </div>
-
-                                <div class="d-flex justify-content-between py-2 border-bottom">
-                                    <span><i class="bi bi-cash-stack text-success"></i> Expense</span>
-                                    <strong>1</strong>
-                                </div>
-
-                                <div class="d-flex justify-content-between py-2">
-                                    <span><i class="bi bi-person-plus text-danger"></i> Recruitment</span>
-                                    <strong>3</strong>
-                                </div>
-
-                            </div>
-
-                        </div>
-
+                    <div class="d-flex justify-content-between">
+                        <span>Leave</span>
+                        <strong id="attendanceLeave">0</strong>
                     </div>
 
                 </div>
 
-            </section>
-        </main>
+            </div>
+
+            <!-- Live Map -->
+            <div class="col-lg-5">
+
+                <div class="card-ui p-3 h-100">
+
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+
+                        <h5 class="mb-0">
+                            Live executive Tracking
+                        </h5>
+
+                        <span class="badge bg-primary" id="onlineCount">0 Online</span>
+
+                    </div>
+
+                    <div id="employeeMap"></div>
+
+
+                </div>
+
+            </div>
+
+
+            <!-- Requests -->
+            <div class="col-lg-3">
+
+                <div class="card-ui p-3 h-100">
+
+                    <h5 class="mb-3">
+                        Pending Requests
+                    </h5>
+
+                    <div class="d-flex justify-content-between py-2 border-bottom">
+                        <span><i class="bi bi-calendar-event text-warning"></i> Leave</span>
+                        <strong>5</strong>
+                    </div>
+
+                    <div class="d-flex justify-content-between py-2 border-bottom">
+                        <span><i class="bi bi-fingerprint text-primary"></i> Attendance</span>
+                        <strong>2</strong>
+                    </div>
+
+                    <div class="d-flex justify-content-between py-2 border-bottom">
+                        <span><i class="bi bi-cash-stack text-success"></i> Expense</span>
+                        <strong>1</strong>
+                    </div>
+
+                    <div class="d-flex justify-content-between py-2">
+                        <span><i class="bi bi-person-plus text-danger"></i> Recruitment</span>
+                        <strong>3</strong>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
 
     </div>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="../assets/js/common.js"></script>
-    <script src="../dashboard/assets/js/dashboard.js"></script>
-
-
-</body>
-
-</html>
+</section>

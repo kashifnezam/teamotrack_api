@@ -26,82 +26,146 @@ export class TasksService {
         return this.firebase.firestore;
     }
 
+
+    /* ==========================================================
+       Monthly Tasks
+    ========================================================== */
+
     async getAll(
         rootId: string,
         year: number,
         month: number,
-        status?: string,
     ) {
 
-        if (month < 1 || month > 12) {
-            throw new BadRequestException('Invalid month');
+        if (
+            !Number.isInteger(year) ||
+            month < 1 ||
+            month > 12
+        ) {
+            throw new BadRequestException(
+                'Invalid month',
+            );
         }
 
-        if (status && !STATUSES.includes(status)) {
-            throw new BadRequestException('Invalid status');
-        }
+        const start =
+            new Date(
+                year,
+                month - 1,
+                1,
+            );
 
-        const start = new Date(year, month - 1, 1);
-        const end = new Date(year, month, 1);
+        const end =
+            new Date(
+                year,
+                month,
+                1,
+            );
 
-        let query: FirebaseFirestore.Query =
-            this.db
+
+        const snapshot =
+            await this.db
                 .collection('tasks')
-                .where('rootId', '==', rootId)
-                .where('startDate', '>=', start)
-                .where('startDate', '<', end);
+                .where(
+                    'rootId',
+                    '==',
+                    rootId,
+                )
+                .where(
+                    'startDate',
+                    '>=',
+                    start,
+                )
+                .where(
+                    'startDate',
+                    '<',
+                    end,
+                )
+                .get();
 
-        if (status) {
-            query = query.where('status', '==', status);
-        }
 
-        const snapshot = await query.get();
+        const [
+            executives,
+            managers,
+        ] = await Promise.all([
 
-        const [executives, managers] =
-            await Promise.all([
-                this.db
-                    .collection('user')
-                    .where('rootId', '==', rootId)
-                    .get(),
+            this.db
+                .collection('user')
+                .where(
+                    'rootId',
+                    '==',
+                    rootId,
+                )
+                .get(),
 
-                this.db
-                    .collection('user')
-                    .where('role', '==', 'child_manager')
-                    .where('reportsTo', '==', rootId)
-                    .get(),
-            ]);
+            this.db
+                .collection('user')
+                .where(
+                    'role',
+                    '==',
+                    'child_manager',
+                )
+                .where(
+                    'reportsTo',
+                    '==',
+                    rootId,
+                )
+                .get(),
+
+        ]);
+
 
         return {
-            tasks: snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...this.serialize(doc.data()),
-            })),
 
-            executives: executives.docs.map(doc => ({
-                id: doc.id,
-                fullName: doc.data().fullName ?? '',
-                email: doc.data().email ?? '',
-            })),
+            tasks:
+                snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...this.serialize(
+                        doc.data(),
+                    ),
+                })),
 
-            managers: managers.docs.map(doc => ({
-                id: doc.id,
-                fullName: doc.data().fullName ?? '',
-            })),
+            executives:
+                executives.docs.map(doc => ({
+                    id: doc.id,
+                    fullName:
+                        doc.data().fullName ?? '',
+                    email:
+                        doc.data().email ?? '',
+                })),
+
+            managers:
+                managers.docs.map(doc => ({
+                    id: doc.id,
+                    fullName:
+                        doc.data().fullName ?? '',
+                })),
         };
     }
 
-    async create(rootId: string, dto: TaskDto) {
+
+    /* ==========================================================
+       Create
+    ========================================================== */
+
+    async create(
+        rootId: string,
+        dto: TaskDto,
+    ) {
 
         this.validate(dto);
 
-        const assignedTo = dto.assignedTo || null;
+        const assignedTo =
+            dto.assignedTo || null;
+
 
         if (assignedTo) {
+
             await this.verifyExecutive(
                 rootId,
                 assignedTo,
             );
         }
+
 
         const startDate =
             new Date(dto.startDate);
@@ -109,33 +173,69 @@ export class TasksService {
         const endDate =
             new Date(dto.endDate);
 
+
+        if (
+            Number.isNaN(startDate.getTime()) ||
+            Number.isNaN(endDate.getTime())
+        ) {
+            throw new BadRequestException(
+                'Invalid schedule',
+            );
+        }
+
+
         if (endDate <= startDate) {
+
             throw new BadRequestException(
                 'End date must be after start date',
             );
         }
 
+
+        const now =
+            new Date();
+
+
         const ref =
-            await this.db.collection('tasks').add({
-                title: dto.title.trim(),
-                description: dto.description.trim(),
-                rootId,
-                assignedTo,
-                status: assignedTo
-                    ? 'assigned'
-                    : 'pending',
-                priority: dto.priority,
-                startDate,
-                endDate,
-                isGeofence:
-                    dto.isGeofence === true,
-                startLocation:
-                    dto.startLocation || null,
-                endLocation:
-                    dto.endLocation || null,
-                createdAt: new Date(),
-                updatedAt: new Date(),
-            });
+            await this.db
+                .collection('tasks')
+                .add({
+
+                    title:
+                        dto.title.trim(),
+
+                    description:
+                        dto.description.trim(),
+
+                    rootId,
+
+                    assignedTo,
+
+                    status:
+                        assignedTo
+                            ? 'assigned'
+                            : 'pending',
+
+                    priority:
+                        dto.priority,
+
+                    startDate,
+
+                    endDate,
+
+                    isGeofence:
+                        dto.isGeofence === true,
+
+                    startLocation:
+                        dto.startLocation || null,
+
+                    endLocation:
+                        dto.endLocation || null,
+
+                    createdAt: now,
+                    updatedAt: now,
+                });
+
 
         return {
             success: true,
@@ -143,139 +243,238 @@ export class TasksService {
         };
     }
 
+
+    /* ==========================================================
+       Update
+    ========================================================== */
+
     async update(
-    rootId: string,
-    id: string,
-    dto: Partial<TaskDto>,
-) {
-    const ref = this.db.collection('tasks').doc(id);
-    const doc = await ref.get();
-
-    if (
-        !doc.exists ||
-        doc.data()?.rootId !== rootId
+        rootId: string,
+        id: string,
+        dto: Partial<TaskDto>,
     ) {
-        throw new NotFoundException('Task not found');
-    }
 
-    const task = doc.data()!;
-    const status = task.status || 'pending';
+        const ref =
+            this.db
+                .collection('tasks')
+                .doc(id);
 
-    // Terminal tasks cannot be edited
-    if (['completed', 'cancelled', 'failed'].includes(status)) {
-        throw new BadRequestException(
-            'Completed, cancelled or failed tasks cannot be edited',
-        );
-    }
+        const doc =
+            await ref.get();
 
-    const data: any = {};
-
-    /*
-     * Title can always be edited while task
-     * is not in a terminal state, even after
-     * the scheduled start time.
-     */
-    if (dto.title !== undefined) {
-        if (!dto.title.trim()) {
-            throw new BadRequestException(
-                'Title is required',
-            );
-        }
-
-        data.title = dto.title.trim();
-    }
-
-    // Description
-    if (dto.description !== undefined) {
-        if (!dto.description.trim()) {
-            throw new BadRequestException(
-                'Description is required',
-            );
-        }
-
-        data.description = dto.description.trim();
-    }
-
-    // Priority
-    if (dto.priority !== undefined) {
-        if (!['Low', 'Medium', 'High'].includes(dto.priority)) {
-            throw new BadRequestException(
-                'Invalid priority',
-            );
-        }
-
-        data.priority = dto.priority;
-    }
-
-    // Schedule
-    if (dto.startDate !== undefined) {
-        data.startDate = new Date(dto.startDate);
-    }
-
-    if (dto.endDate !== undefined) {
-        data.endDate = new Date(dto.endDate);
-    }
-
-    const startDate =
-        data.startDate || task.startDate;
-
-    const endDate =
-        data.endDate || task.endDate;
-
-    if (endDate <= startDate) {
-        throw new BadRequestException(
-            'End date must be after start date',
-        );
-    }
-
-    // Executive
-    if (dto.assignedTo !== undefined) {
-
-        if (dto.assignedTo) {
-            await this.verifyExecutive(
-                rootId,
-                dto.assignedTo,
-            );
-        }
-
-        data.assignedTo =
-            dto.assignedTo || null;
-
-        // Keep status consistent
-        if (status === 'pending' && dto.assignedTo) {
-            data.status = 'assigned';
-        }
 
         if (
-            !dto.assignedTo &&
-            status === 'assigned'
+            !doc.exists ||
+            doc.data()?.rootId !== rootId
         ) {
-            data.status = 'pending';
+            throw new NotFoundException(
+                'Task not found',
+            );
         }
+
+
+        const task =
+            doc.data()!;
+
+        const status =
+            task.status || 'pending';
+
+
+        if (
+            [
+                'completed',
+                'cancelled',
+                'failed',
+            ].includes(status)
+        ) {
+
+            throw new BadRequestException(
+                'Completed, cancelled or failed tasks cannot be edited',
+            );
+        }
+
+
+        const data: any = {};
+
+
+        if (dto.title !== undefined) {
+
+            if (!dto.title.trim()) {
+
+                throw new BadRequestException(
+                    'Title is required',
+                );
+            }
+
+            data.title =
+                dto.title.trim();
+        }
+
+
+        if (dto.description !== undefined) {
+
+            if (!dto.description.trim()) {
+
+                throw new BadRequestException(
+                    'Description is required',
+                );
+            }
+
+            data.description =
+                dto.description.trim();
+        }
+
+
+        if (dto.priority !== undefined) {
+
+            if (
+                ![
+                    'Low',
+                    'Medium',
+                    'High',
+                ].includes(dto.priority)
+            ) {
+
+                throw new BadRequestException(
+                    'Invalid priority',
+                );
+            }
+
+            data.priority =
+                dto.priority;
+        }
+
+
+        if (dto.startDate !== undefined) {
+
+            const date =
+                new Date(dto.startDate);
+
+            if (Number.isNaN(date.getTime())) {
+
+                throw new BadRequestException(
+                    'Invalid start date',
+                );
+            }
+
+            data.startDate =
+                date;
+        }
+
+
+        if (dto.endDate !== undefined) {
+
+            const date =
+                new Date(dto.endDate);
+
+            if (Number.isNaN(date.getTime())) {
+
+                throw new BadRequestException(
+                    'Invalid end date',
+                );
+            }
+
+            data.endDate =
+                date;
+        }
+
+
+        const startDate =
+            data.startDate ||
+            task.startDate;
+
+        const endDate =
+            data.endDate ||
+            task.endDate;
+
+
+        if (endDate <= startDate) {
+
+            throw new BadRequestException(
+                'End date must be after start date',
+            );
+        }
+
+
+        /* Executive */
+
+        if (
+            dto.assignedTo !== undefined
+        ) {
+
+            if (dto.assignedTo) {
+
+                await this.verifyExecutive(
+                    rootId,
+                    dto.assignedTo,
+                );
+            }
+
+
+            data.assignedTo =
+                dto.assignedTo || null;
+
+
+            if (
+                status === 'pending' &&
+                dto.assignedTo
+            ) {
+                data.status = 'assigned';
+            }
+
+
+            if (
+                !dto.assignedTo &&
+                status === 'assigned'
+            ) {
+                data.status = 'pending';
+            }
+        }
+
+
+        /* Location */
+
+        if (
+            dto.isGeofence !== undefined
+        ) {
+            data.isGeofence =
+                dto.isGeofence;
+        }
+
+
+        if (
+            dto.startLocation !== undefined
+        ) {
+            data.startLocation =
+                dto.startLocation;
+        }
+
+
+        if (
+            dto.endLocation !== undefined
+        ) {
+            data.endLocation =
+                dto.endLocation;
+        }
+
+
+        data.updatedAt =
+            new Date();
+
+
+        await ref.update(data);
+
+
+        return {
+            success: true,
+            id,
+        };
     }
 
-    // Location
-    if (dto.isGeofence !== undefined) {
-        data.isGeofence = dto.isGeofence;
-    }
 
-    if (dto.startLocation !== undefined) {
-        data.startLocation = dto.startLocation;
-    }
-
-    if (dto.endLocation !== undefined) {
-        data.endLocation = dto.endLocation;
-    }
-
-    data.updatedAt = new Date();
-
-    await ref.update(data);
-
-    return {
-        success: true,
-        id,
-    };
-}
+    /* ==========================================================
+       Delete
+    ========================================================== */
 
     async remove(
         rootId: string,
@@ -283,26 +482,38 @@ export class TasksService {
     ) {
 
         const ref =
-            this.db.collection('tasks').doc(id);
+            this.db
+                .collection('tasks')
+                .doc(id);
 
-        const doc = await ref.get();
+        const doc =
+            await ref.get();
+
 
         if (
             !doc.exists ||
             doc.data()?.rootId !== rootId
         ) {
+
             throw new NotFoundException(
                 'Task not found',
             );
         }
 
+
         await ref.delete();
+
 
         return {
             success: true,
             id,
         };
     }
+
+
+    /* ==========================================================
+       Status
+    ========================================================== */
 
     async updateStatus(
         rootId: string,
@@ -310,36 +521,55 @@ export class TasksService {
         status: string,
     ) {
 
-        if (!STATUSES.includes(status)) {
+        if (
+            !STATUSES.includes(status)
+        ) {
+
             throw new BadRequestException(
                 'Invalid status',
             );
         }
 
-        const ref =
-            this.db.collection('tasks').doc(id);
 
-        const doc = await ref.get();
+        const ref =
+            this.db
+                .collection('tasks')
+                .doc(id);
+
+        const doc =
+            await ref.get();
+
 
         if (
             !doc.exists ||
             doc.data()?.rootId !== rootId
         ) {
+
             throw new NotFoundException(
                 'Task not found',
             );
         }
 
+
         await ref.update({
+
             status,
-            updatedAt: new Date(),
+
+            updatedAt:
+                new Date(),
         });
+
 
         return {
             success: true,
             id,
         };
     }
+
+
+    /* ==========================================================
+       Executive Validation
+    ========================================================== */
 
     private async verifyExecutive(
         rootId: string,
@@ -352,70 +582,106 @@ export class TasksService {
                 .doc(id)
                 .get();
 
+
+        const data =
+            doc.data();
+
+
         if (
             !doc.exists ||
-            doc.data()?.rootId !== rootId ||
-            doc.data()?.role !== 'field_executive'
+            data?.rootId !== rootId ||
+            data?.role !== 'field_executive'
         ) {
+
             throw new BadRequestException(
                 'Invalid executive',
             );
         }
     }
 
-    private validate(dto: TaskDto) {
+
+    /* ==========================================================
+       Validation
+    ========================================================== */
+
+    private validate(
+        dto: TaskDto,
+    ) {
 
         if (!dto.title?.trim()) {
+
             throw new BadRequestException(
                 'Title is required',
             );
         }
 
+
         if (!dto.description?.trim()) {
+
             throw new BadRequestException(
                 'Description is required',
             );
         }
 
+
         if (
-            !['Low', 'Medium', 'High']
-                .includes(dto.priority)
+            ![
+                'Low',
+                'Medium',
+                'High',
+            ].includes(dto.priority)
         ) {
+
             throw new BadRequestException(
                 'Invalid priority',
             );
         }
 
+
         if (
             !dto.startDate ||
             !dto.endDate
         ) {
+
             throw new BadRequestException(
                 'Schedule is required',
             );
         }
     }
 
+
+    /* ==========================================================
+       Firestore Serializer
+    ========================================================== */
+
     private serialize(data: any) {
 
+        const date = (value: any) =>
+            value?.toDate?.() ?? value ?? null;
+
+
         return {
+
             ...data,
 
             startDate:
-                data.startDate?.toDate?.() ??
-                data.startDate,
+                date(data.startDate),
 
             endDate:
-                data.endDate?.toDate?.() ??
-                data.endDate,
+                date(data.endDate),
 
             createdAt:
-                data.createdAt?.toDate?.() ??
-                data.createdAt,
+                date(data.createdAt),
 
             updatedAt:
-                data.updatedAt?.toDate?.() ??
-                data.updatedAt,
+                date(data.updatedAt),
+
+            startedAt:
+                date(data.startedAt),
+
+            completedAt:
+                date(data.completedAt),
+
         };
     }
 }

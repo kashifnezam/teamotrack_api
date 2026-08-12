@@ -1,15 +1,22 @@
-/* ==========================================================
-   TeamoTrack
-   login.js
-   Login Page
-   ========================================================== */
+// ==========================================================
+// TeamoTrack
+// login.js
+// Login Page
+// ==========================================================
 
-console.log("Login.js loaded");
+import {
+    loginUser
+} from "./auth.js";
 
 
-/* ==========================================================
-   Login Initialization
-   ========================================================== */
+console.log(
+    "Login.js loaded"
+);
+
+
+// ==========================================================
+// Login Initialization
+// ==========================================================
 
 function initializeLogin() {
 
@@ -19,21 +26,32 @@ function initializeLogin() {
 
 
     const form =
-        document.getElementById("loginForm");
+        document.getElementById(
+            "loginForm"
+        );
+
 
     const email =
-        document.getElementById("email");
+        document.getElementById(
+            "email"
+        );
+
 
     const password =
-        document.getElementById("password");
+        document.getElementById(
+            "password"
+        );
+
 
     const loginBtn =
-        document.getElementById("loginBtn");
+        document.getElementById(
+            "loginBtn"
+        );
 
 
-    /* ======================================================
-       Validate Elements
-       ====================================================== */
+    // ======================================================
+    // Validate Elements
+    // ======================================================
 
     if (
         !form ||
@@ -53,6 +71,7 @@ function initializeLogin() {
         );
 
         return;
+
     }
 
 
@@ -61,9 +80,9 @@ function initializeLogin() {
     );
 
 
-    /* ======================================================
-       Dashboard Redirect Alert
-       ====================================================== */
+    // ======================================================
+    // Login Alert
+    // ======================================================
 
     const loginAlert =
         sessionStorage.getItem(
@@ -86,9 +105,9 @@ function initializeLogin() {
     }
 
 
-    /* ======================================================
-       Login Submit
-       ====================================================== */
+    // ======================================================
+    // Login Submit
+    // ======================================================
 
     form.addEventListener(
         "submit",
@@ -116,69 +135,71 @@ function initializeLogin() {
 
             try {
 
-                console.log(
-                    "Sending login request..."
-                );
+                /*
+                 * Firebase Authentication
+                 */
+                const result =
+                    await loginUser(
+                        email.value.trim(),
+                        password.value
+                    );
 
-
-                const response = await fetch(
-                "/auth/login",
-                {
-                    method: "POST",
-
-                    credentials: "include",
-
-                    headers: {
-                        "Content-Type":
-                            "application/json"
-                    },
-
-                    body: JSON.stringify({
-                        email:
-                            email.value.trim(),
-
-                        password:
-                            password.value
-                    })
-                }
-            );
-
-
-            const result =
-                await response.json();
-
-
-            console.log(
-                "Login response:",
-                result
-            );
-
-
-            if (!response.ok) {
-
-                throw new Error(
-                    result?.message ||
-                    "Invalid email or password."
-                );
-            }
-
-
-            if (result?.success) {
 
                 console.log(
-                    "Login successful"
+                    "Firebase login successful"
                 );
 
-                // Store user information only.
-                // DO NOT store the authentication token.
-                if (result.user) {
 
-                    localStorage.setItem(
-                        "userData",
-                        JSON.stringify(result.user)
+                /*
+                 * ==================================================
+                 * Ask NestJS to authorize this Firebase user.
+                 * ==================================================
+                 */
+
+                const response =
+                    await fetch(
+                        "/auth/me",
+                        {
+                            method: "GET",
+
+                            headers: {
+                                "Authorization":
+                                    `Bearer ${result.token}`
+                            }
+                        }
+                    );
+
+
+                const userData =
+                    await response.json();
+
+
+                if (!response.ok) {
+
+                    throw new Error(
+                        userData?.message ||
+                        "You are not authorized to access this dashboard."
                     );
 
                 }
+
+
+                /*
+                 * Store application user data.
+                 *
+                 * This is NOT the authentication token.
+                 */
+                localStorage.setItem(
+                    "userData",
+                    JSON.stringify(
+                        userData
+                    )
+                );
+
+
+                console.log(
+                    "Application authorization successful"
+                );
 
 
                 await AppAlert.success(
@@ -191,16 +212,6 @@ function initializeLogin() {
                     "/dashboard";
 
 
-                return;
-            }
-
-
-            throw new Error(
-                result?.message ||
-                "Login failed."
-            );
-
-
             } catch (error) {
 
                 console.error(
@@ -211,10 +222,9 @@ function initializeLogin() {
 
                 await AppAlert.error(
                     error?.message ||
-                    "Unable to connect to server. Please try again.",
+                    "Unable to login. Please try again.",
                     "Login Failed"
                 );
-
 
             } finally {
 
@@ -231,9 +241,9 @@ function initializeLogin() {
     );
 
 
-    /* ======================================================
-       Password Visibility
-       ====================================================== */
+    // ======================================================
+    // Password Visibility
+    // ======================================================
 
     const togglePassword =
         document.getElementById(
@@ -299,9 +309,5 @@ function initializeLogin() {
 
 }
 
-
-/* ==========================================================
-   Start Login
-   ========================================================== */
 
 initializeLogin();

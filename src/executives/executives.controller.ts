@@ -23,23 +23,32 @@ export class ExecutivesController {
         private readonly service: ExecutivesService,
     ) {}
 
-    // HTML page
+
+    // SPA shell
     @Get()
     page(@Res() res: Response) {
+
         return res.sendFile(
-            'executives.html',
+            'shell.html',
             {
-                root: './public/dashboard/pages/team',
+                root: './public/dashboard',
             },
         );
     }
 
+
     // API
     @Get('data')
     @UseGuards(FirebaseAuthGuard)
-    get(@CurrentUser() user: any) {
-        return this.service.getAll(user.uid);
+    get(
+        @CurrentUser() user: any,
+    ) {
+
+        return this.service.getAll(
+            user.uid,
+        );
     }
+
 
     @Post()
     @UseGuards(FirebaseAuthGuard)
@@ -47,8 +56,13 @@ export class ExecutivesController {
         @CurrentUser() user: any,
         @Body() dto: ExecutiveDto,
     ) {
-        return this.service.create(user.uid, dto);
+
+        return this.service.create(
+            user.uid,
+            dto,
+        );
     }
+
 
     @Patch(':id')
     @UseGuards(FirebaseAuthGuard)
@@ -57,6 +71,11 @@ export class ExecutivesController {
         @Param('id') id: string,
         @Body() dto: ExecutiveDto,
     ) {
-        return this.service.update(user.uid, id, dto);
+
+        return this.service.update(
+            user.uid,
+            id,
+            dto,
+        );
     }
 }

@@ -25,45 +25,54 @@ export class TasksController {
         private readonly service: TasksService,
     ) {}
 
-    // Static page
+    // SPA shell
     @Get()
     page(@Res() res: Response) {
+
         return res.sendFile(
-            'tasks.html',
+            'shell.html',
             {
-                root: './public/dashboard/pages/task',
+                root: './public/dashboard',
             },
         );
     }
 
-    // Month data
+
+    // Monthly tasks API
     @Get('data')
     @UseGuards(FirebaseAuthGuard)
     get(
         @CurrentUser() user: any,
         @Query('year') year?: string,
         @Query('month') month?: string,
-        @Query('status') status?: string,
     ) {
+
         const now = new Date();
 
         return this.service.getAll(
             user.uid,
             Number(year) || now.getFullYear(),
             Number(month) || now.getMonth() + 1,
-            status,
         );
     }
 
+
+    // Create
     @Post()
     @UseGuards(FirebaseAuthGuard)
     create(
         @CurrentUser() user: any,
         @Body() dto: TaskDto,
     ) {
-        return this.service.create(user.uid, dto);
+
+        return this.service.create(
+            user.uid,
+            dto,
+        );
     }
 
+
+    // Update
     @Patch(':id')
     @UseGuards(FirebaseAuthGuard)
     update(
@@ -71,18 +80,31 @@ export class TasksController {
         @Param('id') id: string,
         @Body() dto: Partial<TaskDto>,
     ) {
-        return this.service.update(user.uid, id, dto);
+
+        return this.service.update(
+            user.uid,
+            id,
+            dto,
+        );
     }
 
+
+    // Delete
     @Delete(':id')
     @UseGuards(FirebaseAuthGuard)
     remove(
         @CurrentUser() user: any,
         @Param('id') id: string,
     ) {
-        return this.service.remove(user.uid, id);
+
+        return this.service.remove(
+            user.uid,
+            id,
+        );
     }
 
+
+    // Status
     @Patch(':id/status')
     @UseGuards(FirebaseAuthGuard)
     status(
@@ -90,6 +112,7 @@ export class TasksController {
         @Param('id') id: string,
         @Body('status') status: string,
     ) {
+
         return this.service.updateStatus(
             user.uid,
             id,

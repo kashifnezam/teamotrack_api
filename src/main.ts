@@ -4,24 +4,34 @@ import { AppModule } from './app.module';
 
 import helmet from 'helmet';
 import compression from 'compression';
-import cookieParser from 'cookie-parser';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+
+  const app =
+    await NestFactory.create(AppModule);
+
 
   app.use(
     helmet({
       contentSecurityPolicy: false,
     }),
   );
-  app.use(compression());
 
-  app.use(cookieParser());
 
+  app.use(
+    compression(),
+  );
+
+
+  /*
+   * JWT authentication does not
+   * require cookies/credentials.
+   */
   app.enableCors({
     origin: true,
-    credentials: true,
+    credentials: false,
   });
+
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -29,12 +39,21 @@ async function bootstrap() {
       transform: true,
     }),
   );
-  
-const port = Number(process.env.PORT) || 8080;
 
-await app.listen(port, '0.0.0.0');
 
-console.log(`🚀 Server running on port ${port}`);
+  const port =
+    Number(process.env.PORT) || 8080;
+
+
+  await app.listen(
+    port,
+    '0.0.0.0',
+  );
+
+
+  console.log(
+    `🚀 Server running on port ${port}`,
+  );
 }
 
 bootstrap();

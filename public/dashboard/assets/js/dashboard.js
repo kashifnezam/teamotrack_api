@@ -3,52 +3,54 @@
    dashboard.js
 ========================================================== */
 
-function escapeHtml(value) {
-    return String(value)
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
-}
+(function () {
 
-window.addEventListener(
-    "commonReady",
-    async () => {
+    "use strict";
 
-        
+    let dashboardMap = null;
+    let dashboardMarkers = [];
+
+    /* ==========================================================
+       Initialize
+    ========================================================== */
+
+    window.initializeDashboard = async function () {
+
         try {
+
+            highlightCurrentMenu();
+            initializeTooltips();
+            animateCards();
+
+            initializeEmployeeMap();
+
             const userData =
-            JSON.parse(
-                localStorage.getItem("userData") || "{}"
-            );
-            document.getElementById("userName").textContent = userData.user?.name || "User";
-           
+                JSON.parse(
+                    localStorage.getItem("userData") || "{}"
+                );
+
+            const userName = document.getElementById("userName");
+
+            if (userName) {
+                userName.textContent =
+                    userData.name || "User";
+            }
+
             AppAlert.loading(
                 "Loading dashboard..."
             );
 
-
-            console.log(
-                "Loading dashboard..."
-            );
-
-
             const data =
-                await Api.get(
-                    "/dashboard/me"
-                );
+                await Api.get("/dashboard/me");
 
-
-            if (!data) return;
-
+            if (!data) {
+                AppAlert.close();
+                return;
+            }
 
             populateDashboard(data);
 
-            initializeDashboard();
-
             AppAlert.close();
-
 
         } catch (error) {
 
@@ -66,280 +68,537 @@ window.addEventListener(
 
         }
 
-    },
-    { once: true }
-);
-
-function populateDashboard(data) {
-
-    const {
-        total = 0,
-        present = 0,
-        leave = 0,
-        late = 0,
-        executives = []
-    } = data;
-
-    const absent = Math.max(total - present - leave, 0);
-
-    const attendance =
-        total ? Math.round((present / total) * 100) : 0;
-
-    // KPI
-    document.getElementById("totalExecutives").textContent = total;
-    document.getElementById("presentCount").textContent = present;
-    document.getElementById("leaveCount").textContent = leave;
-    document.getElementById("lateCount").textContent = late;
-
-    // Attendance
-    document.getElementById("attendancePercent").textContent =
-        `${attendance}%`;
-
-    document.getElementById("attendanceCircle").textContent =
-        attendance;
-
-    document.getElementById("attendancePresent").textContent =
-        present;
-
-    document.getElementById("attendanceAbsent").textContent =
-        absent;
-
-    document.getElementById("attendanceLeave").textContent =
-        leave;
-
-    // Map
-    document.getElementById("onlineCount").textContent =
-        `${executives.length} Online`;
-
-    updateEmployeeMap(executives);
-}
-
-function updateEmployeeMap(executives) {
-
-    const bounds = [];
-
-    executives.forEach(exec => {
-
-        const loc = exec.currLoc;
-
-        if (!loc?.lat || !loc?.lng) return;
-
-        const marker = L.marker([
-            loc.lat,
-            loc.lng
-        ])
-            .addTo(map)
-            .bindPopup(`
-            <strong>${escapeHtml(exec.fullName)}</strong>
-            <br>
-            Online
-        `);
-
-        bounds.push([
-            loc.lat,
-            loc.lng
-        ]);
-    });
-
-    if (bounds.length === 1) {
-        map.setView(bounds[0], 15);
     }
 
-    if (bounds.length > 1) {
-        map.fitBounds(bounds, {
-            padding: [40, 40]
-        });
+
+    /* ==========================================================
+       Dashboard Data
+    ========================================================== */
+
+    function populateDashboard(data) {
+
+        const {
+            total = 0,
+            present = 0,
+            leave = 0,
+            late = 0,
+            executives = []
+        } = data;
+
+        const absent =
+            Math.max(
+                total - present - leave,
+                0
+            );
+
+        const attendance =
+            total
+                ? Math.round(
+                    (present / total) * 100
+                )
+                : 0;
+
+
+        /* KPI */
+
+        setText(
+            "totalExecutives",
+            total
+        );
+
+        setText(
+            "presentCount",
+            present
+        );
+
+        setText(
+            "leaveCount",
+            leave
+        );
+
+        setText(
+            "lateCount",
+            late
+        );
+
+
+        /* Attendance */
+
+        setText(
+            "attendancePercent",
+            `${attendance}%`
+        );
+
+        setText(
+            "attendanceCircle",
+            attendance
+        );
+
+        setText(
+            "attendancePresent",
+            present
+        );
+
+        setText(
+            "attendanceAbsent",
+            absent
+        );
+
+        setText(
+            "attendanceLeave",
+            leave
+        );
+
+
+        /* Employee map */
+
+        setText(
+            "onlineCount",
+            `${executives.length} Online`
+        );
+
+        updateEmployeeMap(
+            executives
+        );
+
     }
-}
 
 
-function initializeDashboard() {
+    /* ==========================================================
+       Employee Map
+    ========================================================== */
 
-    highlightCurrentMenu();
+    function initializeEmployeeMap() {
 
-    animateCards();
+        const container =
+            document.getElementById(
+                "employeeMap"
+            );
 
-    initializeTooltips();
+        if (!container) return;
 
-}
+        if (
+            typeof L === "undefined"
+        ) {
+            console.error(
+                "Leaflet is not loaded"
+            );
 
-/* ==========================================================
-   Highlight Active Menu
-========================================================== */
+            return;
+        }
 
-function highlightCurrentMenu() {
+        if (dashboardMap) {
+            dashboardMap.remove();
+            dashboardMap = null;
+        }
 
-    const currentPage = window.location.pathname
-        .split("/")
-        .pop();
+        dashboardMap =
+            L.map("employeeMap")
+                .setView(
+                    [28.6139, 77.2090],
+                    11
+                );
 
-    document
-        .querySelectorAll(".menu a")
-        .forEach(link => {
 
-            const href = link.getAttribute("href");
-
-            if (
-                href &&
-                href !== "#" &&
-                href.endsWith(currentPage)
-            ) {
-
-                document
-                    .querySelectorAll(".menu-item.active")
-                    .forEach(item =>
-                        item.classList.remove("active")
-                    );
-
-                const menuItem =
-                    link.closest(".menu-item");
-
-                if (menuItem) {
-
-                    menuItem.classList.add("active");
-
+        const street =
+            L.tileLayer(
+                "https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}",
+                {
+                    maxZoom: 19,
+                    attribution:
+                        "© OpenStreetMap"
                 }
+            );
 
-                const parent =
-                    link.closest(".has-submenu");
-
-                if (parent) {
-
-                    parent.classList.add("open");
-
+        const satellite =
+            L.tileLayer(
+                "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+                {
+                    attribution:
+                        "Esri"
                 }
+            );
 
-                link.classList.add("active");
+        const topo =
+            L.tileLayer(
+                "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",
+                {
+                    maxZoom: 17,
+                    attribution:
+                        "OpenTopoMap"
+                }
+            );
+
+        const dark =
+            L.tileLayer(
+                "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+                {
+                    attribution:
+                        "CartoDB"
+                }
+            );
+
+
+        street.addTo(
+            dashboardMap
+        );
+
+
+        L.control.layers(
+            {
+                Street: street,
+                Satellite: satellite,
+                Dark: dark,
+                Topographic: topo
+            }
+        ).addTo(
+            dashboardMap
+        );
+
+
+        setTimeout(
+            () => {
+                dashboardMap?.invalidateSize();
+            },
+            100
+        );
+
+    }
+
+
+    /* ==========================================================
+       Update Employee Markers
+    ========================================================== */
+
+    function updateEmployeeMap(
+        executives
+    ) {
+
+        if (!dashboardMap) return;
+
+
+        /* Remove old markers */
+
+        dashboardMarkers.forEach(
+            marker => {
+
+                dashboardMap.removeLayer(
+                    marker
+                );
 
             }
+        );
 
-        });
+        dashboardMarkers = [];
 
-}
 
-/* ==========================================================
-   Card Animation
-========================================================== */
+        const bounds = [];
 
-function animateCards() {
 
-    const observer = new IntersectionObserver(
+        executives.forEach(
+            exec => {
 
-        entries => {
+                const loc =
+                    exec.currLoc;
 
-            entries.forEach(entry => {
-
-                if (entry.isIntersecting) {
-
-                    entry.target.classList.add(
-                        "fade-up"
-                    );
-
-                    observer.unobserve(entry.target);
-
+                if (
+                    !loc ||
+                    !Number.isFinite(
+                        Number(loc.lat)
+                    ) ||
+                    !Number.isFinite(
+                        Number(loc.lng)
+                    )
+                ) {
+                    return;
                 }
+
+
+                const lat =
+                    Number(loc.lat);
+
+                const lng =
+                    Number(loc.lng);
+
+
+                const marker =
+                    L.marker([
+                        lat,
+                        lng
+                    ])
+                        .addTo(
+                            dashboardMap
+                        )
+                        .bindPopup(`
+                        <strong>
+                            ${escapeHtml(
+                            exec.fullName
+                        )}
+                        </strong>
+                        <br>
+                        Online
+                    `);
+
+
+                dashboardMarkers.push(
+                    marker
+                );
+
+                bounds.push([
+                    lat,
+                    lng
+                ]);
+
+            }
+        );
+
+
+        if (bounds.length === 1) {
+
+            dashboardMap.setView(
+                bounds[0],
+                15
+            );
+
+        }
+
+
+        if (bounds.length > 1) {
+
+            dashboardMap.fitBounds(
+                bounds,
+                {
+                    padding: [
+                        40,
+                        40
+                    ]
+                }
+            );
+
+        }
+
+    }
+
+
+    /* ==========================================================
+       Active Menu
+    ========================================================== */
+
+    function highlightCurrentMenu() {
+
+        const currentPath =
+            window.location.pathname
+                .replace(/\/$/, "") ||
+            "/dashboard";
+
+
+        document
+            .querySelectorAll(".menu-item")
+            .forEach(item => {
+
+                item.classList.remove(
+                    "active",
+                    "open"
+                );
 
             });
 
-        },
 
-        {
-            threshold: 0.15
+        document
+            .querySelectorAll(".menu a")
+            .forEach(link => {
+
+                const href =
+                    link.getAttribute(
+                        "href"
+                    );
+
+                if (
+                    !href ||
+                    href === "#"
+                ) {
+                    return;
+                }
+
+
+                const path =
+                    href.replace(
+                        /\/$/,
+                        ""
+                    );
+
+
+                if (
+                    path !== currentPath
+                ) {
+                    return;
+                }
+
+
+                link.classList.add(
+                    "active"
+                );
+
+
+                const menuItem =
+                    link.closest(
+                        ".menu-item"
+                    );
+
+                menuItem?.classList.add(
+                    "active"
+                );
+
+
+                const parent =
+                    link.closest(
+                        ".has-submenu"
+                    );
+
+                parent?.classList.add(
+                    "active",
+                    "open"
+                );
+
+            });
+
+    }
+
+
+    /* ==========================================================
+       Card Animation
+    ========================================================== */
+
+    function animateCards() {
+
+        if (
+            typeof IntersectionObserver ===
+            "undefined"
+        ) {
+            return;
         }
 
-    );
 
-    document
-        .querySelectorAll(
-            ".card-ui, .welcome-card"
+        const observer =
+            new IntersectionObserver(
+                entries => {
+
+                    entries.forEach(
+                        entry => {
+
+                            if (
+                                !entry.isIntersecting
+                            ) {
+                                return;
+                            }
+
+                            entry.target.classList.add(
+                                "fade-up"
+                            );
+
+                            observer.unobserve(
+                                entry.target
+                            );
+
+                        }
+                    );
+
+                },
+                {
+                    threshold: 0.15
+                }
+            );
+
+
+        document
+            .querySelectorAll(
+                ".card-ui, .welcome-card"
+            )
+            .forEach(
+                card =>
+                    observer.observe(card)
+            );
+
+    }
+
+
+    /* ==========================================================
+       Bootstrap Tooltips
+    ========================================================== */
+
+    function initializeTooltips() {
+
+        if (
+            typeof bootstrap ===
+            "undefined"
+        ) {
+            return;
+        }
+
+
+        document
+            .querySelectorAll(
+                '[data-bs-toggle="tooltip"]'
+            )
+            .forEach(
+                el => {
+
+                    bootstrap.Tooltip
+                        .getOrCreateInstance(
+                            el
+                        );
+
+                }
+            );
+
+    }
+
+
+    /* ==========================================================
+       Helpers
+    ========================================================== */
+
+    function setText(
+        id,
+        value
+    ) {
+
+        const element =
+            document.getElementById(id);
+
+        if (element) {
+            element.textContent =
+                value;
+        }
+
+    }
+
+
+    function escapeHtml(value) {
+
+        return String(
+            value ?? ""
         )
-        .forEach(card => {
+            .replaceAll(
+                "&",
+                "&amp;"
+            )
+            .replaceAll(
+                "<",
+                "&lt;"
+            )
+            .replaceAll(
+                ">",
+                "&gt;"
+            )
+            .replaceAll(
+                '"',
+                "&quot;"
+            )
+            .replaceAll(
+                "'",
+                "&#039;"
+            );
 
-            observer.observe(card);
-
-        });
-
-}
-
-/* ==========================================================
-   Bootstrap Tooltips
-========================================================== */
-
-function initializeTooltips() {
-
-    if (
-        typeof bootstrap === "undefined"
-    ) return;
-
-    document
-        .querySelectorAll(
-            '[data-bs-toggle="tooltip"]'
-        )
-        .forEach(el => {
-
-            new bootstrap.Tooltip(el);
-
-        });
-
-}
-
-// ==========================================================
-// Leaflet Map Initialization
-// =========================================================
-// Layers
-
-
-// Employee Locations
-const map = L.map("employeeMap").setView(
-    [28.6139, 77.2090],
-    11
-);
-
-const street = L.tileLayer(
-    'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',
-    {
-        maxZoom: 19,
-        attribution: "© OpenStreetMap"
     }
-);
-
-const satellite = L.tileLayer(
-    "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-    {
-        attribution: "Esri"
-    }
-);
-
-const topo = L.tileLayer(
-    "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",
-    {
-        maxZoom: 17,
-        attribution: "OpenTopoMap"
-    }
-);
-
-const dark = L.tileLayer(
-    "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
-    {
-        attribution: "CartoDB"
-    }
-);
-
-street.addTo(map);
-
-L.control.layers({
-    "Street": street,
-    "Satellite": satellite,
-    "Dark": dark,
-    "Topographic": topo
-}).addTo(map);
-
-// Layer Switcher
-L.control.layers({
-
-    "Street": street,
-    "Satellite": satellite,
-    "Dark": dark,
-    "Topographic": topo
-
-}).addTo(map);
+})();

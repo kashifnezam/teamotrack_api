@@ -1,25 +1,75 @@
+// ==========================================================
+// TeamoTrack
+// api.js
+// API Utility
+// ==========================================================
+
+import {
+    getFreshToken
+} from "./auth.js";
+
+
 const API_BASE = "";
 
 
 const Api = {
 
-    async get(url) {
 
-        const response =
-            await fetch(
-                API_BASE + url,
-                {
-                    method: "GET",
-                    credentials: "include"
-                }
+    // ======================================================
+    // Get Headers
+    // ======================================================
+
+    async getHeaders() {
+
+        const token = await getFreshToken();
+
+
+        if (!token) {
+
+            throw new Error(
+                "Authentication required."
             );
 
+        }
+        return {
+            "Content-Type":
+                "application/json",
 
-        const data =
-            await response.json();
+            "Authorization":
+                `Bearer ${token}`
+
+        };
+
+    },
 
 
-        if (response.status === 401) {
+    // ======================================================
+    // Handle Response
+    // ======================================================
+
+    async handleResponse(
+        response
+    ) {
+
+        let data = null;
+
+
+        try {
+
+            data =
+                await response.json();
+
+        } catch {
+
+            data = null;
+
+        }
+
+
+        if (
+            response.status ===
+            401
+        ) {
 
             sessionStorage.setItem(
                 "loginAlert",
@@ -32,6 +82,7 @@ const Api = {
 
 
             return null;
+
         }
 
 
@@ -50,7 +101,45 @@ const Api = {
     },
 
 
-    async post(url, body) {
+    // ======================================================
+    // GET
+    // ======================================================
+
+    async get(url) {
+
+        const headers =
+            await this.getHeaders();
+
+
+        const response =
+            await fetch(
+                API_BASE + url,
+                {
+                    method: "GET",
+                    headers
+                }
+            );
+
+
+        return this.handleResponse(
+            response
+        );
+
+    },
+
+
+    // ======================================================
+    // POST
+    // ======================================================
+
+    async post(
+        url,
+        body
+    ) {
+
+        const headers =
+            await this.getHeaders();
+
 
         const response =
             await fetch(
@@ -58,12 +147,7 @@ const Api = {
                 {
                     method: "POST",
 
-                    credentials: "include",
-
-                    headers: {
-                        "Content-Type":
-                            "application/json"
-                    },
+                    headers,
 
                     body:
                         JSON.stringify(body)
@@ -71,36 +155,25 @@ const Api = {
             );
 
 
-        const data =
-            await response.json();
-
-
-        if (response.status === 401) {
-
-            window.location.href =
-                "/login";
-
-            return null;
-
-        }
-
-
-        if (!response.ok) {
-
-            throw new Error(
-                data?.message ||
-                "Request failed"
-            );
-
-        }
-
-
-        return data;
+        return this.handleResponse(
+            response
+        );
 
     },
 
 
-    async patch(url, body) {
+    // ======================================================
+    // PATCH
+    // ======================================================
+
+    async patch(
+        url,
+        body
+    ) {
+
+        const headers =
+            await this.getHeaders();
+
 
         const response =
             await fetch(
@@ -108,12 +181,7 @@ const Api = {
                 {
                     method: "PATCH",
 
-                    credentials: "include",
-
-                    headers: {
-                        "Content-Type":
-                            "application/json"
-                    },
+                    headers,
 
                     body:
                         JSON.stringify(body)
@@ -121,66 +189,42 @@ const Api = {
             );
 
 
-        const data =
-            await response.json();
-
-
-        if (response.status === 401) {
-
-            window.location.href =
-                "/login";
-
-            return null;
-
-        }
-
-
-        if (!response.ok) {
-
-            throw new Error(
-                data?.message ||
-                "Request failed"
-            );
-
-        }
-
-
-        return data;
+        return this.handleResponse(
+            response
+        );
 
     },
 
+
+    // ======================================================
+    // DELETE
+    // ======================================================
+
     async delete(url) {
 
-    const response =
-        await fetch(
-            API_BASE + url,
-            {
-                method: "DELETE",
-                credentials: "include"
-            }
-        );
+        const headers =
+            await this.getHeaders();
 
-    const data =
-        await response.json();
 
-    if (response.status === 401) {
+        const response =
+            await fetch(
+                API_BASE + url,
+                {
+                    method: "DELETE",
 
-        window.location.href =
-            "/login";
+                    headers
+                }
+            );
 
-        return null;
-    }
 
-    if (!response.ok) {
-
-        throw new Error(
-            data?.message ||
-            "Request failed"
+        return this.handleResponse(
+            response
         );
 
     }
-
-    return data;
-}
 
 };
+
+window.Api = Api;
+
+export default Api;

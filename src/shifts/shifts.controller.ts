@@ -24,23 +24,32 @@ export class ShiftsController {
         private readonly service: ShiftsService,
     ) {}
 
-    // HTML page
+
+    // SPA shell
     @Get()
     page(@Res() res: Response) {
+
         return res.sendFile(
-            'shifts.html',
+            'shell.html',
             {
-                root: './public/dashboard/pages/team',
+                root: './public/dashboard',
             },
         );
     }
 
+
     // API
     @Get('data')
     @UseGuards(FirebaseAuthGuard)
-    get(@CurrentUser() user: any) {
-        return this.service.getAll(user.uid);
+    get(
+        @CurrentUser() user: any,
+    ) {
+
+        return this.service.getAll(
+            user.uid,
+        );
     }
+
 
     @Post()
     @UseGuards(FirebaseAuthGuard)
@@ -48,8 +57,13 @@ export class ShiftsController {
         @CurrentUser() user: any,
         @Body() dto: ShiftDto,
     ) {
-        return this.service.create(user.uid, dto);
+
+        return this.service.create(
+            user.uid,
+            dto,
+        );
     }
+
 
     @Patch(':id')
     @UseGuards(FirebaseAuthGuard)
@@ -58,6 +72,7 @@ export class ShiftsController {
         @Param('id') id: string,
         @Body() dto: ShiftDto,
     ) {
+
         return this.service.update(
             user.uid,
             id,
@@ -65,12 +80,14 @@ export class ShiftsController {
         );
     }
 
+
     @Delete(':id')
     @UseGuards(FirebaseAuthGuard)
     remove(
         @CurrentUser() user: any,
         @Param('id') id: string,
     ) {
+
         return this.service.remove(
             user.uid,
             id,

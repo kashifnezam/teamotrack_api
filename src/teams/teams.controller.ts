@@ -24,23 +24,32 @@ export class TeamsController {
         private readonly service: TeamsService,
     ) {}
 
-    // HTML page
+
+    // SPA shell
     @Get()
     page(@Res() res: Response) {
+
         return res.sendFile(
-            'teams.html',
+            'shell.html',
             {
-                root: './public/dashboard/pages/team',
+                root: './public/dashboard',
             },
         );
     }
 
+
     // API
     @Get('data')
     @UseGuards(FirebaseAuthGuard)
-    get(@CurrentUser() user: any) {
-        return this.service.getAll(user.uid);
+    get(
+        @CurrentUser() user: any,
+    ) {
+
+        return this.service.getAll(
+            user.uid,
+        );
     }
+
 
     @Post()
     @UseGuards(FirebaseAuthGuard)
@@ -48,8 +57,13 @@ export class TeamsController {
         @CurrentUser() user: any,
         @Body() dto: TeamDto,
     ) {
-        return this.service.create(user.uid, dto);
+
+        return this.service.create(
+            user.uid,
+            dto,
+        );
     }
+
 
     @Patch(':id')
     @UseGuards(FirebaseAuthGuard)
@@ -58,8 +72,14 @@ export class TeamsController {
         @Param('id') id: string,
         @Body() dto: TeamDto,
     ) {
-        return this.service.update(user.uid, id, dto);
+
+        return this.service.update(
+            user.uid,
+            id,
+            dto,
+        );
     }
+
 
     @Delete(':id')
     @UseGuards(FirebaseAuthGuard)
@@ -67,6 +87,10 @@ export class TeamsController {
         @CurrentUser() user: any,
         @Param('id') id: string,
     ) {
-        return this.service.remove(user.uid, id);
+
+        return this.service.remove(
+            user.uid,
+            id,
+        );
     }
 }
