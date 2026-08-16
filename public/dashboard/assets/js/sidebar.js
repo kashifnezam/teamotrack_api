@@ -5,13 +5,10 @@
 
 function initializeSidebar() {
 
-    const sidebar =
-        document.getElementById(
-            "sidebar"
+    const sidebar = document.getElementById("sidebar"
         );
 
-    const toggle =
-        document.getElementById(
+    const toggle = document.getElementById(
             "sidebarToggle"
         );
 

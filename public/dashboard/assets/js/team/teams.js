@@ -554,13 +554,12 @@
         if (!team) return;
 
 
-        const confirmed =
-            await AppAlert.confirm(
+        const confirmed = await AppAlert.confirm(
                 `Are you sure you want to delete the team "${team.name}"? This action cannot be undone.`
             );
 
 
-        if (!confirmed.isConfirmed) {
+        if (!confirmed) {
             return;
         }
 

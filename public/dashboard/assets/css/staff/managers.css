@@ -1,0 +1,454 @@
+/* ==========================================================
+   TeamoTrack Staff
+   managers.css
+========================================================== */
+
+.staff-page {
+    padding: 0;
+}
+
+
+/* ==========================================================
+   PAGE HEADER
+========================================================== */
+
+.page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+
+    margin-bottom: var(--section-gap);
+}
+
+
+/* ==========================================================
+   FILTER
+========================================================== */
+
+.filter-card,
+.staff-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+}
+
+
+.filter-card {
+    padding: 16px;
+    margin-bottom: var(--section-gap);
+}
+
+
+.search-box {
+    position: relative;
+}
+
+
+.search-box i {
+    position: absolute;
+
+    left: 13px;
+    top: 50%;
+
+    transform: translateY(-50%);
+
+    color: var(--text-muted);
+
+    pointer-events: none;
+}
+
+
+.search-box .form-control {
+    padding-left: 38px;
+}
+
+
+/* ==========================================================
+   COUNT
+========================================================== */
+
+.staff-count {
+    color: var(--text-secondary);
+    font-size: var(--font-sm);
+}
+
+
+/* ==========================================================
+   STAFF CARD
+========================================================== */
+
+.staff-card {
+    overflow: hidden;
+
+    box-shadow: var(--shadow-sm);
+}
+
+
+.staff-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    padding: 16px 18px;
+
+    border-bottom: 1px solid var(--border-color);
+}
+
+
+.staff-card .table {
+    min-width: 650px;
+
+    margin-bottom: 0;
+}
+
+
+.staff-card .table > :not(caption) > * > * {
+    border-color: var(--border-color);
+}
+
+
+.staff-card .table thead th {
+    background: var(--table-header-bg);
+
+    color: var(--text-secondary);
+
+    font-size: var(--font-xs);
+    font-weight: var(--fw-semibold);
+
+    text-transform: uppercase;
+    letter-spacing: .03em;
+
+    white-space: nowrap;
+}
+
+
+.staff-card .table tbody tr {
+    transition:
+        background var(--transition-fast);
+}
+
+
+.staff-card .table tbody tr:hover {
+    background: var(--table-hover-bg);
+}
+
+
+/* ==========================================================
+   USER
+========================================================== */
+
+.staff-user {
+    display: flex;
+    align-items: center;
+
+    gap: 10px;
+}
+
+
+.staff-avatar {
+    width: 38px;
+    height: 38px;
+
+    flex-shrink: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 50%;
+
+    background: var(--avatar-bg);
+    color: #fff;
+
+    font-size: var(--font-xs);
+    font-weight: var(--fw-semibold);
+}
+
+
+.staff-name {
+    color: var(--text-primary);
+
+    font-size: var(--font-sm);
+    font-weight: var(--fw-semibold);
+}
+
+
+.staff-email {
+    margin-top: 2px;
+
+    color: var(--text-muted);
+
+    font-size: var(--font-xs);
+}
+
+
+/* ==========================================================
+   STATUS
+========================================================== */
+
+.staff-status {
+    display: inline-flex;
+    align-items: center;
+
+    gap: 5px;
+
+    padding: 4px 9px;
+
+    border-radius: 20px;
+
+    font-size: var(--font-xs);
+    font-weight: var(--fw-semibold);
+}
+
+
+.staff-status.active {
+    background: var(--status-active-bg);
+    color: var(--status-active-text);
+}
+
+
+.staff-status.inactive {
+    background: var(--status-inactive-bg);
+    color: var(--status-inactive-text);
+}
+
+
+/* ==========================================================
+   ACTIONS
+========================================================== */
+
+.staff-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+
+    gap: 4px;
+}
+
+
+.staff-action {
+    width: 34px;
+    height: 34px;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    border: 0;
+    border-radius: var(--radius-xs);
+
+    background: transparent;
+
+    color: var(--text-secondary);
+
+    transition:
+        background var(--transition-fast),
+        color var(--transition-fast),
+        transform var(--transition-fast);
+}
+
+
+.staff-action:hover {
+    background: var(--action-hover-bg);
+    color: var(--primary);
+}
+
+
+.staff-action:active {
+    transform: scale(.94);
+}
+
+
+/* ==========================================================
+   PERMISSIONS
+========================================================== */
+
+.permission-list {
+    display: flex;
+    flex-direction: column;
+
+    gap: 10px;
+}
+
+
+.permission-group {
+    margin-top: 14px;
+}
+
+
+.permission-group:first-child {
+    margin-top: 0;
+}
+
+
+.permission-group-title {
+    margin-bottom: 8px;
+
+    color: var(--text-muted);
+
+    font-size: var(--font-xs);
+    font-weight: var(--fw-bold);
+
+    text-transform: uppercase;
+    letter-spacing: .05em;
+}
+
+
+.permission-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    padding: 12px 14px;
+
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+
+    background: var(--surface);
+
+    transition:
+        background var(--transition-fast),
+        border-color var(--transition-fast);
+}
+
+
+.permission-item:hover {
+    background: var(--surface-soft);
+}
+
+
+.permission-label {
+    color: var(--text-primary);
+
+    font-size: var(--font-sm);
+    font-weight: var(--fw-medium);
+
+    text-transform: capitalize;
+}
+
+
+/* ==========================================================
+   EMPTY STATE
+========================================================== */
+
+.staff-card .empty-state {
+    padding: 45px 20px;
+
+    text-align: center;
+
+    color: var(--empty-state-color);
+}
+
+
+/* ==========================================================
+   MODAL
+========================================================== */
+
+.modal-content {
+    border: 1px solid var(--border-color);
+
+    border-radius: var(--radius-md);
+
+    box-shadow: var(--shadow-lg);
+
+    background: var(--surface);
+}
+
+
+.modal-header {
+    border-bottom-color: var(--border-color);
+}
+
+
+.modal-footer {
+    border-top-color: var(--border-color);
+}
+
+
+.modal-title {
+    color: var(--text-primary);
+
+    font-size: var(--font-lg);
+    font-weight: var(--fw-semibold);
+}
+
+
+/* ==========================================================
+   FORM
+========================================================== */
+
+.form-label {
+    color: var(--text-primary);
+
+    font-size: var(--font-sm);
+    font-weight: var(--fw-medium);
+}
+
+
+.form-control {
+    background: var(--input-bg);
+
+    border-color: var(--border-color);
+
+    color: var(--text-primary);
+
+    border-radius: var(--radius-sm);
+}
+
+
+.form-control:focus {
+    background: var(--input-bg);
+
+    border-color: var(--input-focus-border);
+
+    box-shadow:
+        0 0 0 .2rem
+        rgba(37, 99, 235, .10);
+}
+
+
+.form-control::placeholder {
+    color: var(--text-muted);
+}
+
+
+/* ==========================================================
+   MOBILE
+========================================================== */
+
+@media (max-width: 576px) {
+
+    .page-header {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+
+    .page-header .btn {
+        width: 100%;
+    }
+
+
+    .filter-card {
+        padding: 12px;
+    }
+
+
+    .staff-count {
+        display: block;
+
+        margin-top: 5px;
+    }
+
+
+    .staff-card .table {
+        min-width: 600px;
+    }
+
+
+    .modal-dialog {
+        margin: 12px;
+    }
+
+}

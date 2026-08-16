@@ -90,12 +90,14 @@ if (window.TeamoTrackApp) {
 
             ]);
 
+            initializeHeaderProfile();
 
             initializeSidebar();
 
             initializeTheme();
 
             initializeRipple();
+
 
 
             document.body.classList.remove(
@@ -108,6 +110,8 @@ if (window.TeamoTrackApp) {
             );
 
         },
+
+
 
 
         /* ==================================================
@@ -254,10 +258,22 @@ if (window.TeamoTrackApp) {
                 path;
 
 
+            /* ==================================================
+               HEADER
+            ================================================== */
+
             updatePageHeader(
                 page.title,
                 page.description
             );
+
+
+            /* ==================================================
+               SIDEBAR
+               Update immediately
+            ================================================== */
+
+            setActiveMenu(path);
 
 
             const content =
@@ -277,9 +293,9 @@ if (window.TeamoTrackApp) {
 
             try {
 
-                /* ======================================
+                /* ==============================================
                    HTML
-                ====================================== */
+                ============================================== */
 
                 const response =
                     await fetch(
@@ -300,27 +316,27 @@ if (window.TeamoTrackApp) {
                     await response.text();
 
 
-                /* ======================================
+                /* ==============================================
                    CSS
-                ====================================== */
+                ============================================== */
 
                 await this.loadPageCss(
                     page.css
                 );
 
 
-                /* ======================================
+                /* ==============================================
                    JS
-                ====================================== */
+                ============================================== */
 
                 await this.loadPageScript(
                     page.js
                 );
 
 
-                /* ======================================
-                   INITIALIZE
-                ====================================== */
+                /* ==============================================
+                   INITIALIZE PAGE
+                ============================================== */
 
                 const initializer =
                     window[page.init];
@@ -341,16 +357,9 @@ if (window.TeamoTrackApp) {
                 await initializer();
 
 
-                /* ======================================
-                   SIDEBAR
-                ====================================== */
-
-                setActiveMenu();
-
-
-                /* ======================================
+                /* ==============================================
                    RIPPLE
-                ====================================== */
+                ============================================== */
 
                 initializeRipple();
 
@@ -365,26 +374,25 @@ if (window.TeamoTrackApp) {
 
                 content.innerHTML = `
 
-                    <div class="empty-state">
+            <div class="empty-state">
 
-                        <h5>
-                            Unable to load page
-                        </h5>
+                <h5>
+                    Unable to load page
+                </h5>
 
-                        <p>
-                            ${escapeHtml(
+                <p>
+                    ${escapeHtml(
                     error.message
                 )}
-                        </p>
+                </p>
 
-                    </div>
+            </div>
 
-                `;
+        `;
 
             }
 
         },
-
 
         /* ==================================================
            PAGE SCRIPT
@@ -396,33 +404,6 @@ if (window.TeamoTrackApp) {
                 return Promise.resolve();
             }
 
-
-            if (
-                this.loadedScripts.has(script)
-            ) {
-
-                return Promise.resolve();
-
-            }
-
-
-            const existing =
-                document.querySelector(
-                    `script[data-page-script="${script}"]`
-                );
-
-
-            if (existing) {
-
-                this.loadedScripts.add(
-                    script
-                );
-
-                return Promise.resolve();
-
-            }
-
-
             return new Promise(
                 (resolve, reject) => {
 
@@ -431,43 +412,18 @@ if (window.TeamoTrackApp) {
                             "script"
                         );
 
-
                     element.src =
-                        script;
-
-
-                    element.dataset.pageScript =
-                        script;
-
+                        `${script}?t=${Date.now()}`;
 
                     element.onload =
-                        () => {
-
-                            this.loadedScripts.add(
-                                script
-                            );
-
-                            console.log(
-                                "Loaded:",
-                                script
-                            );
-
-                            resolve();
-
-                        };
-
+                        resolve;
 
                     element.onerror =
-                        () => {
-
-                            reject(
-                                new Error(
-                                    `Unable to load ${script}`
-                                )
-                            );
-
-                        };
-
+                        () => reject(
+                            new Error(
+                                `Unable to load ${script}`
+                            )
+                        );
 
                     document.body.appendChild(
                         element
@@ -691,14 +647,170 @@ if (window.TeamoTrackApp) {
                     description:
                         "Manage executive shifts and schedules."
 
-                }
+                },
 
+                "/attendance": {
+
+                    html:
+                        "/dashboard/pages/attendance/attendance.html",
+
+                    js:
+                        "/dashboard/assets/js/attendance/attendance.js",
+
+                    css:
+                        "/dashboard/assets/css/attendance/attendance.css",
+
+                    init:
+                        "initializeAttendancePage",
+
+                    title:
+                        "Attendance",
+
+                    description:
+                        "View and manage your team's attendance."
+
+                },
+
+
+                "/attendance/live": {
+
+                    html:
+                        "/dashboard/pages/attendance/live.html",
+
+                    js:
+                        "/dashboard/assets/js/attendance/live.js",
+
+                    css:
+                        "/dashboard/assets/css/attendance/live.css",
+
+                    init:
+                        "initializeLiveTrackingPage",
+
+                    title:
+                        "Live Tracking",
+
+                    description:
+                        "Track field executives and review their routes."
+
+                },
+
+                "/profile": {
+
+                    html:
+                        "/dashboard/pages/settings/profile.html",
+
+                    js:
+                        "/dashboard/assets/js/settings/settings.js",
+
+                    css:
+                        "/dashboard/assets/css/settings/settings.css",
+
+                    init:
+                        "initializeProfilePage",
+
+                    title:
+                        "My Profile",
+
+                    description:
+                        "Manage your personal information."
+
+                },
+
+
+                "/settings/company": {
+
+                    html:
+                        "/dashboard/pages/settings/company.html",
+
+                    js:
+                        "/dashboard/assets/js/settings/settings.js",
+
+                    css:
+                        "/dashboard/assets/css/settings/settings.css",
+
+                    init:
+                        "initializeCompanyPage",
+
+                    title:
+                        "Company",
+
+                    description:
+                        "Manage your company information."
+
+                },
+
+
+                "/settings/roles": {
+
+                    html:
+                        "/dashboard/pages/settings/roles.html",
+
+                    js:
+                        "/dashboard/assets/js/settings/settings.js",
+
+                    css:
+                        "/dashboard/assets/css/settings/settings.css",
+
+                    init:
+                        "initializeRolesPage",
+
+                    title:
+                        "Roles & Permissions",
+
+                    description:
+                        "Control what your team can do."
+
+                },
+
+                "/managers": {
+
+                    html:
+                        "/dashboard/pages/staff/managers.html",
+
+                    js:
+                        "/dashboard/assets/js/staff/managers.js",
+
+                    css:
+                        "/dashboard/assets/css/staff/managers.css",
+
+                    init:
+                        "initializeManagersPage",
+
+                    title:
+                        "Managers",
+
+                    description:
+                        "Manage managers and your management hierarchy."
+
+                },
+
+
+                "/hr": {
+
+                    html:
+                        "/dashboard/pages/staff/hr.html",
+
+                    js:
+                        "/dashboard/assets/js/staff/hr.js",
+
+                    css:
+                        "/dashboard/assets/css/staff/managers.css",
+
+                    init:
+                        "initializeHrPage",
+
+                    title:
+                        "HR",
+
+                    description:
+                        "Manage your HR hierarchy."
+                },
             };
 
 
             return pages[path] || null;
 
-        }
+        },
 
     };
 
@@ -792,7 +904,8 @@ if (window.TeamoTrackApp) {
        ACTIVE MENU
     ====================================================== */
 
-    function setActiveMenu() {
+    function setActiveMenu(path = window.location.pathname
+    ) {
 
         const currentPath =
             window.location.pathname
@@ -950,6 +1063,12 @@ if (window.TeamoTrackApp) {
 
     function load404() {
 
+        updatePageHeader(
+            "Page Not Found",
+            "The requested page does not exist."
+        );
+
+
         const content =
             document.getElementById(
                 "page-content"
@@ -963,30 +1082,122 @@ if (window.TeamoTrackApp) {
 
         content.innerHTML = `
 
-            <div class="empty-state">
+        <div class="empty-state">
 
-                <h4>
-                    Page not found
-                </h4>
+            <h4>
+                Page not found
+            </h4>
 
-                <p>
-                    The requested page does not exist.
-                </p>
+            <p>
+                The requested page does not exist.
+            </p>
 
-                <a
-                    href="/dashboard"
-                    class="btn btn-primary"
-                >
-                    Go to Dashboard
-                </a>
+            <a
+                href="/dashboard"
+                class="btn btn-primary"
+            >
+                Go to Dashboard
+            </a>
 
-            </div>
+        </div>
 
-        `;
+    `;
 
     }
 
+    /* ==========================================================
+       HEADER PROFILE
+    ========================================================== */
 
+    function initializeHeaderProfile() {
+
+        const wrapper =
+            document.getElementById(
+                "headerProfileWrapper"
+            );
+
+        const profile =
+            document.getElementById(
+                "headerProfile"
+            );
+
+        const logout =
+            document.getElementById(
+                "logoutButton"
+            );
+
+
+        if (!wrapper || !profile) {
+            return;
+        }
+
+
+        profile.onclick = event => {
+
+            event.stopPropagation();
+
+            const isOpen =
+                wrapper.classList.toggle(
+                    "open"
+                );
+
+            profile.setAttribute(
+                "aria-expanded",
+                String(isOpen)
+            );
+
+        };
+
+
+        document.addEventListener(
+            "click",
+            event => {
+
+                if (
+                    !wrapper.contains(
+                        event.target
+                    )
+                ) {
+
+                    wrapper.classList.remove(
+                        "open"
+                    );
+
+                    profile.setAttribute(
+                        "aria-expanded",
+                        "false"
+                    );
+
+                }
+
+            }
+        );
+
+
+        logout?.addEventListener(
+            "click",
+            async () => {
+
+                const result =
+                    await AppAlert.confirm(
+                        "Are you sure you want to logout?"
+                    );
+
+
+                if (
+                    !result.isConfirmed
+                ) {
+                    return;
+                }
+
+
+                window.location.href =
+                    "/login";
+
+            }
+        );
+
+    }
     /* ======================================================
        ESCAPE
     ====================================================== */

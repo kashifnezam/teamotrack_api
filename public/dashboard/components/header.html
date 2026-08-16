@@ -30,9 +30,11 @@
 
         <div class="header-divider"></div>
 
+
         <button
             class="header-btn ripple"
             aria-label="Notifications"
+            type="button"
         >
             <i class="bi bi-bell"></i>
             <span class="notification-badge"></span>
@@ -42,6 +44,7 @@
         <button
             class="header-btn ripple"
             aria-label="Messages"
+            type="button"
         >
             <i class="bi bi-chat-dots"></i>
         </button>
@@ -51,28 +54,148 @@
             class="header-btn ripple"
             id="themeToggle"
             aria-label="Toggle Theme"
+            type="button"
         >
             <i class="bi bi-moon-stars"></i>
         </button>
 
 
-        <div class="header-profile">
+        <!-- ==================================================
+             PROFILE
+        ================================================== -->
 
-            <div class="profile-avatar">
-                KA
+        <div
+            class="header-profile-wrapper"
+            id="headerProfileWrapper"
+        >
+
+            <button
+                type="button"
+                class="header-profile"
+                id="headerProfile"
+                aria-expanded="false"
+            >
+
+                <div class="profile-avatar">
+                    KA
+                </div>
+
+                <div class="profile-info">
+
+                    <h6 class="name">
+                        Kashif
+                    </h6>
+
+                    <small>
+                        Administrator
+                    </small>
+
+                </div>
+
+                <i class="bi bi-chevron-down profile-arrow"></i>
+
+            </button>
+
+
+            <!-- ==================================================
+                 PROFILE MENU
+            ================================================== -->
+
+            <div
+                class="profile-menu"
+                id="profileMenu"
+            >
+
+                <!-- Profile Header -->
+
+                <div class="profile-menu-header">
+
+                    <div class="profile-menu-avatar">
+                        KA
+                    </div>
+
+                    <div>
+
+                        <h6>
+                            Kashif
+                        </h6>
+
+                        <small>
+                            Administrator
+                        </small>
+
+                    </div>
+
+                </div>
+
+
+                <div class="profile-menu-divider"></div>
+
+
+                <!-- Account -->
+
+                <a
+                    href="/profile"
+                    class="profile-menu-item"
+                >
+
+                    <i class="bi bi-person"></i>
+
+                    <span>
+                        My Profile
+                    </span>
+
+                </a>
+
+
+                <a
+                    href="/change-password"
+                    class="profile-menu-item"
+                >
+
+                    <i class="bi bi-lock"></i>
+
+                    <span>
+                        Change Password
+                    </span>
+
+                </a>
+
+
+                <a
+                    href="/settings/account"
+                    class="profile-menu-item"
+                >
+
+                    <i class="bi bi-gear"></i>
+
+                    <span>
+                        Account Settings
+                    </span>
+
+                </a>
+
+
+                <div class="profile-menu-divider"></div>
+
+
+                <!-- Logout -->
+
+                <button
+                    type="button"
+                    class="profile-menu-item logout"
+                    id="logoutButton"
+                >
+
+                    <i class="bi bi-box-arrow-right"></i>
+
+                    <span>
+                        Logout
+                    </span>
+
+                </button>
+
             </div>
-
-            <div class="profile-info">
-
-                <h6 class="name"></h6>
-
-                <small>
-                    Administrator
-                </small>
-
-            </div>
-
-            <i class="bi bi-chevron-down"></i>
 
         </div>
 

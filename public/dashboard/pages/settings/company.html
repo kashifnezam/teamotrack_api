@@ -1,0 +1,78 @@
+<section class="settings-page">
+    <div class="container-fluid">
+
+        <div class="settings-card">
+
+            <div class="settings-card-header">
+                <div>
+                    <h5>Company</h5>
+                    <p>Manage your company information.</p>
+                </div>
+            </div>
+
+            <div class="settings-card-body">
+
+                <div class="company-logo-wrap">
+
+                    <div
+                        id="companyLogo"
+                        class="company-logo"
+                    >
+                        <i class="bi bi-building"></i>
+                    </div>
+
+                    <button
+                        type="button"
+                        class="btn btn-outline-primary btn-sm"
+                        onclick="changeCompanyLogo()"
+                    >
+                        <i class="bi bi-camera me-1"></i>
+                        Change Logo
+                    </button>
+
+                    <input
+                        id="logoInput"
+                        type="file"
+                        accept="image/*"
+                        hidden
+                    >
+
+                </div>
+
+                <div class="row g-3 mt-2">
+
+                    <div class="col-md-8">
+
+                        <label class="form-label">
+                            Company Name
+                        </label>
+
+                        <input
+                            id="businessName"
+                            class="form-control"
+                            type="text"
+                            placeholder="Enter company name"
+                        >
+
+                    </div>
+
+                </div>
+
+                <div class="mt-4">
+
+                    <button
+                        id="saveCompanyBtn"
+                        class="btn btn-primary"
+                        onclick="saveCompany()"
+                    >
+                        Save Changes
+                    </button>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+</section>

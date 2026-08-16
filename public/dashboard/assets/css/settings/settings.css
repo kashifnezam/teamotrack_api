@@ -1,0 +1,119 @@
+/* ==========================================================
+   SETTINGS
+========================================================== */
+
+.settings-page {
+    padding: 0 0 24px;
+}
+
+.settings-card {
+    background: var(--card-bg, #fff);
+    border: 1px solid var(--border-color, #e5e7eb);
+    border-radius: 14px;
+    overflow: hidden;
+}
+
+.settings-card-header {
+    padding: 20px;
+    border-bottom: 1px solid var(--border-color, #e5e7eb);
+}
+
+.settings-card-header h5 {
+    margin: 0;
+    font-size: 17px;
+}
+
+.settings-card-header p {
+    margin: 4px 0 0;
+    color: var(--text-secondary);
+    font-size: 13px;
+}
+
+.settings-card-body {
+    padding: 20px;
+}
+
+.profile-settings-avatar,
+.company-logo {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #4f46e5;
+    color: #fff;
+    font-weight: 600;
+    margin-bottom: 20px;
+}
+
+.company-logo {
+    border-radius: 12px;
+    overflow: hidden;
+    font-size: 22px;
+}
+
+.company-logo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.company-logo-wrap {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.company-logo-wrap .company-logo {
+    margin-bottom: 0;
+}
+
+.permission-list {
+    border: 1px solid var(--border-color, #e5e7eb);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.permission-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+    padding: 15px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border-color, #e5e7eb);
+}
+
+.permission-item:last-child {
+    border-bottom: 0;
+}
+
+.permission-item strong {
+    display: block;
+    font-size: 14px;
+}
+
+.permission-item small {
+    color: var(--text-secondary);
+    font-size: 12px;
+}
+
+.permission-item input {
+    width: 18px;
+    height: 18px;
+    accent-color: #4f46e5;
+}
+
+@media (max-width: 576px) {
+
+    .settings-card-header,
+    .settings-card-body {
+        padding: 16px;
+    }
+
+    .permission-item {
+        padding: 13px;
+    }
+}

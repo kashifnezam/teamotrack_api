@@ -1070,11 +1070,10 @@
         if (!task) return;
 
 
-        const result =
-            await AppAlert.confirm("Delete Task", "Are you sure you want to delete this task? This action cannot be undone.");
+        const confirmed = await AppAlert.confirm("Delete Task", "Are you sure you want to delete this task? This action cannot be undone.");
 
 
-        if (!result.isConfirmed) return;
+        if (!confirmed) return;
 
 
         try {

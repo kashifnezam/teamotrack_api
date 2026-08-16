@@ -1,0 +1,185 @@
+<section class="live-tracking-page">
+
+    <div class="container-fluid">
+
+        <!-- FILTER -->
+        <div class="filter-card">
+
+            <div class="row g-3 align-items-end">
+
+                <div class="col-lg-5 col-md-6">
+
+                    <label class="form-label">
+                        Executive
+                    </label>
+
+                    <select
+                        id="liveExecutive"
+                        class="form-select"
+                    >
+                        <option value="">
+                            Select Executive
+                        </option>
+                    </select>
+
+                </div>
+
+
+                <div class="col-lg-3 col-md-3">
+
+                    <label class="form-label">
+                        Date
+                    </label>
+
+                    <input
+                        id="liveDate"
+                        type="date"
+                        class="form-control"
+                    >
+
+                </div>
+
+
+                <div class="col-lg-2 col-md-3">
+
+                    <button
+                        id="loadTrackingBtn"
+                        class="btn btn-primary w-100"
+                    >
+                        <i class="bi bi-map me-1"></i>
+                        Track
+                    </button>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- STATS -->
+        <div class="row g-3 mb-3">
+
+            <div class="col-lg-3 col-md-6">
+
+                <div class="tracking-stat">
+
+                    <small>Start</small>
+
+                    <strong id="trackingStart">
+                        --
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+            <div class="col-lg-3 col-md-6">
+
+                <div class="tracking-stat">
+
+                    <small>End</small>
+
+                    <strong id="trackingEnd">
+                        --
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+            <div class="col-lg-3 col-md-6">
+
+                <div class="tracking-stat">
+
+                    <small>Distance</small>
+
+                    <strong id="trackingDistance">
+                        0 m
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+            <div class="col-lg-3 col-md-6">
+
+                <div class="tracking-stat">
+
+                    <small>Stops</small>
+
+                    <strong id="trackingStops">
+                        0
+                    </strong>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- MAP -->
+        <div class="tracking-card">
+
+            <div class="tracking-card-header">
+
+                <h6 class="mb-0">
+                    Live Tracking
+                </h6>
+
+                <span id="trackingStatus">
+                    Select executive
+                </span>
+
+            </div>
+
+
+            <div
+                id="trackingMap"
+                class="tracking-map"
+            ></div>
+
+
+            <!-- PLAYBACK -->
+            <div class="playback-bar">
+
+                <button
+                    id="playBtn"
+                    class="btn btn-primary btn-sm"
+                >
+                    <i class="bi bi-play-fill"></i>
+                </button>
+
+                <button
+                    id="stopBtn"
+                    class="btn btn-light btn-sm"
+                >
+                    <i class="bi bi-stop-fill"></i>
+                </button>
+
+
+                <input
+                    id="playbackSlider"
+                    type="range"
+                    min="0"
+                    max="0"
+                    value="0"
+                    class="form-range"
+                >
+
+
+                <span id="playbackTime">
+                    --
+                </span>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>

@@ -1,0 +1,91 @@
+<section class="settings-page">
+    <div class="container-fluid">
+
+        <div class="settings-card">
+
+            <div class="settings-card-header">
+                <div>
+                    <h5>Roles & Permissions</h5>
+                    <p>Control what your team can do.</p>
+                </div>
+            </div>
+
+            <div class="settings-card-body">
+
+                <div class="permission-list">
+
+                    <label class="permission-item">
+                        <div>
+                            <strong>Create Tasks</strong>
+                            <small>Allow creating tasks.</small>
+                        </div>
+                        <input
+                            id="canCreateTask"
+                            type="checkbox"
+                        >
+                    </label>
+
+                    <label class="permission-item">
+                        <div>
+                            <strong>Edit Tasks</strong>
+                            <small>Allow editing tasks.</small>
+                        </div>
+                        <input
+                            id="canEditTask"
+                            type="checkbox"
+                        >
+                    </label>
+
+                    <label class="permission-item">
+                        <div>
+                            <strong>Delete Tasks</strong>
+                            <small>Allow deleting tasks.</small>
+                        </div>
+                        <input
+                            id="canDeleteTask"
+                            type="checkbox"
+                        >
+                    </label>
+
+                    <label class="permission-item">
+                        <div>
+                            <strong>Approve Leave</strong>
+                            <small>Allow approving leave requests.</small>
+                        </div>
+                        <input
+                            id="canApproveLeave"
+                            type="checkbox"
+                        >
+                    </label>
+
+                    <label class="permission-item">
+                        <div>
+                            <strong>Mark Attendance</strong>
+                            <small>Allow attendance management.</small>
+                        </div>
+                        <input
+                            id="canMarkAttendance"
+                            type="checkbox"
+                        >
+                    </label>
+
+                </div>
+
+                <div class="mt-4">
+
+                    <button
+                        id="savePermissionsBtn"
+                        class="btn btn-primary"
+                        onclick="savePermissions()"
+                    >
+                        Save Changes
+                    </button>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+</section>

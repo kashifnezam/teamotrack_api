@@ -115,12 +115,6 @@ async function getFreshToken() {
         await waitForAuthUser();
 
 
-    console.log(
-        "Firebase current user:",
-        user
-    );
-
-
     if (!user) {
 
         return null;

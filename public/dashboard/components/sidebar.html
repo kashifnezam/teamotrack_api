@@ -5,10 +5,14 @@
 
 <aside class="sidebar" id="sidebar">
 
+    <!-- ======================================================
+         BRAND
+    ======================================================= -->
+
     <div class="sidebar-brand">
 
         <div class="brand-logo">
-            <i class="bi bi-people-fill"></i>
+            <img src="/assets/images/logo.png" alt="TeamoTrack Logo">
         </div>
 
         <div class="brand-name">
@@ -18,136 +22,280 @@
 
     </div>
 
+
+    <!-- ======================================================
+         NAVIGATION
+    ======================================================= -->
+
     <nav class="sidebar-nav">
 
         <ul class="menu">
 
+            <!-- ==================================================
+                 DASHBOARD
+            ================================================== -->
+
             <li class="menu-item">
+
                 <a href="/dashboard" class="menu-link">
                     <i class="bi bi-grid-1x2-fill"></i>
-                    <span class="menu-text">Dashboard</span>
+
+                    <span class="menu-text">
+                        Dashboard
+                    </span>
                 </a>
+
             </li>
+
+
+            <!-- ==================================================
+                 TEAM
+            ================================================== -->
 
             <li class="menu-item has-submenu">
 
                 <div class="menu-link">
+
                     <i class="bi bi-people-fill"></i>
-                    <span class="menu-text">Team</span>
+
+                    <span class="menu-text">
+                        Team
+                    </span>
+
                     <i class="bi bi-chevron-right menu-arrow"></i>
+
                 </div>
+
 
                 <ul class="submenu">
 
                     <li>
-                        <a href="/teams">Teams</a>
+                        <a href="/teams">
+                            <i class="bi bi-people"></i>
+                            <span>Teams</span>
+                        </a>
                     </li>
 
                     <li>
-                        <a href="/executives">Executives</a>
+                        <a href="/executives">
+                            <i class="bi bi-person-badge"></i>
+                            <span>Executives</span>
+                        </a>
                     </li>
 
                     <li>
-                        <a href="/shifts">Shifts</a>
-                    </li>
-
-                    <li>
-                        <a href="/departments">Departments</a>
+                        <a href="/shifts">
+                            <i class="bi bi-clock-history"></i>
+                            <span>Shifts</span>
+                        </a>
                     </li>
 
                 </ul>
 
             </li>
 
+
+            <!-- ==================================================
+                MANAGEMENT
+            ================================================== -->
+
             <li class="menu-item has-submenu">
 
                 <div class="menu-link">
+
+                    <i class="bi bi-people-fill"></i>
+
+                    <span class="menu-text">
+                        Manager
+                    </span>
+
+                    <i class="bi bi-chevron-right menu-arrow"></i>
+
+                </div>
+
+
+                <ul class="submenu">
+
+                    <li>
+
+                        <a href="/managers">
+
+                            <i class="bi bi-person-badge"></i>
+
+                            <span>
+                                Managers
+                            </span>
+
+                        </a>
+
+                    </li>
+
+                </ul>
+
+            </li>
+
+
+            <!-- ==================================================
+                HR
+            ================================================== -->
+
+            <li class="menu-item has-submenu">
+
+                <div class="menu-link">
+
                     <i class="bi bi-person-workspace"></i>
-                    <span class="menu-text">HR</span>
+
+                    <span class="menu-text">
+                        HR
+                    </span>
+
                     <i class="bi bi-chevron-right menu-arrow"></i>
+
                 </div>
+
 
                 <ul class="submenu">
 
-                    <li><a href="/leave">Leave</a></li>
-                    <li><a href="/payroll">Payroll</a></li>
-                    <li><a href="/holidays">Holidays</a></li>
-                    <li><a href="/recruitment">Recruitment</a></li>
+                    <li>
+
+                        <a href="/hr">
+
+                            <i class="bi bi-people"></i>
+
+                            <span>
+                                HR Members
+                            </span>
+
+                        </a>
+
+                    </li>
 
                 </ul>
 
             </li>
 
-            <li class="menu-item has-submenu">
 
-                <div class="menu-link">
-                    <i class="bi bi-briefcase-fill"></i>
-                    <span class="menu-text">Manager</span>
-                    <i class="bi bi-chevron-right menu-arrow"></i>
-                </div>
-
-                <ul class="submenu">
-
-                    <!-- Manager -->
-                    <li><a href="/projects">Projects</a></li>
-                    <li><a href="/performance">Performance</a></li>
-                    <li><a href="/reports">Reports</a></li>
-
-                </ul>
-
-            </li>
+            <!-- ==================================================
+                 TASKS
+            ================================================== -->
 
             <li class="menu-item has-submenu">
 
                 <div class="menu-link">
+
                     <i class="bi bi-list-check"></i>
-                    <span class="menu-text">Tasks</span>
+
+                    <span class="menu-text">
+                        Tasks
+                    </span>
+
                     <i class="bi bi-chevron-right menu-arrow"></i>
+
                 </div>
+
 
                 <ul class="submenu">
 
-                    <!-- Tasks -->
-                    <li><a href="/tasks">All Tasks</a></li>
-                    <!-- <li><a href="/tasks/assigned">Assigned</a></li>
-                    <li><a href="/tasks/completed">Completed</a></li> -->
+                    <li>
+                        <a href="/tasks">
+                            <i class="bi bi-check2-square"></i>
+                            <span>All Tasks</span>
+                        </a>
+                    </li>
 
                 </ul>
 
             </li>
 
+
+            <!-- ==================================================
+                 WORKFORCE
+            ================================================== -->
+
             <li class="menu-item has-submenu">
 
                 <div class="menu-link">
+
                     <i class="bi bi-calendar-check-fill"></i>
-                    <span class="menu-text">Attendance</span>
+
+                    <span class="menu-text">
+                        Workforce
+                    </span>
+
                     <i class="bi bi-chevron-right menu-arrow"></i>
+
                 </div>
+
 
                 <ul class="submenu">
 
-                    <li><a href="/attendance/daily">Daily</a></li>
-                    <li><a href="/attendance/monthly">Monthly</a></li>
-                    <li><a href="/attendance/live">Live Tracking</a></li>
+                    <li>
+                        <a href="/attendance">
+                            <i class="bi bi-calendar-check"></i>
+                            <span>Attendance</span>
+                        </a>
+                    </li>
+
+                    <li>
+                        <a href="/attendance/live">
+                            <i class="bi bi-geo-alt"></i>
+                            <span>Live Tracking</span>
+                        </a>
+                    </li>
 
                 </ul>
 
             </li>
 
+
+            <!-- ==================================================
+                 SETTINGS
+            ================================================== -->
+
             <li class="menu-item has-submenu">
 
                 <div class="menu-link">
+
                     <i class="bi bi-gear-fill"></i>
-                    <span class="menu-text">Settings</span>
+
+                    <span class="menu-text">
+                        Settings
+                    </span>
+
                     <i class="bi bi-chevron-right menu-arrow"></i>
+
                 </div>
+
 
                 <ul class="submenu">
 
-                    <li><a href="/settings/company">Company</a></li>
-                    <li><a href="/settings/users">Users</a></li>
-                    <li><a href="/settings/roles">Roles</a></li>
-                    <li><a href="/settings/preferences">Preferences</a></li>
+                    <li>
+                        <a href="/settings/company">
+                            <i class="bi bi-building"></i>
+                            <span>Company</span>
+                        </a>
+                    </li>
+
+                    <li>
+                        <a href="/settings/users">
+                            <i class="bi bi-person-gear"></i>
+                            <span>Users</span>
+                        </a>
+                    </li>
+
+                    <li>
+                        <a href="/settings/roles">
+                            <i class="bi bi-shield-lock"></i>
+                            <span>Roles & Permissions</span>
+                        </a>
+                    </li>
+
+                    <li>
+                        <a href="/settings/preferences">
+                            <i class="bi bi-sliders"></i>
+                            <span>Preferences</span>
+                        </a>
+                    </li>
 
                 </ul>
 
@@ -156,6 +304,11 @@
         </ul>
 
     </nav>
+
+
+    <!-- ======================================================
+         USER
+    ======================================================= -->
 
     <div class="sidebar-footer">
 
@@ -166,11 +319,17 @@
             </div>
 
             <div class="user-info">
+
                 <h6>Kashif</h6>
-                <small>Administrator</small>
+
+                <small>
+                    Administrator
+                </small>
+
             </div>
 
         </div>
 
     </div>
+
 </aside>

@@ -1,0 +1,115 @@
+/* ==========================================================
+   TeamoTrack Attendance
+========================================================== */
+
+.attendance-page {
+    padding-bottom: 30px;
+}
+
+
+.attendance-stat,
+.attendance-card,
+.filter-card {
+    background: var(--card-bg, #fff);
+    border: 1px solid var(--border-color, #e9ecef);
+    border-radius: 12px;
+}
+
+
+.filter-card {
+    padding: 18px;
+    margin-bottom: 18px;
+}
+
+
+.attendance-stat {
+    padding: 16px;
+}
+
+
+.attendance-stat small {
+    display: block;
+    color: #6c757d;
+    margin-bottom: 5px;
+}
+
+
+.attendance-stat strong {
+    font-size: 22px;
+}
+
+
+.attendance-card {
+    overflow: hidden;
+}
+
+
+.attendance-card-header {
+    padding: 16px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #eee;
+}
+
+
+.attendance-card-header span {
+    color: #6c757d;
+    font-size: 13px;
+}
+
+
+.attendance-status {
+    display: inline-block;
+    padding: 4px 9px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+
+.status-present {
+    background: #e8f7ee;
+    color: #198754;
+}
+
+
+.status-late {
+    background: #fff3cd;
+    color: #997404;
+}
+
+
+.status-half_day {
+    background: #e2e3ff;
+    color: #4b4fc7;
+}
+
+
+.status-weekly_off {
+    background: #e9ecef;
+    color: #495057;
+}
+
+
+.status-absent {
+    background: #f8d7da;
+    color: #b02a37;
+}
+
+
+@media (max-width: 576px) {
+
+    .filter-card {
+        padding: 14px;
+    }
+
+    .attendance-stat {
+        padding: 13px;
+    }
+
+    .attendance-stat strong {
+        font-size: 19px;
+    }
+
+}

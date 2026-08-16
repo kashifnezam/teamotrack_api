@@ -3,18 +3,23 @@
    header.css
    ========================================================== */
 
-/* -----------------------------
-   Header
------------------------------- */
+
+/* ==========================================================
+   HEADER
+========================================================== */
 
 .dashboard-header {
     position: sticky;
     top: 0;
     z-index: var(--z-header);
+
     height: var(--header-height);
+
     background: var(--header-bg);
+
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
+
     border-bottom: 1px solid var(--border-color);
 
     display: flex;
@@ -24,9 +29,10 @@
     padding: 0 28px;
 }
 
-/* -----------------------------
-   Left Section
------------------------------- */
+
+/* ==========================================================
+   LEFT SECTION
+========================================================== */
 
 .header-left {
     display: flex;
@@ -34,18 +40,29 @@
     gap: 18px;
 }
 
+
+/* ==========================================================
+   SIDEBAR TOGGLE
+========================================================== */
+
 .sidebar-toggle {
     width: 46px;
     height: 46px;
+
     border: none;
     border-radius: var(--radius-md);
+
     background: var(--surface);
     color: var(--text-primary);
+
     display: flex;
     align-items: center;
     justify-content: center;
+
     box-shadow: var(--shadow-sm);
+
     transition: var(--transition);
+
     cursor: pointer;
 }
 
@@ -59,22 +76,32 @@
     font-size: 22px;
 }
 
+
+/* ==========================================================
+   PAGE TITLE
+========================================================== */
+
 .page-title h3 {
     margin: 0;
+
     font-size: 22px;
     font-weight: var(--fw-bold);
+
     color: var(--text-primary);
 }
 
 .page-title p {
     margin: 3px 0 0;
+
     font-size: 13px;
+
     color: var(--text-secondary);
 }
 
-/* -----------------------------
-   Right Section
------------------------------- */
+
+/* ==========================================================
+   RIGHT SECTION
+========================================================== */
 
 .header-right {
     display: flex;
@@ -82,9 +109,10 @@
     gap: 14px;
 }
 
-/* -----------------------------
-   Search
------------------------------- */
+
+/* ==========================================================
+   SEARCH
+========================================================== */
 
 .header-search {
     position: relative;
@@ -108,22 +136,30 @@
 
 .header-search input:focus {
     border-color: var(--primary);
-    box-shadow: 0 0 0 4px rgba(37, 99, 235, .12);
+
+    box-shadow:
+        0 0 0 4px rgba(37, 99, 235, .12);
 }
 
 .header-search i {
     position: absolute;
+
     left: 18px;
     top: 50%;
+
     transform: translateY(-50%);
+
     color: var(--text-secondary);
 }
 
-/* -----------------------------
-   Header Buttons
------------------------------- */
+
+/* ==========================================================
+   HEADER BUTTONS
+========================================================== */
 
 .header-btn {
+    position: relative;
+
     width: 46px;
     height: 46px;
 
@@ -141,14 +177,14 @@
     box-shadow: var(--shadow-sm);
 
     transition: var(--transition);
-
-    position: relative;
 }
 
 .header-btn:hover {
     background: var(--primary);
     color: #ffffff;
+
     transform: translateY(-2px);
+
     box-shadow: var(--shadow-hover);
 }
 
@@ -156,12 +192,14 @@
     font-size: 20px;
 }
 
-/* -----------------------------
-   Notification Badge
------------------------------- */
+
+/* ==========================================================
+   NOTIFICATION BADGE
+========================================================== */
 
 .notification-badge {
     position: absolute;
+
     top: 7px;
     right: 8px;
 
@@ -169,70 +207,325 @@
     height: 10px;
 
     border-radius: 50%;
+
     background: var(--danger);
+
     border: 2px solid #ffffff;
 }
 
-/* -----------------------------
-   User Profile
------------------------------- */
 
-.header-profile {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-
-    padding: 6px 10px 6px 6px;
-
-    border-radius: 50px;
-
-    background: var(--surface);
-
-    cursor: pointer;
-
-    transition: var(--transition);
-
-    box-shadow: var(--shadow-sm);
-}
-
-.header-profile:hover {
-    box-shadow: var(--shadow-hover);
-}
-
-.profile-avatar {
-    width: 44px;
-    height: 44px;
-
-    border-radius: 50%;
-
-    background: var(--primary-gradient);
-
-    color: #ffffff;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    font-weight: var(--fw-bold);
-}
-
-.profile-info h6 {
-    margin: 0;
-    font-size: 14px;
-    font-weight: var(--fw-semibold);
-}
-
-.profile-info small {
-    color: var(--text-secondary);
-    font-size: 12px;
-}
-
-/* -----------------------------
-   Header Divider
------------------------------- */
+/* ==========================================================
+   HEADER DIVIDER
+========================================================== */
 
 .header-divider {
     width: 1px;
     height: 36px;
+
     background: var(--border-color);
+}
+
+
+/* ==========================================================
+   PROFILE WRAPPER
+========================================================== */
+
+.header-profile-wrapper {
+    position: relative;
+}
+
+
+/* ==========================================================
+   PROFILE BUTTON
+========================================================== */
+
+.header-profile {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    border: 0;
+    background: transparent;
+
+    padding: 5px 6px;
+
+    border-radius: 12px;
+
+    cursor: pointer;
+
+    transition:
+        background .2s ease;
+}
+
+.header-profile:hover {
+    background: var(--bg-hover);
+}
+
+
+/* ==========================================================
+   AVATAR
+========================================================== */
+
+.profile-avatar,
+.profile-menu-avatar {
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    flex-shrink: 0;
+
+    font-weight: 600;
+
+    color: #fff;
+
+    background: #4f46e5;
+
+    border-radius: 50%;
+
+    opacity: 1;
+
+    box-shadow:
+        0 2px 6px rgba(0, 0, 0, .12);
+}
+
+
+.profile-avatar {
+
+    width: 38px;
+    height: 38px;
+
+    font-size: 13px;
+}
+
+
+.profile-menu-avatar {
+
+    width: 44px;
+    height: 44px;
+
+    font-size: 14px;
+}
+.profile-menu-avatar {
+    width: 44px;
+    height: 44px;
+
+    font-size: 14px;
+}
+
+
+/* ==========================================================
+   PROFILE INFO
+========================================================== */
+
+.profile-info {
+    text-align: left;
+    min-width: 80px;
+}
+
+.profile-info h6 {
+    margin: 0;
+
+    font-size: 13px;
+    font-weight: 600;
+
+    color: var(--text-primary);
+}
+
+.profile-info small {
+    display: block;
+
+    margin-top: 2px;
+
+    font-size: 11px;
+
+    color: var(--text-secondary);
+}
+
+
+/* ==========================================================
+   PROFILE ARROW
+========================================================== */
+
+.profile-arrow {
+    font-size: 11px;
+
+    color: var(--text-secondary);
+
+    transition:
+        transform .2s ease;
+}
+
+.header-profile-wrapper.open .profile-arrow {
+    transform: rotate(180deg);
+}
+
+
+/* ==========================================================
+   PROFILE MENU
+========================================================== */
+
+.profile-menu {
+
+    position: absolute;
+
+    top: calc(100% + 10px);
+    right: 0;
+
+    width: 260px;
+
+    background: #ffffff;
+
+    border: 1px solid #e5e7eb;
+
+    border-radius: 14px;
+
+    box-shadow:
+        0 12px 35px rgba(0, 0, 0, .15);
+
+    padding: 8px;
+
+    z-index: 9999;
+
+    opacity: 0;
+    visibility: hidden;
+
+    transform: translateY(-6px);
+
+    transition:
+        opacity .18s ease,
+        transform .18s ease,
+        visibility .18s ease;
+}
+
+.dark-theme .profile-menu {
+
+    background: #1f2937;
+
+    border-color: #374151;
+
+    box-shadow:
+        0 12px 35px rgba(0, 0, 0, .35);
+}
+
+.header-profile-wrapper.open .profile-menu {
+    opacity: 1;
+    visibility: visible;
+
+    transform: translateY(0);
+}
+
+
+/* ==========================================================
+   PROFILE MENU HEADER
+========================================================== */
+
+.profile-menu-header {
+    display: flex;
+    align-items: center;
+
+    gap: 11px;
+
+    padding: 10px;
+}
+
+.profile-menu-header h6 {
+    margin: 0;
+
+    font-size: 14px;
+    font-weight: 600;
+
+    color: var(--text-primary);
+}
+
+.profile-menu-header small {
+    display: block;
+
+    margin-top: 3px;
+
+    font-size: 11px;
+
+    color: var(--text-secondary);
+}
+
+
+/* ==========================================================
+   PROFILE MENU DIVIDER
+========================================================== */
+
+.profile-menu-divider {
+    height: 1px;
+
+    margin: 5px 2px;
+
+    background: var(--border-color);
+}
+
+
+/* ==========================================================
+   PROFILE MENU ITEM
+========================================================== */
+
+.profile-menu-item {
+    width: 100%;
+
+    display: flex;
+    align-items: center;
+
+    gap: 12px;
+
+    padding: 10px;
+
+    border: 0;
+    border-radius: 9px;
+
+    background: transparent;
+
+    text-decoration: none;
+
+    font-size: 13px;
+
+    color: var(--text-primary);
+
+    cursor: pointer;
+
+    transition:
+        background .18s ease,
+        color .18s ease;
+}
+
+.profile-menu-item i {
+    width: 18px;
+
+    font-size: 16px;
+
+    color: var(--text-secondary);
+
+    text-align: center;
+}
+
+.profile-menu-item:hover {
+    background: var(--bg-hover);
+}
+
+.profile-menu-item:hover i {
+    color: var(--primary-color);
+}
+
+
+/* ==========================================================
+   LOGOUT
+========================================================== */
+
+.profile-menu-item.logout {
+    color: var(--danger-color, #dc3545);
+}
+
+.profile-menu-item.logout i {
+    color: var(--danger-color, #dc3545);
+}
+
+.profile-menu-item.logout:hover {
+    background: rgba(220, 53, 69, .08);
 }
