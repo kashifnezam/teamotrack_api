@@ -1,6 +1,7 @@
 import {
     BadRequestException,
     Injectable,
+    Logger,
     NotFoundException,
 } from '@nestjs/common';
 
@@ -10,6 +11,9 @@ import { TeamDto } from './dto/team.dto';
 @Injectable()
 export class TeamsService {
 
+    private readonly logger =
+        new Logger(TeamsService.name);
+
     constructor(
         private readonly firebase: FirebaseService,
     ) {}
@@ -18,90 +22,195 @@ export class TeamsService {
         return this.firebase.firestore;
     }
 
+
+    // ==================================================
+    // GET ALL
+    // ==================================================
+
     async getAll(rootId: string) {
 
-    const [teamSnap, managerSnap, shiftSnap, execSnap] =
-        await Promise.all([
+        this.logger.log(
+            `Fetching teams | rootId=${rootId}`,
+        );
 
-            this.db.collection('teams')
-                .where('rootId', '==', rootId)
+        const [
+            teamSnap,
+            managerSnap,
+            shiftSnap,
+            execSnap,
+        ] = await Promise.all([
+
+            this.db
+                .collection('teams')
+                .where(
+                    'rootId',
+                    '==',
+                    rootId,
+                )
                 .get(),
 
-            this.db.collection('user')
-                .where('role', '==', 'child_manager')
-                .where('reportsTo', '==', rootId)
+            this.db
+                .collection('user')
+                .where(
+                    'role',
+                    '==',
+                    'child_manager',
+                )
+                .where(
+                    'reportsTo',
+                    '==',
+                    rootId,
+                )
                 .get(),
 
-            this.db.collection('shifts')
-                .where('rootId', '==', rootId)
+            this.db
+                .collection('shifts')
+                .where(
+                    'rootId',
+                    '==',
+                    rootId,
+                )
                 .get(),
 
-            this.db.collection('user')
-                .where('role', '==', 'field_executive')
-                .where('rootId', '==', rootId)
+            this.db
+                .collection('user')
+                .where(
+                    'role',
+                    '==',
+                    'field_executive',
+                )
+                .where(
+                    'rootId',
+                    '==',
+                    rootId,
+                )
                 .get(),
+
         ]);
 
-    // Count executives by team
-    const counts: Record<string, number> = {};
+        const counts: Record<string, number> = {};
 
-    execSnap.docs.forEach(doc => {
+        execSnap.docs.forEach(doc => {
 
-        const teamId = doc.data().teamId;
+            const teamId =
+                doc.data().teamId;
 
-        if (teamId) {
-            counts[teamId] = (counts[teamId] || 0) + 1;
-        }
+            if (teamId) {
+                counts[teamId] =
+                    (counts[teamId] || 0) + 1;
+            }
 
-    });
+        });
 
-    return {
+        this.logger.log(
+            `Teams fetched | rootId=${rootId} | teams=${teamSnap.size} | managers=${managerSnap.size} | shifts=${shiftSnap.size} | executives=${execSnap.size}`,
+        );
 
-        teams: teamSnap.docs.map(doc => {
+        return {
 
-            const data = doc.data();
+            teams:
+                teamSnap.docs.map(doc => {
 
-            return {
-                id: doc.id,
-                name: data.name ?? '',
-                leadId: data.leadId ?? '',
-                shiftId: data.shiftId ?? '',
+                    const data =
+                        doc.data();
 
-                totalExecutives:
-                    counts[doc.id] || 0,
-            };
+                    return {
 
-        }),
+                        id: doc.id,
 
-        managers: managerSnap.docs.map(doc => ({
-            id: doc.id,
-            fullName: doc.data().fullName ?? '',
-        })),
+                        name:
+                            data.name ?? '',
 
-        shifts: shiftSnap.docs.map(doc => ({
-            id: doc.id,
-            name: doc.data().name ?? '',
-        })),
+                        leadId:
+                            data.leadId ?? '',
 
-    };
-}
+                        shiftId:
+                            data.shiftId ?? '',
 
-    async create(rootId: string, dto: TeamDto) {
+                        totalExecutives:
+                            counts[doc.id] || 0,
+
+                    };
+
+                }),
+
+            managers:
+                managerSnap.docs.map(doc => ({
+
+                    id: doc.id,
+
+                    fullName:
+                        doc.data().fullName ?? '',
+
+                })),
+
+            shifts:
+                shiftSnap.docs.map(doc => ({
+
+                    id: doc.id,
+
+                    name:
+                        doc.data().name ?? '',
+
+                })),
+
+        };
+    }
+
+
+    // ==================================================
+    // CREATE
+    // ==================================================
+
+    async create(
+        rootId: string,
+        dto: TeamDto,
+    ) {
+
+        this.logger.log(
+            `Creating team | rootId=${rootId} | name=${dto.name}`,
+        );
 
         this.validate(dto);
 
-        await this.verifyShift(rootId, dto.shiftId);
-        await this.verifyManager(rootId, dto.leadId);
-
-        const ref = await this.db.collection('teams').add({
-            name: dto.name.trim(),
+        await this.verifyShift(
             rootId,
-            leadId: dto.leadId || null,
-            shiftId: dto.shiftId,
-            totalExecutives: 0,
-            activeToday: 0,
-            createdAt: new Date(),
-        });
+            dto.shiftId,
+        );
+
+        await this.verifyManager(
+            rootId,
+            dto.leadId,
+        );
+
+        const ref =
+            await this.db
+                .collection('teams')
+                .add({
+
+                    name:
+                        dto.name.trim(),
+
+                    rootId,
+
+                    leadId:
+                        dto.leadId || null,
+
+                    shiftId:
+                        dto.shiftId,
+
+                    totalExecutives: 0,
+
+                    activeToday: 0,
+
+                    createdAt:
+                        new Date(),
+
+                });
+
+        this.logger.log(
+            `Team created | id=${ref.id} | rootId=${rootId}`,
+        );
 
         return {
             success: true,
@@ -109,33 +218,74 @@ export class TeamsService {
         };
     }
 
+
+    // ==================================================
+    // UPDATE
+    // ==================================================
+
     async update(
         rootId: string,
         id: string,
         dto: TeamDto,
     ) {
 
+        this.logger.log(
+            `Updating team | id=${id} | rootId=${rootId}`,
+        );
+
         this.validate(dto);
 
-        const ref = this.db.collection('teams').doc(id);
-        const doc = await ref.get();
+        const ref =
+            this.db
+                .collection('teams')
+                .doc(id);
+
+        const doc =
+            await ref.get();
 
         if (
             !doc.exists ||
             doc.data()?.rootId !== rootId
         ) {
-            throw new NotFoundException('Team not found');
+
+            this.logger.warn(
+                `Team not found | id=${id} | rootId=${rootId}`,
+            );
+
+            throw new NotFoundException(
+                'Team not found',
+            );
         }
 
-        await this.verifyShift(rootId, dto.shiftId);
-        await this.verifyManager(rootId, dto.leadId);
+        await this.verifyShift(
+            rootId,
+            dto.shiftId,
+        );
+
+        await this.verifyManager(
+            rootId,
+            dto.leadId,
+        );
 
         await ref.update({
-            name: dto.name.trim(),
-            leadId: dto.leadId || null,
-            shiftId: dto.shiftId,
-            updatedAt: new Date(),
+
+            name:
+                dto.name.trim(),
+
+            leadId:
+                dto.leadId || null,
+
+            shiftId:
+                dto.shiftId,
+
+            updatedAt:
+                new Date(),
+
         });
+
+        this.logger.log(
+            `Team updated | id=${id} | rootId=${rootId}`,
+        );
 
         return {
             success: true,
@@ -143,29 +293,64 @@ export class TeamsService {
         };
     }
 
+
+    // ==================================================
+    // DELETE
+    // ==================================================
+
     async remove(
         rootId: string,
         id: string,
     ) {
 
-        const ref = this.db.collection('teams').doc(id);
-        const team = await ref.get();
+        this.logger.log(
+            `Deleting team | id=${id} | rootId=${rootId}`,
+        );
+
+        const ref =
+            this.db
+                .collection('teams')
+                .doc(id);
+
+        const team =
+            await ref.get();
 
         if (
             !team.exists ||
             team.data()?.rootId !== rootId
         ) {
-            throw new NotFoundException('Team not found');
+
+            this.logger.warn(
+                `Team not found | id=${id} | rootId=${rootId}`,
+            );
+
+            throw new NotFoundException(
+                'Team not found',
+            );
         }
 
-        const executives = await this.db
-            .collection('user')
-            .where('rootId', '==', rootId)
-            .where('teamId', '==', id)
-            .limit(1)
-            .get();
+        const executives =
+            await this.db
+                .collection('user')
+                .where(
+                    'rootId',
+                    '==',
+                    rootId,
+                )
+                .where(
+                    'teamId',
+                    '==',
+                    id,
+                )
+                .limit(1)
+                .get();
 
         if (!executives.empty) {
+
+            this.logger.warn(
+                `Team deletion blocked; executives attached | teamId=${id}`,
+            );
+
             throw new BadRequestException(
                 'Executives are attached to this team',
             );
@@ -173,13 +358,24 @@ export class TeamsService {
 
         await ref.delete();
 
+        this.logger.log(
+            `Team deleted | id=${id} | rootId=${rootId}`,
+        );
+
         return {
             success: true,
             id,
         };
     }
 
-    private validate(dto: TeamDto) {
+
+    // ==================================================
+    // VALIDATION
+    // ==================================================
+
+    private validate(
+        dto: TeamDto,
+    ) {
 
         if (!dto.name?.trim()) {
             throw new BadRequestException(
@@ -194,6 +390,11 @@ export class TeamsService {
         }
     }
 
+
+    // ==================================================
+    // VERIFY SHIFT
+    // ==================================================
+
     private async verifyShift(
         rootId: string,
         shiftId?: string,
@@ -201,20 +402,31 @@ export class TeamsService {
 
         if (!shiftId) return;
 
-        const doc = await this.db
-            .collection('shifts')
-            .doc(shiftId)
-            .get();
+        const doc =
+            await this.db
+                .collection('shifts')
+                .doc(shiftId)
+                .get();
 
         if (
             !doc.exists ||
             doc.data()?.rootId !== rootId
         ) {
+
+            this.logger.warn(
+                `Invalid shift | shiftId=${shiftId} | rootId=${rootId}`,
+            );
+
             throw new BadRequestException(
                 'Invalid shift',
             );
         }
     }
+
+
+    // ==================================================
+    // VERIFY MANAGER
+    // ==================================================
 
     private async verifyManager(
         rootId: string,
@@ -223,30 +435,28 @@ export class TeamsService {
 
         if (!managerId) return;
 
-        const doc = await this.db
-            .collection('user')
-            .doc(managerId)
-            .get();
+        const doc =
+            await this.db
+                .collection('user')
+                .doc(managerId)
+                .get();
+
+        const data =
+            doc.data();
 
         if (
             !doc.exists ||
-            doc.data()?.role !== 'child_manager' ||
-            doc.data()?.reportsTo !== rootId
+            data?.role !== 'child_manager' ||
+            data?.reportsTo !== rootId
         ) {
+
+            this.logger.warn(
+                `Invalid manager | managerId=${managerId} | rootId=${rootId}`,
+            );
+
             throw new BadRequestException(
                 'Invalid manager',
             );
         }
-    }
-
-    private pickTeam(data: any) {
-
-        return {
-            name: data.name ?? '',
-            leadId: data.leadId ?? '',
-            shiftId: data.shiftId ?? '',
-            totalExecutives: data.totalExecutives ?? 0,
-            activeToday: data.activeToday ?? 0,
-        };
     }
 }

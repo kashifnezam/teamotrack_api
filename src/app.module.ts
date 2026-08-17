@@ -16,7 +16,6 @@ import { TasksModule } from './tasks/tasks.module';
 import { AttendanceModule } from './attendance/attendance.module';
 import { LiveTrackingModule } from './live-tracking/live-tracking.module';
 import { SettingsModule } from './settings/settings.module';
-import { HierarchyModule } from './hierarchy/hierarchy.module';
 import { StaffModule } from './staff/staff.module';
 
 @Module({
@@ -74,8 +73,6 @@ import { StaffModule } from './staff/staff.module';
         LiveTrackingModule,
 
         SettingsModule,
-
-        HierarchyModule,
 
         StaffModule,
 

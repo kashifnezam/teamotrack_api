@@ -23,7 +23,7 @@ export class HrController {
 
     constructor(
         private readonly service: StaffService,
-    ) {}
+    ) { }
 
 
     @Get()
@@ -62,6 +62,15 @@ export class HrController {
         );
     }
 
+    @Get('parents')
+    @UseGuards(FirebaseAuthGuard)
+    parents(@CurrentUser() user: any) {
+
+        return this.service.getParents(
+            user.uid,
+            'hr',
+        );
+    }
 
     @Patch(':id')
     @UseGuards(FirebaseAuthGuard)

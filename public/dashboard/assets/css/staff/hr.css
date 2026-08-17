@@ -1,177 +1,1424 @@
 /* ==========================================================
    TeamoTrack HR
+   hr.css
+
+   HR-only styling
+   Responsive • Compact • No Manager CSS dependency
 ========================================================== */
 
-.staff-page {
-    padding-bottom: 30px;
+
+/* ==========================================================
+   PAGE
+========================================================== */
+
+.hr-page .container-fluid {
+    width: 100%;
 }
 
-.staff-page .page-header {
+
+/* ==========================================================
+   PAGE HEADER
+========================================================== */
+
+.hr-page .page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    gap: 20px;
+
     margin-bottom: 18px;
 }
 
-.staff-page .page-header p {
-    color: var(--text-muted);
+
+.hr-page .page-header > div:first-child {
+    min-width: 0;
+}
+
+
+.hr-page .page-header .text-primary {
+    font-size: 10px !important;
+    font-weight: 700 !important;
+
+    letter-spacing: .12em;
+    text-transform: uppercase;
+}
+
+
+.hr-page .page-header h4 {
+    margin: 0;
+
+    color: var(--text-primary, #182230);
+
+    font-size: 22px;
+    font-weight: 700;
+}
+
+
+.hr-page .page-header p {
+    color: var(--text-muted, #7b8491) !important;
+
     font-size: 13px;
+
+    line-height: 1.4;
 }
 
-.filter-card,
-.staff-card {
-    background: var(--card-bg, #fff);
-    border: 1px solid var(--border-color, #e8e8e8);
-    border-radius: 12px;
+
+/* ==========================================================
+   ADD HR BUTTON
+========================================================== */
+
+.hr-page .page-header .btn-primary {
+    min-height: 40px;
+
+    padding: 8px 16px;
+
+    border: 0;
+    border-radius: 9px;
+
+    font-size: 13px;
+    font-weight: 600;
+
+    white-space: nowrap;
+}
+
+
+/* ==========================================================
+   FILTER / SEARCH
+========================================================== */
+
+.hr-filter-card {
     margin-bottom: 18px;
+
+    padding: 14px 16px;
+
+    background: var(--card-bg, #fff);
+
+    border: 1px solid
+        var(--border-color, #e7eaf0);
+
+    border-radius: 12px;
 }
 
-.filter-card {
-    padding: 16px;
-}
 
-.search-box {
+.hr-search-box {
     position: relative;
 }
 
-.search-box i {
+
+.hr-search-box i {
     position: absolute;
+
     left: 13px;
     top: 50%;
+
+    z-index: 2;
+
     transform: translateY(-50%);
-    color: var(--text-muted);
+
+    color: var(--text-muted, #8a929d);
+
+    font-size: 14px;
+
+    pointer-events: none;
 }
 
-.search-box input {
+
+.hr-search-box .form-control {
+    min-height: 40px;
+
     padding-left: 38px;
+
+    background: var(--input-bg, #fff);
+
+    border: 1px solid
+        var(--border-color, #dfe3e8);
+
+    border-radius: 9px;
+
+    color: var(--text-primary, #182230);
+
+    font-size: 13px;
+
+    box-shadow: none;
 }
 
-.staff-count {
-    font-size: 14px;
-    color: var(--text-muted);
+
+.hr-search-box .form-control::placeholder {
+    color: var(--text-muted, #9aa1aa);
 }
 
-.staff-count strong {
-    color: var(--text-color);
+
+.hr-search-box .form-control:focus {
+    border-color: var(--primary, var(--bs-primary));
+
+    box-shadow:
+        0 0 0 3px
+        rgba(var(--bs-primary-rgb), .08);
 }
 
-.staff-card {
-    overflow: hidden;
-}
 
-.staff-card-header {
-    padding: 16px 18px;
-    border-bottom: 1px solid var(--border-color, #e8e8e8);
-}
+/* ==========================================================
+   HR COUNT
+========================================================== */
 
-.staff-card th {
-    white-space: nowrap;
-    font-size: 12px;
-    color: var(--text-muted);
-    font-weight: 600;
-}
-
-.staff-card td {
-    font-size: 14px;
-}
-
-.staff-name {
-    font-weight: 600;
-}
-
-.staff-email {
-    color: var(--text-muted);
-}
-
-.staff-status {
+.hr-count {
     display: inline-flex;
+
     align-items: center;
+
     gap: 5px;
+
+    color: var(--text-muted, #7b8491);
+
+    font-size: 12px;
+}
+
+
+.hr-count strong {
+    color: var(--text-primary, #182230);
+
+    font-size: 16px;
+    font-weight: 700;
+}
+
+
+/* ==========================================================
+   HR CARD
+========================================================== */
+
+.hr-card {
+    overflow: hidden;
+
+    background: var(--card-bg, #fff);
+
+    border: 1px solid
+        var(--border-color, #e7eaf0);
+
+    border-radius: 13px;
+
+    box-shadow:
+        0 2px 10px rgba(0, 0, 0, .03);
+}
+
+
+/* ==========================================================
+   HR CARD HEADER
+========================================================== */
+
+.hr-card-header {
+    display: flex;
+
+    align-items: center;
+    justify-content: space-between;
+
+    gap: 15px;
+
+    min-height: 64px;
+
+    padding: 13px 18px;
+
+    border-bottom: 1px solid
+        var(--border-color, #edf0f4);
+}
+
+
+.hr-card-header h6 {
+    color: var(--text-primary, #182230);
+
+    font-size: 14px;
+    font-weight: 700;
+}
+
+
+.hr-card-header small {
+    color: var(--text-muted, #8a929d) !important;
+
+    font-size: 11px;
+}
+
+
+.hr-card-header .badge {
+    padding: 5px 9px;
+
+    border-radius: 6px;
+
+    font-size: 9px;
+    font-weight: 700;
+
+    letter-spacing: .05em;
+}
+
+
+/* ==========================================================
+   HR TABLE
+========================================================== */
+
+.hr-card .table {
+    width: 100%;
+
+    min-width: 650px;
+
+    margin-bottom: 0;
+}
+
+
+.hr-card .table > :not(caption) > * > * {
+    padding: 13px 16px;
+
+    border-color:
+        var(--border-color, #edf0f4);
+}
+
+
+.hr-card .table thead th {
+    background:
+        var(--table-header-bg, #fafbfc);
+
+    color:
+        var(--text-muted, #7b8491);
+
+    font-size: 10px;
+    font-weight: 700;
+
+    text-transform: uppercase;
+
+    letter-spacing: .05em;
+
+    white-space: nowrap;
+}
+
+
+.hr-card .table tbody td {
+    color: var(--text-primary, #374151);
+
+    font-size: 13px;
+
+    vertical-align: middle;
+}
+
+
+.hr-card .table tbody tr {
+    transition:
+        background .15s ease;
+}
+
+
+.hr-card .table tbody tr:hover {
+    background:
+        var(--table-hover-bg, #fafbfc);
+}
+
+
+/* ==========================================================
+   HR USER
+========================================================== */
+
+.hr-user {
+    display: flex;
+
+    align-items: center;
+
+    gap: 10px;
+
+    min-width: 180px;
+}
+
+
+.hr-avatar {
+    width: 38px;
+    height: 38px;
+
+    flex: 0 0 38px;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 50%;
+
+    background:
+        var(--avatar-bg, var(--bs-primary));
+
+    color: #fff;
+
+    font-size: 11px;
+    font-weight: 700;
+}
+
+
+.hr-name {
+    color:
+        var(--text-primary, #182230);
+
+    font-size: 13px;
+    font-weight: 600;
+
+    line-height: 1.3;
+}
+
+
+.hr-email {
+    margin-top: 2px;
+
+    color:
+        var(--text-muted, #8a929d);
+
+    font-size: 11px;
+
+    line-height: 1.3;
+}
+
+
+/* ==========================================================
+   PARENT
+========================================================== */
+
+.hr-card .hr-parent {
+    color:
+        var(--text-secondary, #4b5563);
+
+    font-size: 12px;
+    font-weight: 500;
+}
+
+
+/* ==========================================================
+   STATUS
+========================================================== */
+
+.hr-status {
+    display: inline-flex;
+
+    align-items: center;
+
+    gap: 5px;
+
     padding: 4px 9px;
+
     border-radius: 20px;
+
+    font-size: 10px;
+    font-weight: 700;
+
+    white-space: nowrap;
+}
+
+
+.hr-status i {
+    font-size: 10px;
+}
+
+
+.hr-status.active {
+    color: #198754;
+
+    background:
+        rgba(25, 135, 84, .10);
+}
+
+
+.hr-status.inactive {
+    color: #dc3545;
+
+    background:
+        rgba(220, 53, 69, .10);
+}
+
+
+/* ==========================================================
+   ACTIONS
+========================================================== */
+
+.hr-actions {
+    display: flex;
+
+    align-items: center;
+    justify-content: flex-end;
+
+    gap: 4px;
+}
+
+
+.hr-action {
+    width: 32px;
+    height: 32px;
+
+    display: inline-flex;
+
+    align-items: center;
+    justify-content: center;
+
+    padding: 0;
+
+    border: 0;
+
+    border-radius: 7px;
+
+    background: transparent;
+
+    color:
+        var(--text-muted, #8a929d);
+
+    transition:
+        background .15s ease,
+        color .15s ease,
+        transform .15s ease;
+}
+
+
+.hr-action:hover {
+    background:
+        var(--hover-bg, #f3f5f7);
+
+    color:
+        var(--primary-color, var(--bs-primary));
+}
+
+
+.hr-action:active {
+    transform: scale(.94);
+}
+
+
+.hr-action i {
+    font-size: 14px;
+}
+
+
+/* ==========================================================
+   EMPTY STATE
+========================================================== */
+
+.hr-card .empty-state {
+    padding: 35px 20px !important;
+
+    text-align: center;
+
+    color:
+        var(--text-muted, #8a929d);
+
+    font-size: 12px;
+}
+
+
+.hr-card .empty-state i {
+    color:
+        var(--text-muted, #9aa1aa);
+
+    font-size: 24px !important;
+}
+
+
+/* ==========================================================
+   HR ADD / EDIT MODAL
+========================================================== */
+
+#hrModal .modal-dialog {
+    width: 100%;
+
+    max-width: 760px;
+
+    margin: 16px auto;
+}
+
+
+#hrModal .modal-content {
+    overflow: hidden;
+
+    border: 0;
+
+    border-radius: 16px;
+
+    background: #fff;
+
+    box-shadow:
+        0 18px 55px rgba(0, 0, 0, .16);
+}
+
+
+/* ==========================================================
+   MODAL HEADER
+========================================================== */
+
+#hrModal .teamo-modal-header {
+    display: flex;
+
+    align-items: flex-start;
+    justify-content: space-between;
+
+    gap: 15px;
+
+    padding: 18px 22px 15px;
+
+    border-bottom: 1px solid #edf0f4;
+
+    background: #fff;
+}
+
+
+#hrModal .modal-eyebrow {
+    margin-bottom: 3px;
+
+    color:
+        var(--bs-primary);
+
+    font-size: 9px;
+    font-weight: 700;
+
+    letter-spacing: .12em;
+}
+
+
+#hrModal .modal-title {
+    margin: 0;
+
+    color: #182230;
+
+    font-size: 19px;
+    font-weight: 700;
+}
+
+
+#hrModal .modal-subtitle {
+    margin-top: 2px;
+
+    color: #7b8491;
+
+    font-size: 11px;
+}
+
+
+/* ==========================================================
+   MODAL BODY
+========================================================== */
+
+#hrModal .modal-body {
+    padding: 18px 22px;
+
+    background: #fff;
+}
+
+
+#hrModal .form-label {
+    display: block;
+
+    margin-bottom: 5px;
+
+    color: #374151;
+
     font-size: 11px;
     font-weight: 600;
 }
 
-.staff-status.active {
-    color: #198754;
-    background: rgba(25, 135, 84, .1);
-}
 
-.staff-status.inactive {
-    color: #dc3545;
-    background: rgba(220, 53, 69, .1);
-}
+#hrModal .form-control,
+#hrModal .form-select {
+    width: 100%;
 
-.action-btn {
-    width: 34px;
-    height: 34px;
-    border: 0;
-    background: transparent;
-    border-radius: 7px;
-    color: var(--text-muted);
-}
+    min-height: 40px;
 
-.action-btn:hover {
-    background: var(--hover-bg, #f5f5f5);
-    color: var(--primary-color);
-}
+    padding: 8px 11px;
 
-.permission-list {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
-}
+    border: 1px solid #dfe3e8;
 
-.permission-group {
-    grid-column: 1 / -1;
+    border-radius: 8px;
+
+    background: #fff;
+
+    color: #1f2937;
+
     font-size: 12px;
-    font-weight: 700;
-    color: var(--text-muted);
-    margin-top: 5px;
+
+    box-shadow: none;
 }
 
-.permission-item {
+
+#hrModal .form-control::placeholder {
+    color: #9aa1aa;
+}
+
+
+#hrModal .form-control:focus,
+#hrModal .form-select:focus {
+    border-color:
+        var(--bs-primary);
+
+    box-shadow:
+        0 0 0 3px
+        rgba(var(--bs-primary-rgb), .08);
+}
+
+
+#hrModal .form-control:disabled,
+#hrModal .form-select:disabled {
+    background: #f5f6f8;
+
+    color: #7b8491;
+
+    cursor: not-allowed;
+}
+
+
+#hrModal .form-hint {
+    margin-top: 4px;
+
+    color: #8a929d;
+
+    font-size: 9px;
+
+    line-height: 1.4;
+}
+
+
+/* ==========================================================
+   ACCOUNT STATUS
+========================================================== */
+
+#hrModal .status-box {
+    min-height: 62px;
+
+    height: 100%;
+
     display: flex;
+
     align-items: center;
     justify-content: space-between;
-    padding: 13px 14px;
-    border: 1px solid var(--border-color, #e8e8e8);
+
+    gap: 10px;
+
+    padding: 10px 12px;
+
+    border: 1px solid #e4e7eb;
+
     border-radius: 9px;
+
+    background: #fafbfc;
 }
 
-.permission-title {
-    font-size: 13px;
+
+#hrModal .status-content {
+    min-width: 0;
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 8px;
+}
+
+
+#hrModal .status-dot {
+    width: 8px;
+    height: 8px;
+
+    flex: 0 0 8px;
+
+    border-radius: 50%;
+
+    background: #22c55e;
+}
+
+
+#hrModal .status-title {
+    color: #374151;
+
+    font-size: 11px;
     font-weight: 600;
 }
 
-@media (max-width: 768px) {
 
-    .filter-card {
-        padding: 12px;
+#hrModal .status-description {
+    margin-top: 2px;
+
+    color: #8a929d;
+
+    font-size: 9px;
+}
+
+
+/* ==========================================================
+   SWITCH
+========================================================== */
+
+#hrModal .form-check-input {
+    margin: 0;
+
+    cursor: pointer;
+}
+
+
+#hrModal .form-check-input:focus {
+    box-shadow:
+        0 0 0 .2rem
+        rgba(var(--bs-primary-rgb), .12);
+}
+
+
+/* ==========================================================
+   MODAL FOOTER
+========================================================== */
+
+#hrModal .teamo-modal-footer {
+    display: flex;
+
+    align-items: center;
+    justify-content: flex-end;
+
+    gap: 8px;
+
+    padding: 12px 22px;
+
+    border-top: 1px solid #edf0f4;
+
+    background: #fafbfc;
+}
+
+
+#hrModal .teamo-modal-footer .btn {
+    min-height: 38px;
+
+    padding: 7px 16px;
+
+    border-radius: 8px;
+
+    font-size: 12px;
+    font-weight: 600;
+}
+
+
+/* ==========================================================
+   PERMISSION MODAL
+========================================================== */
+
+#permissionModal .modal-dialog {
+    width: 100%;
+
+    max-width: 760px;
+
+    margin: 16px auto;
+}
+
+
+#permissionModal .modal-content {
+    overflow: hidden;
+
+    border: 0;
+
+    border-radius: 16px;
+
+    background: #fff;
+
+    box-shadow:
+        0 18px 55px rgba(0, 0, 0, .16);
+}
+
+
+/* ==========================================================
+   PERMISSION HEADER
+========================================================== */
+
+#permissionModal .teamo-modal-header {
+    display: flex;
+
+    align-items: flex-start;
+    justify-content: space-between;
+
+    gap: 15px;
+
+    padding: 18px 22px 15px;
+
+    border-bottom: 1px solid #edf0f4;
+
+    background: #fff;
+}
+
+
+#permissionModal .modal-eyebrow {
+    margin-bottom: 3px;
+
+    color:
+        var(--bs-primary);
+
+    font-size: 9px;
+    font-weight: 700;
+
+    letter-spacing: .12em;
+}
+
+
+#permissionModal .modal-title {
+    margin: 0;
+
+    color: #182230;
+
+    font-size: 19px;
+    font-weight: 700;
+}
+
+
+#permissionModal .modal-subtitle {
+    margin-top: 2px;
+
+    color: #7b8491;
+
+    font-size: 11px;
+}
+
+
+/* ==========================================================
+   PERMISSION BODY
+========================================================== */
+
+#permissionModal .permission-modal-body {
+    padding: 16px 22px 18px;
+
+    background: #fff;
+}
+
+
+#permissionModal .permission-header {
+    display: flex;
+
+    align-items: center;
+    justify-content: space-between;
+
+    gap: 15px;
+
+    margin-bottom: 12px;
+}
+
+
+#permissionModal .permission-title {
+    color: #1f2937;
+
+    font-size: 13px;
+    font-weight: 700;
+}
+
+
+#permissionModal .permission-description {
+    margin-top: 2px;
+
+    color: #8a929d;
+
+    font-size: 10px;
+}
+
+
+#permissionModal .permission-badge {
+    flex: 0 0 auto;
+
+    padding: 5px 8px;
+
+    border-radius: 6px;
+
+    background:
+        rgba(var(--bs-primary-rgb), .08);
+
+    color:
+        var(--bs-primary);
+
+    font-size: 8px;
+    font-weight: 700;
+
+    letter-spacing: .06em;
+}
+
+
+/* ==========================================================
+   PERMISSION LIST
+========================================================== */
+
+#permissionModal .permission-list {
+    display: grid;
+
+    grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+
+    gap: 8px;
+
+    max-height: 330px;
+
+    overflow-y: auto;
+
+    padding: 2px;
+
+    scrollbar-width: thin;
+}
+
+
+/* ==========================================================
+   PERMISSION GROUP
+========================================================== */
+
+#permissionModal .permission-group {
+    grid-column: 1 / -1;
+
+    margin-top: 6px;
+    margin-bottom: 2px;
+
+    color: #8a929d;
+
+    font-size: 9px;
+    font-weight: 700;
+
+    text-transform: uppercase;
+
+    letter-spacing: .06em;
+}
+
+
+#permissionModal .permission-group:first-child {
+    margin-top: 0;
+}
+
+
+/* ==========================================================
+   PERMISSION ITEM
+========================================================== */
+
+#permissionModal .permission-item {
+    display: flex;
+
+    align-items: center;
+    justify-content: space-between;
+
+    gap: 10px;
+
+    min-height: 45px;
+
+    padding: 9px 11px;
+
+    border: 1px solid #e4e7eb;
+
+    border-radius: 8px;
+
+    background: #fff;
+
+    transition:
+        background .15s ease,
+        border-color .15s ease;
+}
+
+
+#permissionModal .permission-item:hover {
+    background: #fafbfc;
+
+    border-color: #d9dee5;
+}
+
+
+#permissionModal .permission-title {
+    color: #374151;
+
+    font-size: 11px;
+    font-weight: 600;
+
+    text-transform: capitalize;
+}
+
+
+/* ==========================================================
+   PERMISSION CHECKBOX
+========================================================== */
+
+#permissionModal .permission-item .form-check {
+    margin: 0;
+}
+
+
+#permissionModal .permission-item .form-check-input {
+    margin: 0;
+
+    cursor: pointer;
+}
+
+
+#permissionModal .permission-item .form-check-input:focus {
+    box-shadow:
+        0 0 0 .2rem
+        rgba(var(--bs-primary-rgb), .10);
+}
+
+
+/* ==========================================================
+   PERMISSION FOOTER
+========================================================== */
+
+#permissionModal .teamo-modal-footer {
+    display: flex;
+
+    align-items: center;
+    justify-content: flex-end;
+
+    gap: 8px;
+
+    padding: 12px 22px;
+
+    border-top: 1px solid #edf0f4;
+
+    background: #fafbfc;
+}
+
+
+#permissionModal .teamo-modal-footer .btn {
+    min-height: 38px;
+
+    padding: 7px 16px;
+
+    border-radius: 8px;
+
+    font-size: 12px;
+    font-weight: 600;
+}
+
+
+/* ==========================================================
+   TABLET
+========================================================== */
+
+@media (max-width: 991.98px) {
+
+    .hr-page .page-header {
+        gap: 15px;
     }
 
-    .filter-card .text-md-end {
-        text-align: left !important;
+
+    .hr-page .page-header h4 {
+        font-size: 20px;
     }
 
-    .staff-count {
-        display: inline-block;
-        margin-top: 5px;
+
+    .hr-filter-card {
+        padding: 13px;
     }
 
-    .permission-list {
-        grid-template-columns: 1fr;
+
+    .hr-card .table > :not(caption) > * > * {
+        padding: 12px 13px;
     }
 
-    .staff-card {
-        overflow-x: auto;
+
+    #hrModal .modal-dialog,
+    #permissionModal .modal-dialog {
+        max-width: 700px;
     }
 
 }
 
-@media (max-width: 576px) {
 
-    .staff-page .btn {
-        margin-left: 0 !important;
-        margin-top: 8px;
+/* ==========================================================
+   MOBILE
+========================================================== */
+
+@media (max-width: 767.98px) {
+
+    .hr-page {
+        padding: 12px !important;
     }
 
+
+    /* Header */
+
+    .hr-page .page-header {
+        align-items: flex-start;
+
+        flex-direction: column;
+
+        margin-bottom: 14px;
+    }
+
+
+    .hr-page .page-header .btn-primary {
+        width: 100%;
+    }
+
+
+    .hr-page .page-header h4 {
+        font-size: 19px;
+    }
+
+
+    .hr-page .page-header p {
+        font-size: 12px;
+    }
+
+
+    /* Filter */
+
+    .hr-filter-card {
+        padding: 12px;
+
+        margin-bottom: 14px;
+    }
+
+
+    .hr-count {
+        display: flex;
+
+        justify-content: flex-start;
+
+        margin-top: 0;
+    }
+
+
+    /* Table */
+
+    .hr-card {
+        border-radius: 11px;
+    }
+
+
+    .hr-card-header {
+        min-height: 58px;
+
+        padding: 12px 14px;
+    }
+
+
+    .hr-card-header small {
+        display: block;
+
+        max-width: 260px;
+    }
+
+
+    .hr-card .table {
+        min-width: 620px;
+    }
+
+
+    /* Modal */
+
+    #hrModal .modal-dialog,
+    #permissionModal .modal-dialog {
+        width: auto;
+
+        max-width: none;
+
+        margin: 10px;
+    }
+
+
+    #hrModal .modal-content,
+    #permissionModal .modal-content {
+        border-radius: 14px;
+    }
+
+
+    #hrModal .teamo-modal-header,
+    #permissionModal .teamo-modal-header {
+        padding: 15px 17px 13px;
+    }
+
+
+    #hrModal .modal-body,
+    #permissionModal .permission-modal-body {
+        padding: 15px 17px;
+    }
+
+
+    #hrModal .teamo-modal-footer,
+    #permissionModal .teamo-modal-footer {
+        padding: 11px 17px;
+    }
+
+
+    #permissionModal .permission-list {
+        grid-template-columns: 1fr;
+
+        max-height: 300px;
+    }
+
+}
+
+
+/* ==========================================================
+   SMALL MOBILE
+========================================================== */
+
+@media (max-width: 575.98px) {
+
+    .hr-page {
+        padding: 10px !important;
+    }
+
+
+    .hr-page .page-header .text-primary {
+        font-size: 9px !important;
+    }
+
+
+    .hr-page .page-header h4 {
+        font-size: 18px;
+    }
+
+
+    .hr-filter-card {
+        padding: 10px;
+    }
+
+
+    .hr-search-box .form-control {
+        min-height: 39px;
+
+        font-size: 12px;
+    }
+
+
+    .hr-count strong {
+        font-size: 15px;
+    }
+
+
+    .hr-card-header {
+        align-items: flex-start;
+    }
+
+
+    .hr-card-header .badge {
+        flex-shrink: 0;
+    }
+
+
+    /* HR Modal */
+
+    #hrModal .modal-title,
+    #permissionModal .modal-title {
+        font-size: 17px;
+    }
+
+
+    #hrModal .modal-subtitle,
+    #permissionModal .modal-subtitle {
+        max-width: 240px;
+
+        font-size: 10px;
+    }
+
+
+    #hrModal .modal-body {
+        padding: 14px;
+    }
+
+
+    /*
+     * Stack the form completely on small screens.
+     */
+    #hrModal .row.g-3 > [class*="col-md-"] {
+        width: 100%;
+    }
+
+
+    #hrModal .status-box {
+        min-height: 58px;
+    }
+
+
+    /* Permission */
+
+    #permissionModal .permission-modal-body {
+        padding: 13px 14px;
+    }
+
+
+    #permissionModal .permission-header {
+        align-items: flex-start;
+    }
+
+
+    #permissionModal .permission-description {
+        max-width: 220px;
+    }
+
+
+    #permissionModal .permission-badge {
+        margin-top: 1px;
+    }
+
+
+    /* Footer buttons */
+
+    #hrModal .teamo-modal-footer,
+    #permissionModal .teamo-modal-footer {
+        flex-direction: column-reverse;
+
+        align-items: stretch;
+    }
+
+
+    #hrModal .teamo-modal-footer .btn,
+    #permissionModal .teamo-modal-footer .btn {
+        width: 100%;
+    }
+
+}
+
+
+/* ==========================================================
+   VERY SMALL MOBILE
+========================================================== */
+
+@media (max-width: 380px) {
+
+    .hr-page {
+        padding: 8px !important;
+    }
+
+
+    .hr-card .table {
+        min-width: 590px;
+    }
+
+
+    #hrModal .modal-dialog,
+    #permissionModal .modal-dialog {
+        margin: 7px;
+    }
+
+
+    #hrModal .teamo-modal-header,
+    #permissionModal .teamo-modal-header {
+        padding: 13px 14px 11px;
+    }
+
+
+    #hrModal .modal-body,
+    #permissionModal .permission-modal-body {
+        padding: 12px;
+    }
+
+
+    #hrModal .teamo-modal-footer,
+    #permissionModal .teamo-modal-footer {
+        padding: 10px 12px;
+    }
+
+
+    #permissionModal .permission-item {
+        min-height: 43px;
+
+        padding: 8px 10px;
+    }
+
+}
+
+
+/* ==========================================================
+   ACCESSIBILITY
+========================================================== */
+
+.hr-page button:focus-visible,
+.hr-page input:focus-visible,
+#hrModal button:focus-visible,
+#hrModal input:focus-visible,
+#hrModal select:focus-visible,
+#permissionModal button:focus-visible,
+#permissionModal input:focus-visible {
+    outline: 2px solid
+        var(--bs-primary);
+
+    outline-offset: 2px;
 }

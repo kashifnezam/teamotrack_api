@@ -1,4 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import {
+    Injectable,
+    Logger,
+} from '@nestjs/common';
 
 import {
     App,
@@ -21,6 +24,9 @@ import {
 @Injectable()
 export class FirebaseService {
 
+    private readonly logger =
+        new Logger(FirebaseService.name);
+
     private readonly app: App;
     private readonly firestoreDb: Firestore;
     private readonly authDb: Auth;
@@ -28,16 +34,34 @@ export class FirebaseService {
 
     constructor() {
 
-        this.app = getApps().length
-            ? getApp()
-            : initializeApp();
+        try {
 
-        this.firestoreDb =
-            getFirestore(this.app);
+            this.app =
+                getApps().length
+                    ? getApp()
+                    : initializeApp();
 
-        this.authDb =
-            getAuth(this.app);
+            this.firestoreDb =
+                getFirestore(this.app);
 
+            this.authDb =
+                getAuth(this.app);
+
+            this.logger.log(
+                'Firebase initialized successfully',
+            );
+
+        } catch (error) {
+
+            this.logger.error(
+                'Firebase initialization failed',
+                error instanceof Error
+                    ? error.stack
+                    : undefined,
+            );
+
+            throw error;
+        }
     }
 
 

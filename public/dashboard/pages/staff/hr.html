@@ -1,37 +1,56 @@
-<section class="staff-page">
+<section class="hr-page p-3">
 
     <div class="container-fluid">
+
+        <!-- ==================================================
+             PAGE HEADER
+        ================================================== -->
 
         <div class="page-header">
 
             <div>
+
+                <div class="text-primary small fw-semibold mb-1">
+                    TEAMOTRACK • PEOPLE
+                </div>
+
                 <h4 class="mb-1">
-                    HR
+                    HR Management
                 </h4>
 
-                <p class="text-muted mb-0">
-                    Manage your HR hierarchy.
+                <p class="mb-0">
+                    Manage your HR team and reporting structure.
                 </p>
+
             </div>
 
+
             <button
+                type="button"
                 class="btn btn-primary"
                 onclick="openHrModal()"
             >
-                <i class="bi bi-plus-lg me-1"></i>
+
+                <i class="bi bi-person-plus me-1"></i>
+
                 Add HR
+
             </button>
 
         </div>
 
 
-        <div class="filter-card">
+        <!-- ==================================================
+             SEARCH / SUMMARY
+        ================================================== -->
 
-            <div class="row g-2 align-items-center">
+        <div class="hr-filter-card">
 
-                <div class="col-lg-6">
+            <div class="row g-3 align-items-center">
 
-                    <div class="search-box">
+                <div class="col-lg-7">
+
+                    <div class="hr-search-box">
 
                         <i class="bi bi-search"></i>
 
@@ -39,24 +58,27 @@
                             id="hrSearch"
                             type="search"
                             class="form-control"
-                            placeholder="Search HR..."
+                            placeholder="Search by name, email, mobile or manager..."
                         >
 
                     </div>
 
                 </div>
 
-                <div class="col-lg-6 text-lg-end">
 
-                    <span class="staff-count">
+                <div class="col-lg-5 text-lg-end">
+
+                    <div class="hr-count">
 
                         <strong id="hrCount">
                             0
                         </strong>
 
-                        HR
+                        <span>
+                            HR members
+                        </span>
 
-                    </span>
+                    </div>
 
                 </div>
 
@@ -65,13 +87,29 @@
         </div>
 
 
-        <div class="staff-card">
+        <!-- ==================================================
+             HR LIST
+        ================================================== -->
 
-            <div class="staff-card-header">
+        <div class="hr-card">
 
-                <h6 class="mb-0">
-                    My HR
-                </h6>
+            <div class="hr-card-header">
+
+                <div>
+
+                    <h6 class="mb-1">
+                        HR Team
+                    </h6>
+
+                    <small class="text-muted">
+                        Human resource accounts under your authority
+                    </small>
+
+                </div>
+
+                <span class="badge bg-primary-subtle text-primary">
+                    HR
+                </span>
 
             </div>
 
@@ -84,12 +122,24 @@
 
                         <tr>
 
-                            <th>HR</th>
-                            <th>Mobile</th>
-                            <th>Status</th>
+                            <th>
+                                HR Member
+                            </th>
+
+                            <th>
+                                Parent Manager
+                            </th>
+
+                            <th>
+                                Mobile
+                            </th>
+
+                            <th>
+                                Status
+                            </th>
 
                             <th class="text-end">
-                                Action
+                                Actions
                             </th>
 
                         </tr>
@@ -102,10 +152,18 @@
                         <tr>
 
                             <td
-                                colspan="4"
+                                colspan="5"
                                 class="empty-state"
                             >
-                                Loading HR...
+
+                                <div class="py-3">
+
+                                    <i class="bi bi-people fs-4 d-block mb-2"></i>
+
+                                    Loading HR...
+
+                                </div>
+
                             </td>
 
                         </tr>
@@ -127,146 +185,270 @@
      HR MODAL
 ========================================================== -->
 
-<div
-    class="modal fade"
-    id="hrModal"
-    tabindex="-1"
->
+<div class="modal fade" id="hrModal" tabindex="-1">
 
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
 
-        <div class="modal-content">
+        <div class="modal-content teamo-modal">
 
-            <div class="modal-header">
+            <!-- Header -->
+            <div class="modal-header teamo-modal-header">
 
-                <h5
-                    class="modal-title"
-                    id="hrModalTitle"
-                >
-                    Add HR
-                </h5>
+                <div>
+                    <div class="modal-eyebrow">
+                        TEAMOTRACK • PEOPLE
+                    </div>
 
-                <button
-                    type="button"
-                    class="btn-close"
-                    data-bs-dismiss="modal"
-                ></button>
+                    <h5 class="modal-title" id="hrModalTitle">
+                        Add HR
+                    </h5>
+
+                    <div class="modal-subtitle">
+                        Create and manage an HR team member
+                    </div>
+                </div>
+
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal">
+                </button>
 
             </div>
 
 
+            <!-- Body -->
             <div class="modal-body">
 
-                <input
-                    type="hidden"
-                    id="hrId"
-                >
+                <input type="hidden" id="hrId">
 
-                <div class="mb-3">
+                <div class="row g-3">
 
-                    <label class="form-label">
-                        Full Name
-                    </label>
+                    <!-- Parent -->
+                    <div class="col-md-6">
 
-                    <input
-                        id="hrName"
-                        class="form-control"
-                        placeholder="Enter full name"
-                    >
+                        <label class="form-label">
+                            Parent
+                        </label>
 
-                </div>
+                        <select id="hrParentId"
+                                class="form-select">
+                            <option value="">
+                                Select parent
+                            </option>
+                        </select>
 
+                        <div class="form-hint">
+                            Direct reporting parent
+                        </div>
 
-                <div class="mb-3">
-
-                    <label class="form-label">
-                        Email
-                    </label>
-
-                    <input
-                        id="hrEmail"
-                        type="email"
-                        class="form-control"
-                        placeholder="Enter email"
-                    >
-
-                </div>
+                    </div>
 
 
-                <div class="mb-3">
+                    <!-- Full Name -->
+                    <div class="col-md-6">
 
-                    <label class="form-label">
-                        Mobile
-                    </label>
+                        <label class="form-label">
+                            Full Name
+                        </label>
 
-                    <input
-                        id="hrMobile"
-                        class="form-control"
-                        placeholder="Enter mobile"
-                    >
+                        <input id="hrName"
+                               class="form-control"
+                               placeholder="Enter full name">
 
-                </div>
-
-
-                <div class="mb-3">
-
-                    <label class="form-label">
-                        Password
-                    </label>
-
-                    <input
-                        id="hrPassword"
-                        type="password"
-                        class="form-control"
-                        placeholder="Enter password"
-                    >
-
-                    <small
-                        id="hrPasswordHint"
-                        class="text-muted"
-                    >
-                        Required when creating.
-                    </small>
-
-                </div>
+                    </div>
 
 
-                <div class="form-check">
+                    <!-- Email -->
+                    <div class="col-md-6">
 
-                    <input
-                        id="hrActive"
-                        type="checkbox"
-                        class="form-check-input"
-                        checked
-                    >
+                        <label class="form-label">
+                            Email
+                        </label>
 
-                    <label
-                        class="form-check-label"
-                        for="hrActive"
-                    >
-                        Active
-                    </label>
+                        <input id="hrEmail"
+                               type="email"
+                               class="form-control"
+                               placeholder="name@example.com">
+
+                    </div>
+
+
+                    <!-- Mobile -->
+                    <div class="col-md-6">
+
+                        <label class="form-label">
+                            Mobile
+                        </label>
+
+                        <input id="hrMobile"
+                               class="form-control"
+                               placeholder="Enter mobile number">
+
+                    </div>
+
+
+                    <!-- Password -->
+                    <div class="col-md-8">
+
+                        <label class="form-label">
+                            Password
+                        </label>
+
+                        <input id="hrPassword"
+                               type="password"
+                               class="form-control"
+                               placeholder="Enter password">
+
+                        <div id="hrPasswordHint"
+                             class="form-hint">
+                            Required when creating a new HR account
+                        </div>
+
+                    </div>
+
+
+                    <!-- Active -->
+                    <div class="col-md-4">
+
+                        <div class="status-box">
+
+                            <div class="status-content">
+
+                                <span class="status-dot"></span>
+
+                                <div>
+                                    <div class="status-title">
+                                        Account Status
+                                    </div>
+
+                                    <div class="status-description">
+                                        HR can access the system
+                                    </div>
+                                </div>
+
+                            </div>
+
+                            <div class="form-check form-switch m-0">
+
+                                <input id="hrActive"
+                                       type="checkbox"
+                                       class="form-check-input"
+                                       checked>
+
+                            </div>
+
+                        </div>
+
+                    </div>
 
                 </div>
 
             </div>
 
 
-            <div class="modal-footer">
+            <!-- Footer -->
+            <div class="modal-footer teamo-modal-footer">
 
-                <button
-                    class="btn btn-light"
-                    data-bs-dismiss="modal"
-                >
+                <button type="button"
+                        class="btn btn-light"
+                        data-bs-dismiss="modal">
                     Cancel
                 </button>
 
-                <button
-                    id="saveHrBtn"
-                    class="btn btn-primary"
-                    onclick="saveHr()"
-                >
+                <button id="saveHrBtn"
+                        class="btn btn-primary px-4"
+                        onclick="saveHr()">
                     Save HR
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+
+<!-- ==========================================================
+     HR PERMISSION MODAL
+========================================================== -->
+
+<div class="modal fade" id="permissionModal" tabindex="-1">
+
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+
+        <div class="modal-content teamo-modal">
+
+            <!-- Header -->
+            <div class="modal-header teamo-modal-header">
+
+                <div>
+
+                    <div class="modal-eyebrow">
+                        TEAMOTRACK • ACCESS CONTROL
+                    </div>
+
+                    <h5 class="modal-title">
+                        HR Permissions
+                    </h5>
+
+                    <div class="modal-subtitle">
+                        Control what this HR account can manage
+                    </div>
+
+                </div>
+
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal">
+                </button>
+
+            </div>
+
+
+            <!-- Body -->
+            <div class="modal-body permission-modal-body">
+
+                <div class="permission-header">
+
+                    <div>
+                        <div class="permission-title">
+                            Access &amp; Permissions
+                        </div>
+
+                        <div class="permission-description">
+                            Grant only the access required for this HR role.
+                        </div>
+                    </div>
+
+                    <span class="permission-badge">
+                        HR ROLE
+                    </span>
+
+                </div>
+
+                <div id="permissionList"
+                     class="permission-list">
+                </div>
+
+            </div>
+
+
+            <!-- Footer -->
+            <div class="modal-footer teamo-modal-footer">
+
+                <button type="button"
+                        class="btn btn-light"
+                        data-bs-dismiss="modal">
+                    Cancel
+                </button>
+
+                <button id="saveHrPermissionBtn"
+                        class="btn btn-primary px-4"
+                        onclick="saveHrPermissions()">
+                    Save Permissions
                 </button>
 
             </div>

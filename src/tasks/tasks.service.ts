@@ -1,6 +1,7 @@
 import {
     BadRequestException,
     Injectable,
+    Logger,
     NotFoundException,
 } from '@nestjs/common';
 
@@ -17,6 +18,9 @@ const STATUSES = [
 
 @Injectable()
 export class TasksService {
+
+    private readonly logger =
+        new Logger(TasksService.name);
 
     constructor(
         private readonly firebase: FirebaseService,
@@ -37,11 +41,20 @@ export class TasksService {
         month: number,
     ) {
 
+        this.logger.log(
+            `Fetching tasks | rootId=${rootId} | ${year}-${month}`,
+        );
+
         if (
             !Number.isInteger(year) ||
             month < 1 ||
             month > 12
         ) {
+
+            this.logger.warn(
+                `Invalid month | year=${year} | month=${month}`,
+            );
+
             throw new BadRequestException(
                 'Invalid month',
             );
@@ -60,7 +73,6 @@ export class TasksService {
                 month,
                 1,
             );
-
 
         const snapshot =
             await this.db
@@ -81,7 +93,6 @@ export class TasksService {
                     end,
                 )
                 .get();
-
 
         const [
             executives,
@@ -113,6 +124,9 @@ export class TasksService {
 
         ]);
 
+        this.logger.log(
+            `Tasks fetched | rootId=${rootId} | tasks=${snapshot.size} | users=${executives.size} | managers=${managers.size}`,
+        );
 
         return {
 
@@ -139,6 +153,7 @@ export class TasksService {
                     fullName:
                         doc.data().fullName ?? '',
                 })),
+
         };
     }
 
@@ -152,11 +167,14 @@ export class TasksService {
         dto: TaskDto,
     ) {
 
+        this.logger.log(
+            `Creating task | rootId=${rootId} | title=${dto.title}`,
+        );
+
         this.validate(dto);
 
         const assignedTo =
             dto.assignedTo || null;
-
 
         if (assignedTo) {
 
@@ -166,35 +184,39 @@ export class TasksService {
             );
         }
 
-
         const startDate =
             new Date(dto.startDate);
 
         const endDate =
             new Date(dto.endDate);
 
-
         if (
             Number.isNaN(startDate.getTime()) ||
             Number.isNaN(endDate.getTime())
         ) {
+
+            this.logger.warn(
+                `Invalid task schedule | rootId=${rootId}`,
+            );
+
             throw new BadRequestException(
                 'Invalid schedule',
             );
         }
 
-
         if (endDate <= startDate) {
+
+            this.logger.warn(
+                `Invalid task date range | rootId=${rootId}`,
+            );
 
             throw new BadRequestException(
                 'End date must be after start date',
             );
         }
 
-
         const now =
             new Date();
-
 
         const ref =
             await this.db
@@ -236,6 +258,9 @@ export class TasksService {
                     updatedAt: now,
                 });
 
+        this.logger.log(
+            `Task created | id=${ref.id} | rootId=${rootId}`,
+        );
 
         return {
             success: true,
@@ -254,6 +279,10 @@ export class TasksService {
         dto: Partial<TaskDto>,
     ) {
 
+        this.logger.log(
+            `Updating task | id=${id} | rootId=${rootId}`,
+        );
+
         const ref =
             this.db
                 .collection('tasks')
@@ -262,23 +291,25 @@ export class TasksService {
         const doc =
             await ref.get();
 
-
         if (
             !doc.exists ||
             doc.data()?.rootId !== rootId
         ) {
+
+            this.logger.warn(
+                `Task not found | id=${id} | rootId=${rootId}`,
+            );
+
             throw new NotFoundException(
                 'Task not found',
             );
         }
-
 
         const task =
             doc.data()!;
 
         const status =
             task.status || 'pending';
-
 
         if (
             [
@@ -288,19 +319,20 @@ export class TasksService {
             ].includes(status)
         ) {
 
+            this.logger.warn(
+                `Task update blocked | id=${id} | status=${status}`,
+            );
+
             throw new BadRequestException(
                 'Completed, cancelled or failed tasks cannot be edited',
             );
         }
 
-
         const data: any = {};
-
 
         if (dto.title !== undefined) {
 
             if (!dto.title.trim()) {
-
                 throw new BadRequestException(
                     'Title is required',
                 );
@@ -310,11 +342,9 @@ export class TasksService {
                 dto.title.trim();
         }
 
-
         if (dto.description !== undefined) {
 
             if (!dto.description.trim()) {
-
                 throw new BadRequestException(
                     'Description is required',
                 );
@@ -323,7 +353,6 @@ export class TasksService {
             data.description =
                 dto.description.trim();
         }
-
 
         if (dto.priority !== undefined) {
 
@@ -334,7 +363,6 @@ export class TasksService {
                     'High',
                 ].includes(dto.priority)
             ) {
-
                 throw new BadRequestException(
                     'Invalid priority',
                 );
@@ -344,14 +372,12 @@ export class TasksService {
                 dto.priority;
         }
 
-
         if (dto.startDate !== undefined) {
 
             const date =
                 new Date(dto.startDate);
 
             if (Number.isNaN(date.getTime())) {
-
                 throw new BadRequestException(
                     'Invalid start date',
                 );
@@ -361,14 +387,12 @@ export class TasksService {
                 date;
         }
 
-
         if (dto.endDate !== undefined) {
 
             const date =
                 new Date(dto.endDate);
 
             if (Number.isNaN(date.getTime())) {
-
                 throw new BadRequestException(
                     'Invalid end date',
                 );
@@ -378,7 +402,6 @@ export class TasksService {
                 date;
         }
 
-
         const startDate =
             data.startDate ||
             task.startDate;
@@ -387,16 +410,11 @@ export class TasksService {
             data.endDate ||
             task.endDate;
 
-
         if (endDate <= startDate) {
-
             throw new BadRequestException(
                 'End date must be after start date',
             );
         }
-
-
-        /* Executive */
 
         if (
             dto.assignedTo !== undefined
@@ -410,10 +428,8 @@ export class TasksService {
                 );
             }
 
-
             data.assignedTo =
                 dto.assignedTo || null;
-
 
             if (
                 status === 'pending' &&
@@ -421,7 +437,6 @@ export class TasksService {
             ) {
                 data.status = 'assigned';
             }
-
 
             if (
                 !dto.assignedTo &&
@@ -431,16 +446,12 @@ export class TasksService {
             }
         }
 
-
-        /* Location */
-
         if (
             dto.isGeofence !== undefined
         ) {
             data.isGeofence =
                 dto.isGeofence;
         }
-
 
         if (
             dto.startLocation !== undefined
@@ -449,7 +460,6 @@ export class TasksService {
                 dto.startLocation;
         }
 
-
         if (
             dto.endLocation !== undefined
         ) {
@@ -457,13 +467,14 @@ export class TasksService {
                 dto.endLocation;
         }
 
-
         data.updatedAt =
             new Date();
 
-
         await ref.update(data);
 
+        this.logger.log(
+            `Task updated | id=${id} | rootId=${rootId}`,
+        );
 
         return {
             success: true,
@@ -481,6 +492,10 @@ export class TasksService {
         id: string,
     ) {
 
+        this.logger.log(
+            `Deleting task | id=${id} | rootId=${rootId}`,
+        );
+
         const ref =
             this.db
                 .collection('tasks')
@@ -489,20 +504,25 @@ export class TasksService {
         const doc =
             await ref.get();
 
-
         if (
             !doc.exists ||
             doc.data()?.rootId !== rootId
         ) {
+
+            this.logger.warn(
+                `Task not found | id=${id} | rootId=${rootId}`,
+            );
 
             throw new NotFoundException(
                 'Task not found',
             );
         }
 
-
         await ref.delete();
 
+        this.logger.log(
+            `Task deleted | id=${id} | rootId=${rootId}`,
+        );
 
         return {
             success: true,
@@ -525,11 +545,14 @@ export class TasksService {
             !STATUSES.includes(status)
         ) {
 
+            this.logger.warn(
+                `Invalid task status | id=${id} | status=${status}`,
+            );
+
             throw new BadRequestException(
                 'Invalid status',
             );
         }
-
 
         const ref =
             this.db
@@ -539,17 +562,19 @@ export class TasksService {
         const doc =
             await ref.get();
 
-
         if (
             !doc.exists ||
             doc.data()?.rootId !== rootId
         ) {
 
+            this.logger.warn(
+                `Task not found | id=${id} | rootId=${rootId}`,
+            );
+
             throw new NotFoundException(
                 'Task not found',
             );
         }
-
 
         await ref.update({
 
@@ -559,6 +584,9 @@ export class TasksService {
                 new Date(),
         });
 
+        this.logger.log(
+            `Task status updated | id=${id} | status=${status}`,
+        );
 
         return {
             success: true,
@@ -582,16 +610,18 @@ export class TasksService {
                 .doc(id)
                 .get();
 
-
         const data =
             doc.data();
-
 
         if (
             !doc.exists ||
             data?.rootId !== rootId ||
             data?.role !== 'field_executive'
         ) {
+
+            this.logger.warn(
+                `Invalid executive | id=${id} | rootId=${rootId}`,
+            );
 
             throw new BadRequestException(
                 'Invalid executive',
@@ -615,14 +645,12 @@ export class TasksService {
             );
         }
 
-
         if (!dto.description?.trim()) {
 
             throw new BadRequestException(
                 'Description is required',
             );
         }
-
 
         if (
             ![
@@ -636,7 +664,6 @@ export class TasksService {
                 'Invalid priority',
             );
         }
-
 
         if (
             !dto.startDate ||
@@ -657,8 +684,9 @@ export class TasksService {
     private serialize(data: any) {
 
         const date = (value: any) =>
-            value?.toDate?.() ?? value ?? null;
-
+            value?.toDate?.() ??
+            value ??
+            null;
 
         return {
 

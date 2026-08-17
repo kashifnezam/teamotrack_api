@@ -59,8 +59,18 @@ export class ManagersController {
             'manager',
             dto,
         );
-    }
+    } 
 
+    @Get('parents')
+    @UseGuards(FirebaseAuthGuard)
+    parents(
+        @CurrentUser() user: any,
+    ) {
+        return this.service.getParents(
+            user.uid,
+            'manager',
+        );
+    }
 
     @Patch(':id')
     @UseGuards(FirebaseAuthGuard)

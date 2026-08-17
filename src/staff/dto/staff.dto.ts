@@ -26,4 +26,8 @@ export class StaffDto {
     @IsOptional()
     @IsBoolean()
     isActive?: boolean;
+
+    @IsString()
+    @IsOptional()
+    parentId?: string;
 }

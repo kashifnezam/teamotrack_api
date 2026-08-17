@@ -33,7 +33,7 @@
 
             if (userName) {
                 userName.textContent =
-                    userData.name || "User";
+                    userData.fullName || userData.name || "User";
             }
 
             AppAlert.loading(
@@ -53,19 +53,17 @@
             AppAlert.close();
 
         } catch (error) {
-
             console.error(
                 "Dashboard loading failed:",
                 error
             );
 
             AppAlert.close();
-
             AppAlert.error(
                 error.message ||
                 "Failed to load dashboard"
             );
-
+            window.location.href = "/login";
         }
 
     }

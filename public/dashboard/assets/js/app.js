@@ -794,7 +794,7 @@ if (window.TeamoTrackApp) {
                         "/dashboard/assets/js/staff/hr.js",
 
                     css:
-                        "/dashboard/assets/css/staff/managers.css",
+                        "/dashboard/assets/css/staff/hr.css",
 
                     init:
                         "initializeHrPage",

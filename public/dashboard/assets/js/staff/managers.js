@@ -7,8 +7,12 @@
     "use strict";
 
     let managers = [];
+    let parentManagers = [];
     let editingId = null;
     let permissionId = null;
+
+    // Parent API is loaded only once when modal needs it
+    let parentManagersLoaded = false;
 
 
     /* ======================================================
@@ -30,7 +34,7 @@
 
 
     /* ======================================================
-       LOAD
+       LOAD MANAGERS
     ====================================================== */
 
     async function loadManagers() {
@@ -49,11 +53,109 @@
 
         } catch (error) {
 
-            console.error(error);
+            console.error(
+                "Unable to load managers:",
+                error
+            );
 
             AppAlert.error(
                 error.message ||
                 "Unable to load managers"
+            );
+
+        }
+
+    }
+
+
+    /* ======================================================
+       PARENT OPTIONS
+       Loaded only when Add Manager is opened
+    ====================================================== */
+
+    function renderParentOptions(
+        selectedId = ""
+    ) {
+
+        const select =
+            document.getElementById(
+                "staffParentId"
+            );
+
+        if (!select) return;
+
+        select.innerHTML = `
+            <option value="">
+                Select parent
+            </option>
+        `;
+
+
+        parentManagers.forEach(
+            manager => {
+
+                const option =
+                    document.createElement(
+                        "option"
+                    );
+
+                option.value =
+                    manager.id;
+
+                option.textContent =
+                    `${manager.fullName || "Unnamed"} (${manager.role || "Manager"})`;
+
+                option.selected =
+                    manager.id === selectedId;
+
+                select.appendChild(
+                    option
+                );
+
+            }
+        );
+
+
+        if (selectedId) {
+            select.value =
+                selectedId;
+        }
+
+    }
+
+
+    async function loadParentManagers() {
+
+        if (parentManagersLoaded) {
+            return;
+        }
+
+
+        try {
+
+            const data =
+                await Api.get(
+                    "/managers/parents"
+                );
+
+            if (!data) return;
+
+            parentManagers =
+                data.users || [];
+
+            parentManagersLoaded =
+                true;
+
+        } catch (error) {
+
+            console.error(
+                "Unable to load parent managers:",
+                error
+            );
+
+            AppAlert.error(
+                error.message ||
+                "Unable to load parent managers"
             );
 
         }
@@ -79,18 +181,20 @@
                 .trim()
                 .toLowerCase() || "";
 
+
         if (!tbody) return;
 
 
         const list =
-            managers.filter(manager =>
-                !search ||
-                manager.fullName
-                    ?.toLowerCase()
-                    .includes(search) ||
-                manager.email
-                    ?.toLowerCase()
-                    .includes(search)
+            managers.filter(
+                manager =>
+                    !search ||
+                    manager.fullName
+                        ?.toLowerCase()
+                        .includes(search) ||
+                    manager.email
+                        ?.toLowerCase()
+                        .includes(search)
             );
 
 
@@ -110,7 +214,7 @@
             tbody.innerHTML = `
                 <tr>
                     <td
-                        colspan="4"
+                        colspan="5"
                         class="empty-state"
                     >
                         No managers found
@@ -123,106 +227,164 @@
 
 
         tbody.innerHTML =
-            list.map(manager => {
+            list.map(
+                manager => {
 
-                const name =
-                    manager.fullName ||
-                    "Unnamed";
+                    const name =
+                        manager.fullName ||
+                        "Unnamed";
 
-                const initials =
-                    getInitials(name);
+                    const initials =
+                        getInitials(name);
 
-                return `
-                    <tr>
 
-                        <td>
-                            <div class="staff-user">
+                    return `
+                        <tr>
 
-                                <div class="staff-avatar">
-                                    ${escapeHtml(initials)}
-                                </div>
+                            <!-- USER -->
 
-                                <div>
+                            <td>
 
-                                    <div class="staff-name">
-                                        ${escapeHtml(name)}
-                                    </div>
+                                <div class="staff-user">
 
-                                    <div class="staff-email">
+                                    <div class="staff-avatar">
                                         ${escapeHtml(
-                                            manager.email || ""
+                                            initials
                                         )}
                                     </div>
 
+                                    <div>
+
+                                        <div class="staff-name">
+                                            ${escapeHtml(
+                                                name
+                                            )}
+                                        </div>
+
+                                        <div class="staff-email">
+                                            ${escapeHtml(
+                                                manager.email ||
+                                                ""
+                                            )}
+                                        </div>
+
+                                    </div>
+
                                 </div>
 
-                            </div>
-                        </td>
+                            </td>
 
-                        <td>
-                            ${escapeHtml(
-                                manager.mobile || "--"
-                            )}
-                        </td>
 
-                        <td>
-                            <span class="staff-status ${
-                                manager.isActive
-                                    ? "active"
-                                    : "inactive"
-                            }">
+                            <!-- DIRECT PARENT -->
 
-                                <i class="bi ${
-                                    manager.isActive
-                                        ? "bi-check-circle"
-                                        : "bi-pause-circle"
-                                }"></i>
+                            <td>
+
+                                <div class="staff-name">
+
+                                    ${escapeHtml(
+                                        manager.parentName ||
+                                        "Root"
+                                    )}
+
+                                </div>
 
                                 ${
-                                    manager.isActive
-                                        ? "Active"
-                                        : "Inactive"
+                                    manager.parentRole
+                                        ? `
+                                            <div class="staff-email">
+                                                ${escapeHtml(
+                                                    manager.parentRole
+                                                )}
+                                            </div>
+                                        `
+                                        : ""
                                 }
 
-                            </span>
-                        </td>
+                            </td>
 
-                        <td>
 
-                            <div class="staff-actions">
+                            <!-- MOBILE -->
 
-                                <button
-                                    class="staff-action"
-                                    title="Edit"
-                                    onclick="editStaff('${manager.id}')"
+                            <td>
+                                ${escapeHtml(
+                                    manager.mobile ||
+                                    "--"
+                                )}
+                            </td>
+
+
+                            <!-- STATUS -->
+
+                            <td>
+
+                                <span
+                                    class="staff-status ${
+                                        manager.isActive
+                                            ? "active"
+                                            : "inactive"
+                                    }"
                                 >
-                                    <i class="bi bi-pencil"></i>
-                                </button>
 
-                                <button
-                                    class="staff-action"
-                                    title="Permissions"
-                                    onclick="openPermissions('${manager.id}')"
-                                >
-                                    <i class="bi bi-shield-lock"></i>
-                                </button>
+                                    <i
+                                        class="bi ${
+                                            manager.isActive
+                                                ? "bi-check-circle"
+                                                : "bi-pause-circle"
+                                        }"
+                                    ></i>
 
-                                <button
-                                    class="staff-action"
-                                    title="Delete"
-                                    onclick="deleteStaff('${manager.id}')"
-                                >
-                                    <i class="bi bi-trash"></i>
-                                </button>
+                                    ${
+                                        manager.isActive
+                                            ? "Active"
+                                            : "Inactive"
+                                    }
 
-                            </div>
+                                </span>
 
-                        </td>
+                            </td>
 
-                    </tr>
-                `;
 
-            }).join("");
+                            <!-- ACTIONS -->
+
+                            <td>
+
+                                <div class="staff-actions">
+
+                                    <button
+                                        class="staff-action"
+                                        title="Edit"
+                                        onclick="editStaff('${manager.id}')"
+                                    >
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+
+
+                                    <button
+                                        class="staff-action"
+                                        title="Permissions"
+                                        onclick="openPermissions('${manager.id}')"
+                                    >
+                                        <i class="bi bi-shield-lock"></i>
+                                    </button>
+
+
+                                    <button
+                                        class="staff-action"
+                                        title="Delete"
+                                        onclick="deleteStaff('${manager.id}')"
+                                    >
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+
+                                </div>
+
+                            </td>
+
+                        </tr>
+                    `;
+
+                }
+            ).join("");
 
     }
 
@@ -231,14 +393,77 @@
        MODAL
     ====================================================== */
 
-    function openStaffModal(id = null) {
+    async function openStaffModal(
+        id = null
+    ) {
 
         editingId = id;
 
+
         const manager =
             managers.find(
-                item => item.id === id
+                item =>
+                    item.id === id
             );
+
+
+        const parentSelect =
+            document.getElementById(
+                "staffParentId"
+            );
+
+
+        /*
+         * ADD
+         *
+         * Load parent hierarchy only
+         * on first Add click.
+         */
+        if (!id) {
+
+            await loadParentManagers();
+
+            renderParentOptions();
+
+            if (parentSelect) {
+                parentSelect.disabled = false;
+            }
+
+        }
+
+
+        /*
+         * EDIT
+         *
+         * No parent API required.
+         *
+         * Backend already gives us:
+         * parentId
+         * parentName
+         */
+        else {
+
+            if (parentSelect) {
+
+                parentSelect.innerHTML = `
+                    <option value="${escapeHtml(
+                        manager?.parentId || ""
+                    )}">
+                        ${escapeHtml(
+                            manager?.parentName ||
+                            "Root"
+                        )}
+                    </option>
+                `;
+
+                parentSelect.value =
+                    manager?.parentId || "";
+
+                parentSelect.disabled = true;
+
+            }
+
+        }
 
 
         document.getElementById(
@@ -255,12 +480,6 @@
             id
                 ? "Update Manager"
                 : "Save Manager";
-
-
-        document.getElementById(
-            "staffId"
-        ).value =
-            id || "";
 
 
         document.getElementById(
@@ -334,6 +553,7 @@
         }
 
         openStaffModal(id);
+
     }
 
 
@@ -348,25 +568,53 @@
                 "staffName"
             ).value.trim();
 
+
+        const parentSelect =
+            document.getElementById(
+                "staffParentId"
+            );
+
+
+        const parentId =
+            parentSelect?.value?.trim() || "";
+
+
+        if (
+            !editingId &&
+            !parentId
+        ) {
+
+            AppAlert.warning(
+                "Please select a parent manager"
+            );
+
+            return;
+        }
+
+
         const email =
             document.getElementById(
                 "staffEmail"
             ).value.trim();
+
 
         const mobile =
             document.getElementById(
                 "staffMobile"
             ).value.trim();
 
+
         const password =
             document.getElementById(
                 "staffPassword"
             ).value;
 
+
         const isActive =
             document.getElementById(
                 "staffActive"
             ).checked;
+
 
         const button =
             document.getElementById(
@@ -394,7 +642,10 @@
         }
 
 
-        if (!editingId && !password) {
+        if (
+            !editingId &&
+            !password
+        ) {
 
             AppAlert.warning(
                 "Password is required"
@@ -406,7 +657,9 @@
 
         try {
 
-            button.disabled = true;
+            button.disabled =
+                true;
+
 
             AppAlert.loading(
                 editingId
@@ -416,15 +669,26 @@
 
 
             const body = {
-                fullName: name,
+
+                fullName:
+                    name,
+
                 email,
+
                 mobile,
-                isActive
+
+                isActive,
+
+                parentId,
+
             };
 
 
             if (password) {
-                body.password = password;
+
+                body.password =
+                    password;
+
             }
 
 
@@ -438,17 +702,17 @@
 
                     : await Api.post(
                         "/managers",
-                        {
-                            ...body,
-                            password
-                        }
+                        body
                     );
 
 
-            if (!data) return;
+            if (!data) {
+                return;
+            }
 
 
             AppAlert.close();
+
 
             AppAlert.success(
                 editingId
@@ -468,20 +732,28 @@
 
             await loadManagers();
 
+
         } catch (error) {
 
-            console.error(error);
+            console.error(
+                "Unable to save manager:",
+                error
+            );
+
 
             AppAlert.close();
+
 
             AppAlert.error(
                 error.message ||
                 "Unable to save manager"
             );
 
+
         } finally {
 
-            button.disabled = false;
+            button.disabled =
+                false;
 
         }
 
@@ -496,8 +768,10 @@
 
         const manager =
             managers.find(
-                item => item.id === id
+                item =>
+                    item.id === id
             );
+
 
         if (!manager) return;
 
@@ -508,7 +782,9 @@
             );
 
 
-        if (!confirmed.isConfirmed) {
+        if (
+            !confirmed.isConfirmed
+        ) {
             return;
         }
 
@@ -531,6 +807,7 @@
 
             AppAlert.close();
 
+
             AppAlert.success(
                 "Manager deleted successfully"
             );
@@ -538,9 +815,11 @@
 
             await loadManagers();
 
+
         } catch (error) {
 
             AppAlert.close();
+
 
             AppAlert.error(
                 error.message ||
@@ -558,7 +837,9 @@
 
     async function openPermissions(id) {
 
-        permissionId = id;
+        permissionId =
+            id;
+
 
         try {
 
@@ -592,9 +873,11 @@
                 )
                 .show();
 
+
         } catch (error) {
 
             AppAlert.close();
+
 
             AppAlert.error(
                 error.message ||
@@ -615,91 +898,105 @@
                 "permissionList"
             );
 
+
         if (!container) return;
 
 
         const groups = {
-            manager: "Managers",
-            hr: "HR",
-            field_executive: "Executives",
-            attendance: "Attendance",
-            tracking: "Live Tracking"
+
+            manager:
+                "Managers",
+
+            hr:
+                "HR",
+
+            field_executive:
+                "Executives",
+
+            attendance:
+                "Attendance",
+
+            tracking:
+                "Live Tracking",
+
         };
 
 
         container.innerHTML =
             Object.entries(groups)
-                .map(([group, title]) => {
+                .map(
+                    ([group, title]) => {
 
-                    const keys =
-                        Object.keys(
-                            permissions
-                        ).filter(
-                            key =>
-                                key.startsWith(
-                                    `${group}.`
-                                )
-                        );
-
-
-                    if (!keys.length) {
-                        return "";
-                    }
+                        const keys =
+                            Object.keys(
+                                permissions
+                            ).filter(
+                                key =>
+                                    key.startsWith(
+                                        `${group}.`
+                                    )
+                            );
 
 
-                    return `
+                        if (!keys.length) {
+                            return "";
+                        }
 
-                        <div class="permission-group">
 
-                            <div class="permission-group-title">
-                                ${title}
+                        return `
+                            <div class="permission-group">
+
+                                <div class="permission-group-title">
+                                    ${title}
+                                </div>
+
+                                ${keys
+                                    .map(key => {
+
+                                        const action =
+                                            key
+                                                .split(".")
+                                                .slice(1)
+                                                .join(" ");
+
+
+                                        return `
+                                            <div class="permission-item">
+
+                                                <span class="permission-label">
+                                                    ${formatPermission(
+                                                        action
+                                                    )}
+                                                </span>
+
+                                                <div class="form-check form-switch">
+
+                                                    <input
+                                                        class="form-check-input permission-toggle"
+                                                        type="checkbox"
+                                                        data-key="${escapeHtml(
+                                                            key
+                                                        )}"
+                                                        ${
+                                                            permissions[key]
+                                                                ? "checked"
+                                                                : ""
+                                                        }
+                                                    >
+
+                                                </div>
+
+                                            </div>
+                                        `;
+
+                                    })
+                                    .join("")}
+
                             </div>
+                        `;
 
-                            ${keys.map(key => {
-
-                                const action =
-                                    key
-                                        .split(".")
-                                        .slice(1)
-                                        .join(" ");
-
-                                return `
-
-                                    <div
-                                        class="permission-item"
-                                    >
-
-                                        <span class="permission-label">
-                                            ${formatPermission(
-                                                action
-                                            )}
-                                        </span>
-
-                                        <div class="form-check form-switch">
-
-                                            <input
-                                                class="form-check-input permission-toggle"
-                                                type="checkbox"
-                                                data-key="${escapeHtml(key)}"
-                                                ${
-                                                    permissions[key]
-                                                        ? "checked"
-                                                        : ""
-                                                }
-                                            >
-
-                                        </div>
-
-                                    </div>
-
-                                `;
-
-                            }).join("")}
-
-                        </div>
-                    `;
-
-                })
+                    }
+                )
                 .join("");
 
     }
@@ -717,13 +1014,16 @@
             .querySelectorAll(
                 ".permission-toggle"
             )
-            .forEach(input => {
+            .forEach(
+                input => {
 
-                permissions[
-                    input.dataset.key
-                ] = input.checked;
+                    permissions[
+                        input.dataset.key
+                    ] =
+                        input.checked;
 
-            });
+                }
+            );
 
 
         const button =
@@ -734,7 +1034,9 @@
 
         try {
 
-            button.disabled = true;
+            button.disabled =
+                true;
+
 
             AppAlert.loading(
                 "Saving permissions..."
@@ -753,6 +1055,7 @@
 
             AppAlert.close();
 
+
             AppAlert.success(
                 "Permissions updated"
             );
@@ -766,18 +1069,22 @@
                 )
                 ?.hide();
 
+
         } catch (error) {
 
             AppAlert.close();
+
 
             AppAlert.error(
                 error.message ||
                 "Unable to save permissions"
             );
 
+
         } finally {
 
-            button.disabled = false;
+            button.disabled =
+                false;
 
         }
 
@@ -807,7 +1114,10 @@
     function formatPermission(value) {
 
         return value
-            .replaceAll("_", " ")
+            .replaceAll(
+                "_",
+                " "
+            )
             .replace(
                 /\b\w/g,
                 char =>
@@ -822,11 +1132,26 @@
         return String(
             value ?? ""
         )
-            .replaceAll("&", "&amp;")
-            .replaceAll("<", "&lt;")
-            .replaceAll(">", "&gt;")
-            .replaceAll('"', "&quot;")
-            .replaceAll("'", "&#039;");
+            .replaceAll(
+                "&",
+                "&amp;"
+            )
+            .replaceAll(
+                "<",
+                "&lt;"
+            )
+            .replaceAll(
+                ">",
+                "&gt;"
+            )
+            .replaceAll(
+                '"',
+                "&quot;"
+            )
+            .replaceAll(
+                "'",
+                "&#039;"
+            );
 
     }
 

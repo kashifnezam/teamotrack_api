@@ -1,95 +1,140 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import {
+    Injectable,
+    InternalServerErrorException,
+    Logger,
+} from '@nestjs/common';
+
 import { FirebaseService } from '../firebase/firebase.service';
 import { DashboardDto } from './dto/dashboard.dto';
 
 @Injectable()
 export class DashboardService {
+
+    private readonly logger =
+        new Logger(DashboardService.name);
+
     constructor(
         private readonly firebase: FirebaseService,
     ) {}
 
-    async getDashboardData(user: any): Promise<DashboardDto> {
+
+    async getDashboardData(
+        user: any,
+    ): Promise<DashboardDto> {
+
         try {
-            console.log('========== DASHBOARD START ==========');
-            console.log('User:', user);
 
             if (!user?.uid) {
-                console.error('User UID is missing:', user);
-                throw new Error('User UID is missing');
+
+                this.logger.error(
+                    'Dashboard request failed | user UID missing',
+                );
+
+                throw new Error(
+                    'User UID is missing',
+                );
             }
 
-            const db = this.firebase.firestore;
+            const db =
+                this.firebase.firestore;
 
             if (!db) {
-                console.error('Firestore instance is not available');
-                throw new Error('Firestore instance is not available');
+
+                this.logger.error(
+                    'Dashboard request failed | Firestore unavailable',
+                );
+
+                throw new Error(
+                    'Firestore instance is not available',
+                );
             }
 
-            // Today: YYYYMMDD
-            const now = new Date();
+            const now =
+                new Date();
 
-            const today = new Intl.DateTimeFormat('en-CA', {
-                timeZone: 'Asia/Kolkata',
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-            })
-                .format(now)
-                .replace(/-/g, '');
+            const today =
+                new Intl.DateTimeFormat(
+                    'en-CA',
+                    {
+                        timeZone: 'Asia/Kolkata',
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                    },
+                )
+                    .format(now)
+                    .replace(/-/g, '');
 
-            console.log('Today:', today);
+            this.logger.log(
+                `Dashboard fetch | uid=${user.uid} | date=${today}`,
+            );
 
-            // -----------------------------------------
-            // Fetch executives
-            // -----------------------------------------
 
-            console.log('Fetching executives...');
+            // ==================================================
+            // EXECUTIVES
+            // ==================================================
 
-            const snapshot = await db
-                .collection('user')
-                .where('role', '==', 'field_executive')
-                .where('rootId', '==', user.uid)
-                .get();
+            const snapshot =
+                await db
+                    .collection('user')
+                    .where(
+                        'role',
+                        '==',
+                        'field_executive',
+                    )
+                    .where(
+                        'rootId',
+                        '==',
+                        user.uid,
+                    )
+                    .get();
 
-            console.log('Executives found:', snapshot.size);
+            this.logger.log(
+                `Executives fetched | count=${snapshot.size}`,
+            );
 
-            const executives = snapshot.docs.map(doc => {
-                try {
-                    const data = doc.data();
 
-                    console.log('Executive:', {
-                        id: doc.id,
-                        data,
-                    });
+            const executives =
+                snapshot.docs.map(doc => {
 
-                    const loc = data.currLoc;
+                    const data =
+                        doc.data();
+
+                    const loc =
+                        data.currLoc;
 
                     return {
                         id: doc.id,
-                        fullName: data.fullName ?? 'Unknown',
-                        ...(loc?.lat != null && loc?.lng != null
+
+                        fullName:
+                            data.fullName ??
+                            'Unknown',
+
+                        ...(loc?.lat != null &&
+                        loc?.lng != null
                             ? {
                                 currLoc: {
-                                    lat: Number(loc.lat),
-                                    lng: Number(loc.lng),
+                                    lat:
+                                        Number(
+                                            loc.lat,
+                                        ),
+
+                                    lng:
+                                        Number(
+                                            loc.lng,
+                                        ),
                                 },
                             }
                             : {}),
                     };
-                } catch (error) {
-                    console.error(
-                        `Error processing executive document ${doc.id}:`,
-                        error,
-                    );
+                });
 
-                    throw error;
-                }
-            });
-
-            console.log('Processed executives:', executives);
 
             if (!executives.length) {
-                console.log('No field executives found');
+
+                this.logger.log(
+                    `No executives found | uid=${user.uid}`,
+                );
 
                 return {
                     total: 0,
@@ -100,139 +145,138 @@ export class DashboardService {
                 };
             }
 
-            // -----------------------------------------
-            // Attendance references
-            // -----------------------------------------
 
-            console.log('Creating attendance references...');
+            // ==================================================
+            // ATTENDANCE
+            // ==================================================
 
-            const refs = executives.map(e => {
-                console.log(
-                    `Attendance path for ${e.id}: attendance/${e.id}/records/${today}`,
+            const refs =
+                executives.map(
+                    executive =>
+                        db
+                            .collection(
+                                'attendance',
+                            )
+                            .doc(
+                                executive.id,
+                            )
+                            .collection(
+                                'records',
+                            )
+                            .doc(today),
                 );
 
-                return db
-                    .collection('attendance')
-                    .doc(e.id)
-                    .collection('records')
-                    .doc(today);
-            });
 
-            // -----------------------------------------
-            // Fetch attendance
-            // -----------------------------------------
+            const attendance =
+                await db.getAll(...refs);
 
-            console.log('Fetching attendance...');
-
-            const attendance = await db.getAll(...refs);
-
-            console.log(
-                'Attendance documents returned:',
-                attendance.length,
+            this.logger.log(
+                `Attendance fetched | count=${attendance.length}`,
             );
+
 
             let present = 0;
             let leave = 0;
             let late = 0;
 
-            // Late threshold: 10:00 AM
             const lateHour = 10;
 
-            // -----------------------------------------
-            // Process attendance
-            // -----------------------------------------
+
+            // ==================================================
+            // PROCESS
+            // ==================================================
 
             attendance.forEach(doc => {
-                try {
-                    console.log('Processing attendance:', {
-                        id: doc.id,
-                        exists: doc.exists,
-                        path: doc.ref.path,
-                    });
 
-                    if (!doc.exists) {
-                        console.log(
-                            `Attendance does not exist for ${doc.id}`,
-                        );
-                        return;
-                    }
+                if (!doc.exists) {
+                    return;
+                }
 
-                    const data = doc.data();
+                const data =
+                    doc.data();
 
-                    console.log(
-                        `Attendance data for ${doc.id}:`,
-                        data,
-                    );
+                if (
+                    data?.status ===
+                    'leave'
+                ) {
 
-                    if (data?.status === 'leave') {
-                        leave++;
-                        return;
-                    }
+                    leave++;
+                    return;
+                }
 
-                    if (data?.checkInTime) {
-                        present++;
+                if (!data?.checkInTime) {
+                    return;
+                }
 
-                        let checkIn: Date;
+                present++;
 
-                        if (
-                            data.checkInTime &&
-                            typeof data.checkInTime.toDate === 'function'
-                        ) {
-                            checkIn = data.checkInTime.toDate();
-                        } else {
-                            checkIn = new Date(data.checkInTime);
-                        }
-
-                        console.log(
-                            `Check-in time for ${doc.id}:`,
-                            checkIn,
+                const checkIn =
+                    typeof data.checkInTime
+                        ?.toDate ===
+                    'function'
+                        ? data.checkInTime.toDate()
+                        : new Date(
+                            data.checkInTime,
                         );
 
-                        if (isNaN(checkIn.getTime())) {
-                            console.error(
-                                `Invalid checkInTime for ${doc.id}:`,
-                                data.checkInTime,
-                            );
-                            return;
-                        }
+                if (
+                    isNaN(
+                        checkIn.getTime(),
+                    )
+                ) {
 
-                        if (checkIn.getHours() >= lateHour) {
-                            late++;
-                        }
-                    }
-                } catch (error) {
-                    console.error(
-                        `Error processing attendance document ${doc.id}:`,
-                        error,
+                    this.logger.warn(
+                        `Invalid checkInTime | executive=${doc.id}`,
                     );
 
-                    throw error;
+                    return;
+                }
+
+                if (
+                    checkIn.getHours() >=
+                    lateHour
+                ) {
+                    late++;
                 }
             });
 
+
+            // ==================================================
+            // RESULT
+            // ==================================================
+
             const result = {
-                total: executives.length,
+                total:
+                    executives.length,
+
                 present,
+
                 leave,
+
                 late,
+
                 executives,
             };
 
-            console.log('Dashboard result:', result);
-            console.log('========== DASHBOARD END ==========');
+
+            this.logger.log(
+                `Dashboard ready | uid=${user.uid} | total=${result.total} present=${present} leave=${leave} late=${late}`,
+            );
 
             return result;
+
         } catch (error) {
-            console.error('========== DASHBOARD ERROR ==========');
-            console.error('Error:', error);
 
-            if (error instanceof Error) {
-                console.error('Message:', error.message);
-                console.error('Stack:', error.stack);
-            }
-
-            console.error('User:', user);
-            console.error('====================================');
+            this.logger.error(
+                `Dashboard fetch failed | uid=${user?.uid ?? 'unknown'} | ${
+                    error instanceof Error
+                        ? error.message
+                        : 'Unknown error'
+                }`,
+                error instanceof Error
+                    ? error.stack
+                    : undefined,
+            );
 
             throw new InternalServerErrorException(
                 error instanceof Error

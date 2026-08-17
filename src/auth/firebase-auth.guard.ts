@@ -2,6 +2,7 @@ import {
   CanActivate,
   ExecutionContext,
   Injectable,
+  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
 
@@ -10,6 +11,9 @@ import { FirebaseService } from '../firebase/firebase.service';
 @Injectable()
 export class FirebaseAuthGuard
   implements CanActivate {
+
+  private readonly logger =
+    new Logger(FirebaseAuthGuard.name);
 
   constructor(
     private readonly firebase: FirebaseService,
@@ -25,45 +29,36 @@ export class FirebaseAuthGuard
         .switchToHttp()
         .getRequest();
 
-
-    /*
-     * Read:
-     *
-     * Authorization: Bearer <JWT>
-     */
     const authorization =
       request.headers.authorization;
 
-
     if (!authorization) {
+
+      this.logger.warn(
+        'Authentication failed | token missing',
+      );
 
       throw new UnauthorizedException(
         'Authorization token missing',
       );
-
     }
 
-
-    /*
-     * Expected format:
-     *
-     * Bearer eyJhbGciOi...
-     */
     const [type, token] =
       authorization.split(' ');
-
 
     if (
       type !== 'Bearer' ||
       !token
     ) {
 
+      this.logger.warn(
+        'Authentication failed | invalid authorization format',
+      );
+
       throw new UnauthorizedException(
         'Invalid authorization format',
       );
-
     }
-
 
     try {
 
@@ -72,10 +67,7 @@ export class FirebaseAuthGuard
        */
       const decoded =
         await this.firebase.auth
-          .verifyIdToken(
-            token,
-          );
-
+          .verifyIdToken(token);
 
       /*
        * Load application user.
@@ -86,41 +78,39 @@ export class FirebaseAuthGuard
           .doc(decoded.uid)
           .get();
 
-
       if (!userDoc.exists) {
+
+        this.logger.warn(
+          `Authentication failed | user not found | uid=${decoded.uid}`,
+        );
 
         throw new UnauthorizedException(
           'User not found',
         );
-
       }
-
 
       const userData =
         userDoc.data();
 
-
       /*
        * Dashboard authorization.
        */
-      if (
-        userData?.role !==
-        'root_manager'
-      ) {
+      if (userData?.role === 'field_executive') {
+
+        this.logger.warn(
+          `Authentication failed | unauthorized role | uid=${decoded.uid} role=${userData?.role}`,
+        );
 
         throw new UnauthorizedException(
           'You are not authorized to access this resource',
         );
-
       }
-
 
       /*
        * Attach authenticated user
        * to request.
        */
       request.user = {
-
         uid:
           decoded.uid,
 
@@ -128,27 +118,37 @@ export class FirebaseAuthGuard
           decoded.email,
 
         ...userData,
-
       };
-
 
       return true;
 
-
     } catch (error) {
 
-      console.error(
-        'JWT verification failed:',
-        error,
+      /*
+       * Do not log JWT/token.
+       */
+      this.logger.error(
+        `JWT verification failed | ${
+          error instanceof Error
+            ? error.message
+            : 'Unknown error'
+        }`,
       );
 
+      /*
+       * Preserve our own authorization
+       * errors.
+       */
+      if (
+        error instanceof
+        UnauthorizedException
+      ) {
+        throw error;
+      }
 
       throw new UnauthorizedException(
         'Invalid or expired token',
       );
-
     }
-
   }
-
 }

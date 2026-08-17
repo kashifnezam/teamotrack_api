@@ -1,5 +1,6 @@
 import {
     Injectable,
+    Logger,
     NotFoundException,
 } from '@nestjs/common';
 
@@ -8,6 +9,9 @@ import { AttendanceDto } from './dto/attendance.dto';
 
 @Injectable()
 export class AttendanceService {
+
+    private readonly logger =
+        new Logger(AttendanceService.name);
 
     constructor(
         private readonly firebase: FirebaseService,
@@ -19,6 +23,10 @@ export class AttendanceService {
     }
 
 
+    // ==================================================
+    // GET DATA
+    // ==================================================
+
     async getData(
         rootId: string,
         dto: AttendanceDto,
@@ -28,7 +36,6 @@ export class AttendanceService {
             rootId,
             dto.executiveId,
         );
-
 
         const start = new Date(
             dto.year,
@@ -42,55 +49,72 @@ export class AttendanceService {
             1,
         );
 
+        try {
 
-        const snapshot = await this.db
-            .collection('attendance')
-            .doc(dto.executiveId)
-            .collection('records')
-            .where(
-                'date',
-                '>=',
-                start,
-            )
-            .where(
-                'date',
-                '<',
-                end,
-            )
-            .get();
+            const snapshot = await this.db
+                .collection('attendance')
+                .doc(dto.executiveId)
+                .collection('records')
+                .where(
+                    'date',
+                    '>=',
+                    start,
+                )
+                .where(
+                    'date',
+                    '<',
+                    end,
+                )
+                .get();
 
+            const records = snapshot.docs.map(
+                doc => {
 
-        const records = snapshot.docs.map(
-            doc => {
+                    const data = doc.data();
 
-                const data = doc.data();
+                    return {
+                        id: doc.id,
+                        date: data.date ?? null,
+                        checkInTime:
+                            data.checkInTime ?? null,
+                        checkOutTime:
+                            data.checkOutTime ?? null,
+                        workingMinutes:
+                            data.workingMinutes ?? 0,
+                        status:
+                            data.status ?? 'absent',
+                    };
 
-                return {
-                    id: doc.id,
-                    date: data.date ?? null,
-                    checkInTime:
-                        data.checkInTime ?? null,
-                    checkOutTime:
-                        data.checkOutTime ?? null,
-                    workingMinutes:
-                        data.workingMinutes ?? 0,
-                    status:
-                        data.status ?? 'absent',
-                };
+                },
+            );
 
-            },
-        );
+            return {
+                records,
+                summary:
+                    this.getSummary(records),
+            };
 
+        } catch (error) {
 
-        return {
-            records,
-            summary: this.getSummary(records),
-        };
+            this.logger.error(
+                `Attendance fetch failed | executive=${dto.executiveId} | ${dto.year}-${dto.month}`,
+                error instanceof Error
+                    ? error.stack
+                    : String(error),
+            );
 
+            throw error;
+        }
     }
 
 
-    private getSummary(records: any[]) {
+    // ==================================================
+    // SUMMARY
+    // ==================================================
+
+    private getSummary(
+        records: any[],
+    ) {
 
         return {
             totalPresent:
@@ -126,9 +150,12 @@ export class AttendanceService {
                     0,
                 ),
         };
-
     }
 
+
+    // ==================================================
+    // VERIFY EXECUTIVE
+    // ==================================================
 
     private async verifyExecutive(
         rootId: string,
@@ -148,12 +175,13 @@ export class AttendanceService {
             data?.role !== 'field_executive'
         ) {
 
+            this.logger.warn(
+                `Executive validation failed | executive=${executiveId} | root=${rootId}`,
+            );
+
             throw new NotFoundException(
                 'Executive not found',
             );
-
         }
-
     }
-
 }
