@@ -1,14 +1,16 @@
 import { IsOptional, IsString } from 'class-validator';
 
 export class TeamDto {
+
     @IsString()
     name!: string;
 
-    @IsString()
     @IsOptional()
+    @IsString()
     leadId?: string;
 
-    @IsString()
     @IsOptional()
+    @IsString()
     shiftId?: string;
+
 }

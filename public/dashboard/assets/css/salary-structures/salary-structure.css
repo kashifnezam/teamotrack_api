@@ -1,0 +1,37 @@
+#salaryStructureTableWrap {
+    overflow-x: auto;
+}
+
+#salaryStructureTableWrap table {
+    min-width: 850px;
+}
+
+.salary-structure-card {
+    padding: 1rem;
+    border-bottom: 1px solid var(--bs-border-color);
+}
+
+.salary-structure-card:last-child {
+    border-bottom: 0;
+}
+
+.salary-total {
+    font-size: 1.05rem;
+    font-weight: 600;
+}
+
+.salary-component {
+    font-size: .82rem;
+}
+
+@media (max-width: 767.98px) {
+
+    #salaryStructureTableWrap {
+        display: none !important;
+    }
+
+    #salaryStructureMobileList {
+        display: block !important;
+    }
+
+}

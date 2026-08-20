@@ -1,0 +1,44 @@
+#payrollCalculationTableWrap {
+    overflow-x: auto;
+}
+
+#payrollCalculationTableWrap table {
+    min-width: 900px;
+}
+
+.payroll-calculation-card {
+    padding: 1rem;
+    border-bottom: 1px solid var(--bs-border-color);
+}
+
+.payroll-calculation-card:last-child {
+    border-bottom: 0;
+}
+
+.payroll-calculation-name {
+    font-weight: 600;
+}
+
+.payroll-calculation-meta {
+    font-size: .82rem;
+}
+
+.payroll-calculation-amount {
+    font-weight: 600;
+}
+
+@media (max-width: 767.98px) {
+
+    #payrollCalculationTableWrap {
+        display: none !important;
+    }
+
+    #payrollCalculationMobileList {
+        display: block !important;
+    }
+
+    #payrollCalculationPeriod {
+        width: 100%;
+    }
+
+}

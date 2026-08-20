@@ -102,61 +102,48 @@
 
 
     async function loadExecutives() {
+    try {
+        const select = document.getElementById("liveExecutive");
 
-        try {
-
-            const data =
-                await Api.get(
-                    "/executives/data"
-                );
-
-            if (!data) return;
-
-            executives =
-                data.executives || [];
-
-
-            const select =
-                document.getElementById(
-                    "liveExecutive"
-                );
-
-
-            select.innerHTML =
-                `<option value="">
-                    Select Executive
-                </option>`;
-
-
-            executives
-                .filter(e => e.isActive !== false)
-                .forEach(executive => {
-
-                    select.insertAdjacentHTML(
-                        "beforeend",
-                        `
-                        <option value="${executive.id}">
-                            ${escapeHtml(
-                                executive.fullName
-                            )}
-                        </option>
-                        `
-                    );
-
-                });
-
-        } catch (error) {
-
-            console.error(error);
-
-            AppAlert.error(
-                error.message ||
-                "Unable to load executives"
+        if (!select) {
+            throw new Error(
+                'Element "#liveExecutive" not found in live.html'
             );
-
         }
 
+        const data = await Api.get("/executives/data");
+
+        if (!data) return;
+
+        executives = data.executives || [];
+
+        select.innerHTML = `
+            <option value="">
+                Select Executive
+            </option>
+        `;
+
+        executives
+            .filter(e => e.isActive !== false)
+            .forEach(executive => {
+                select.insertAdjacentHTML(
+                    "beforeend",
+                    `
+                    <option value="${executive.id}">
+                        ${escapeHtml(executive.fullName)}
+                    </option>
+                    `
+                );
+            });
+
+    } catch (error) {
+        console.error("loadExecutives failed:", error);
+
+        AppAlert.error(
+            error.message || "Unable to load executives"
+        );
     }
+}
 
 
     async function loadTracking() {

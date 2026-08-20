@@ -27,11 +27,14 @@ export class ShiftsService {
     // GET ALL
     // ==================================================
 
-    async getAll(rootId: string) {
+    async getAll(userId: string) {
 
-        this.logger.log(
-            `Fetching shifts | rootId=${rootId}`,
-        );
+        const user =
+            await this.getUser(userId);
+
+        const rootId =
+            this.getRootId(user);
+
 
         try {
 
@@ -49,24 +52,19 @@ export class ShiftsService {
                     )
                     .get();
 
-            this.logger.log(
-                `Shifts fetched | rootId=${rootId} | count=${snap.size}`,
-            );
 
             return {
                 shifts:
                     snap.docs.map(doc => ({
                         id: doc.id,
-                        ...this.pick(
-                            doc.data(),
-                        ),
+                        ...this.pick(doc.data()),
                     })),
             };
 
         } catch (error) {
 
             this.logger.error(
-                `Failed to fetch shifts | rootId=${rootId}`,
+                `Failed to fetch shifts | user=${userId}`,
                 error instanceof Error
                     ? error.stack
                     : undefined,
@@ -82,15 +80,26 @@ export class ShiftsService {
     // ==================================================
 
     async create(
-        rootId: string,
+        userId: string,
         dto: ShiftDto,
     ) {
 
-        this.logger.log(
-            `Creating shift | rootId=${rootId} | name=${dto.name}`,
+        const user =
+            await this.getUser(userId);
+
+
+        await this.authorize(
+            user,
+            'shift.create',
         );
 
+
         this.validate(dto);
+
+
+        const rootId =
+            this.getRootId(user);
+
 
         const ref =
             await this.db
@@ -109,9 +118,11 @@ export class ShiftsService {
 
                 });
 
+
         this.logger.log(
-            `Shift created | id=${ref.id} | rootId=${rootId}`,
+            `Shift created | id=${ref.id} | user=${userId}`,
         );
+
 
         return {
             success: true,
@@ -125,38 +136,48 @@ export class ShiftsService {
     // ==================================================
 
     async update(
-        rootId: string,
+        userId: string,
         id: string,
         dto: ShiftDto,
     ) {
 
-        this.logger.log(
-            `Updating shift | id=${id} | rootId=${rootId}`,
+        const user =
+            await this.getUser(userId);
+
+
+        await this.authorize(
+            user,
+            'shift.edit',
         );
 
+
         this.validate(dto);
+
+
+        const rootId =
+            this.getRootId(user);
+
 
         const ref =
             this.db
                 .collection('shifts')
                 .doc(id);
 
+
         const doc =
             await ref.get();
+
 
         if (
             !doc.exists ||
             doc.data()?.rootId !== rootId
         ) {
 
-            this.logger.warn(
-                `Shift not found | id=${id} | rootId=${rootId}`,
-            );
-
             throw new NotFoundException(
                 'Shift not found',
             );
         }
+
 
         await ref.update({
 
@@ -167,9 +188,11 @@ export class ShiftsService {
 
         });
 
+
         this.logger.log(
-            `Shift updated | id=${id} | rootId=${rootId}`,
+            `Shift updated | id=${id} | user=${userId}`,
         );
+
 
         return {
             success: true,
@@ -183,30 +206,38 @@ export class ShiftsService {
     // ==================================================
 
     async remove(
-        rootId: string,
+        userId: string,
         id: string,
     ) {
 
-        this.logger.log(
-            `Deleting shift | id=${id} | rootId=${rootId}`,
+        const user =
+            await this.getUser(userId);
+
+
+        await this.authorize(
+            user,
+            'shift.delete',
         );
+
+
+        const rootId =
+            this.getRootId(user);
+
 
         const ref =
             this.db
                 .collection('shifts')
                 .doc(id);
 
+
         const doc =
             await ref.get();
+
 
         if (
             !doc.exists ||
             doc.data()?.rootId !== rootId
         ) {
-
-            this.logger.warn(
-                `Shift not found | id=${id} | rootId=${rootId}`,
-            );
 
             throw new NotFoundException(
                 'Shift not found',
@@ -214,7 +245,9 @@ export class ShiftsService {
         }
 
 
-        // Prevent deleting an assigned shift.
+        /*
+         * Prevent deleting an assigned shift.
+         */
         const teams =
             await this.db
                 .collection('teams')
@@ -234,10 +267,6 @@ export class ShiftsService {
 
         if (!teams.empty) {
 
-            this.logger.warn(
-                `Shift deletion blocked | id=${id} | assigned to team`,
-            );
-
             throw new BadRequestException(
                 'Shift is assigned to a team',
             );
@@ -246,14 +275,265 @@ export class ShiftsService {
 
         await ref.delete();
 
+
         this.logger.log(
-            `Shift deleted | id=${id} | rootId=${rootId}`,
+            `Shift deleted | id=${id} | user=${userId}`,
         );
+
 
         return {
             success: true,
             id,
         };
+    }
+
+
+    // ==================================================
+    // AUTHORIZATION
+    // ==================================================
+
+    private async authorize(
+        user: any,
+        permission: string,
+    ) {
+
+        /*
+         * Root authority.
+         */
+        if (this.isRoot(user)) {
+            return;
+        }
+
+
+        /*
+         * HR does not manage
+         * organizational shift configuration.
+         */
+        if (user.role === 'hr') {
+
+            throw new BadRequestException(
+                'HR cannot manage shifts',
+            );
+        }
+
+
+        /*
+         * Field Executive cannot
+         * manage anything.
+         */
+        if (
+            user.role ===
+            'field_executive'
+        ) {
+
+            throw new BadRequestException(
+                'Executive has no management permission',
+            );
+        }
+
+
+        /*
+         * Manager permission.
+         */
+        const permissions =
+            await this.getPermissions(
+                user.uid,
+            );
+
+
+        if (
+            permissions[permission] !== true
+        ) {
+
+            throw new BadRequestException(
+                'Permission denied',
+            );
+        }
+
+
+        /*
+         * Parent authority must also
+         * contain the same permission.
+         */
+        await this.verifyAuthorityChain(
+            user,
+            permission,
+        );
+    }
+
+
+    // ==================================================
+    // AUTHORITY CHAIN
+    // ==================================================
+
+    private async verifyAuthorityChain(
+        user: any,
+        permission: string,
+    ) {
+
+        let current =
+            user;
+
+
+        const visited =
+            new Set<string>();
+
+
+        while (
+            current.parentId &&
+            !visited.has(current.uid)
+        ) {
+
+            visited.add(
+                current.uid,
+            );
+
+
+            const parent =
+                await this.getUser(
+                    current.parentId,
+                );
+
+
+            if (
+                this.getRootId(current) !==
+                this.getRootId(parent)
+            ) {
+
+                throw new BadRequestException(
+                    'Invalid hierarchy',
+                );
+            }
+
+
+            /*
+             * Root authority ends
+             * the chain.
+             */
+            if (
+                this.isRoot(parent)
+            ) {
+
+                return;
+            }
+
+
+            const permissions =
+                await this.getPermissions(
+                    parent.uid,
+                );
+
+
+            if (
+                permissions[permission] !== true
+            ) {
+
+                throw new BadRequestException(
+                    'Parent authority denied',
+                );
+            }
+
+
+            current =
+                parent;
+        }
+    }
+
+
+    // ==================================================
+    // USER
+    // ==================================================
+
+    private async getUser(
+        uid: string,
+    ) {
+
+        const doc =
+            await this.db
+                .collection('user')
+                .doc(uid)
+                .get();
+
+
+        if (!doc.exists) {
+
+            throw new NotFoundException(
+                'User not found',
+            );
+        }
+
+
+        return {
+            uid: doc.id,
+            ...doc.data(),
+        } as any;
+    }
+
+
+    // ==================================================
+    // PERMISSIONS
+    // ==================================================
+
+    private async getPermissions(
+        uid: string,
+    ) {
+
+        const doc =
+            await this.db
+                .collection('user')
+                .doc(uid)
+                .collection('settings')
+                .doc('permissions')
+                .get();
+
+
+        return doc.exists
+            ? doc.data() ?? {}
+            : {};
+    }
+
+
+    // ==================================================
+    // ROOT
+    // ==================================================
+
+    private isRoot(
+        user: any,
+    ) {
+
+        return [
+            'root',
+            'admin',
+            'root_manager',
+            'root_hr',
+        ].includes(
+            user.role,
+        );
+    }
+
+
+    private getRootId(
+        user: any,
+    ): string {
+
+        if (this.isRoot(user)) {
+
+            return (
+                user.rootId ||
+                user.uid
+            );
+        }
+
+
+        if (!user.rootId) {
+
+            throw new BadRequestException(
+                'Invalid hierarchy',
+            );
+        }
+
+
+        return user.rootId;
     }
 
 
@@ -267,10 +547,6 @@ export class ShiftsService {
 
         if (!dto.name?.trim()) {
 
-            this.logger.warn(
-                'Shift validation failed | name missing',
-            );
-
             throw new BadRequestException(
                 'Shift name is required',
             );
@@ -278,15 +554,15 @@ export class ShiftsService {
 
 
         if (
+            dto.startHour < 0 ||
             dto.startHour > 23 ||
+            dto.endHour < 0 ||
             dto.endHour > 23 ||
+            dto.startMinute < 0 ||
             dto.startMinute > 59 ||
+            dto.endMinute < 0 ||
             dto.endMinute > 59
         ) {
-
-            this.logger.warn(
-                `Shift validation failed | invalid time | name=${dto.name}`,
-            );
 
             throw new BadRequestException(
                 'Invalid shift time',
@@ -295,13 +571,11 @@ export class ShiftsService {
 
 
         if (
+            dto.halfDayMinutes < 0 ||
+            dto.fullDayMinutes < 0 ||
             dto.halfDayMinutes >
             dto.fullDayMinutes
         ) {
-
-            this.logger.warn(
-                `Shift validation failed | invalid attendance duration | name=${dto.name}`,
-            );
 
             throw new BadRequestException(
                 'Invalid attendance duration',
@@ -314,7 +588,9 @@ export class ShiftsService {
     // PICK
     // ==================================================
 
-    private pick(data: any) {
+    private pick(
+        data: any,
+    ) {
 
         return {
 

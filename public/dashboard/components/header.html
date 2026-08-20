@@ -2,12 +2,7 @@
 
     <div class="header-left">
 
-        <button
-            class="sidebar-toggle"
-            id="sidebarToggle"
-            type="button"
-            aria-label="Toggle Sidebar"
-        >
+        <button class="sidebar-toggle" id="sidebarToggle" type="button" aria-label="Toggle Sidebar">
             <i class="bi bi-list"></i>
         </button>
 
@@ -31,31 +26,18 @@
         <div class="header-divider"></div>
 
 
-        <button
-            class="header-btn ripple"
-            aria-label="Notifications"
-            type="button"
-        >
+        <button class="header-btn ripple" aria-label="Notifications" type="button">
             <i class="bi bi-bell"></i>
             <span class="notification-badge"></span>
         </button>
 
 
-        <button
-            class="header-btn ripple"
-            aria-label="Messages"
-            type="button"
-        >
+        <button class="header-btn ripple" aria-label="Messages" type="button">
             <i class="bi bi-chat-dots"></i>
         </button>
 
 
-        <button
-            class="header-btn ripple"
-            id="themeToggle"
-            aria-label="Toggle Theme"
-            type="button"
-        >
+        <button class="header-btn ripple" id="themeToggle" aria-label="Toggle Theme" type="button">
             <i class="bi bi-moon-stars"></i>
         </button>
 
@@ -64,29 +46,20 @@
              PROFILE
         ================================================== -->
 
-        <div
-            class="header-profile-wrapper"
-            id="headerProfileWrapper"
-        >
+        <div class="header-profile-wrapper" id="headerProfileWrapper">
 
-            <button
-                type="button"
-                class="header-profile"
-                id="headerProfile"
-                aria-expanded="false"
-            >
+            <button type="button" class="header-profile" id="headerProfile" aria-expanded="false">
 
-                <div class="profile-avatar">
-                    KA
+                <div class="profile-avatar" id="headerUserAvatar">
+                    U
                 </div>
 
                 <div class="profile-info">
 
-                    <h6 class="name">
-                        Kashif
+                    <h6 class="name" id="headerUserName">
+                        User
                     </h6>
-
-                    <small>
+                    <small id="profileMenuUserRole">
                         Administrator
                     </small>
 
@@ -101,26 +74,23 @@
                  PROFILE MENU
             ================================================== -->
 
-            <div
-                class="profile-menu"
-                id="profileMenu"
-            >
+            <div class="profile-menu" id="profileMenu">
 
                 <!-- Profile Header -->
 
                 <div class="profile-menu-header">
 
-                    <div class="profile-menu-avatar">
-                        KA
+                    <div class="profile-menu-avatar" id="profileMenuUserAvatar">
+                        U
                     </div>
 
                     <div>
 
-                        <h6>
-                            Kashif
+                        <h6 class="username" d="profileMenuUserName">
+
                         </h6>
 
-                        <small>
+                        <small id="profileMenuUserRole">
                             Administrator
                         </small>
 
@@ -134,10 +104,7 @@
 
                 <!-- Account -->
 
-                <a
-                    href="/profile"
-                    class="profile-menu-item"
-                >
+                <a href="/profile" class="profile-menu-item">
 
                     <i class="bi bi-person"></i>
 
@@ -148,10 +115,7 @@
                 </a>
 
 
-                <a
-                    href="/change-password"
-                    class="profile-menu-item"
-                >
+                <a href="/change-password" class="profile-menu-item">
 
                     <i class="bi bi-lock"></i>
 
@@ -162,10 +126,7 @@
                 </a>
 
 
-                <a
-                    href="/settings/account"
-                    class="profile-menu-item"
-                >
+                <a href="/settings/account" class="profile-menu-item">
 
                     <i class="bi bi-gear"></i>
 
@@ -181,11 +142,7 @@
 
                 <!-- Logout -->
 
-                <button
-                    type="button"
-                    class="profile-menu-item logout"
-                    id="logoutButton"
-                >
+                <button type="button" class="profile-menu-item logout" id="logoutButton">
 
                     <i class="bi bi-box-arrow-right"></i>
 

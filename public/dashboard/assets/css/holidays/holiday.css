@@ -1,0 +1,45 @@
+#holidayTableWrap {
+    overflow-x: auto;
+}
+
+#holidayTableWrap table {
+    min-width: 760px;
+}
+
+.holiday-card {
+    border-bottom: 1px solid var(--bs-border-color);
+}
+
+.holiday-card:last-child {
+    border-bottom: 0;
+}
+
+.holiday-date {
+    min-width: 72px;
+}
+
+.holiday-date-day {
+    font-size: 1.4rem;
+    line-height: 1;
+    font-weight: 600;
+}
+
+.holiday-date-month {
+    font-size: .72rem;
+    text-transform: uppercase;
+    color: var(--bs-secondary-color);
+}
+
+@media (max-width: 767.98px) {
+    #holidayTableWrap {
+        display: none !important;
+    }
+
+    #holidayMobileList {
+        display: block !important;
+    }
+
+    .holiday-card {
+        padding: 1rem;
+    }
+}

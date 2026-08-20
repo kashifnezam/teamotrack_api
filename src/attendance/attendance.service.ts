@@ -15,7 +15,7 @@ export class AttendanceService {
 
     constructor(
         private readonly firebase: FirebaseService,
-    ) {}
+    ) { }
 
 
     private get db() {
@@ -32,72 +32,102 @@ export class AttendanceService {
         dto: AttendanceDto,
     ) {
 
-        await this.verifyExecutive(
+        await this.verifyStaff(
             rootId,
             dto.executiveId,
         );
 
-        const start = new Date(
-            dto.year,
-            dto.month - 1,
-            1,
-        );
 
-        const end = new Date(
-            dto.year,
-            dto.month,
-            1,
-        );
+        const start =
+            new Date(
+                dto.year,
+                dto.month - 1,
+                1,
+            );
+
+
+        const end =
+            new Date(
+                dto.year,
+                dto.month,
+                1,
+            );
+
 
         try {
 
-            const snapshot = await this.db
-                .collection('attendance')
-                .doc(dto.executiveId)
-                .collection('records')
-                .where(
-                    'date',
-                    '>=',
-                    start,
-                )
-                .where(
-                    'date',
-                    '<',
-                    end,
-                )
-                .get();
+            const snapshot =
+                await this.db
+                    .collection('attendance')
+                    .doc(dto.executiveId)
+                    .collection('records')
+                    .where(
+                        'date',
+                        '>=',
+                        start,
+                    )
+                    .where(
+                        'date',
+                        '<',
+                        end,
+                    )
+                    .get();
 
-            const records = snapshot.docs.map(
-                doc => {
 
-                    const data = doc.data();
+            const records =
+                snapshot.docs.map(
+                    doc => {
 
-                    return {
-                        id: doc.id,
-                        date: data.date ?? null,
-                        checkInTime:
-                            data.checkInTime ?? null,
-                        checkOutTime:
-                            data.checkOutTime ?? null,
-                        workingMinutes:
-                            data.workingMinutes ?? 0,
-                        status:
-                            data.status ?? 'absent',
-                    };
+                        const data =
+                            doc.data();
 
-                },
-            );
+
+                        return {
+
+                            id:
+                                doc.id,
+
+                            date:
+                                data.date ??
+                                null,
+
+                            checkInTime:
+                                data.checkInTime ??
+                                null,
+
+                            checkOutTime:
+                                data.checkOutTime ??
+                                null,
+
+                            workingMinutes:
+                                data.workingMinutes ??
+                                0,
+
+                            status:
+                                data.status ??
+                                'absent',
+
+                        };
+
+                    },
+                );
+
 
             return {
+
                 records,
+
                 summary:
-                    this.getSummary(records),
+                    this.getSummary(
+                        records,
+                    ),
+
             };
 
         } catch (error) {
 
             this.logger.error(
-                `Attendance fetch failed | executive=${dto.executiveId} | ${dto.year}-${dto.month}`,
+                `Attendance fetch failed | staff=${dto.executiveId} | ${dto.year}-${dto.month}`,
                 error instanceof Error
                     ? error.stack
                     : String(error),
@@ -117,71 +147,103 @@ export class AttendanceService {
     ) {
 
         return {
+
             totalPresent:
                 records.filter(
-                    x => x.status === 'present',
+                    x =>
+                        x.status ===
+                        'present',
                 ).length,
 
             totalLate:
                 records.filter(
-                    x => x.status === 'late',
+                    x =>
+                        x.status ===
+                        'late',
                 ).length,
 
             totalHalfDay:
                 records.filter(
-                    x => x.status === 'half_day',
+                    x =>
+                        x.status ===
+                        'half_day',
                 ).length,
 
             totalWeeklyOff:
                 records.filter(
-                    x => x.status === 'weekly_off',
+                    x =>
+                        x.status ===
+                        'weekly_off',
                 ).length,
 
             totalAbsent:
                 records.filter(
-                    x => x.status === 'absent',
+                    x =>
+                        x.status ===
+                        'absent',
                 ).length,
 
             totalWorkingMinutes:
                 records.reduce(
-                    (sum, x) =>
+                    (
+                        sum,
+                        x,
+                    ) =>
                         sum +
-                        (x.workingMinutes || 0),
+                        (
+                            x.workingMinutes ||
+                            0
+                        ),
                     0,
                 ),
+
         };
     }
 
 
     // ==================================================
-    // VERIFY EXECUTIVE
+    // VERIFY STAFF
     // ==================================================
 
-    private async verifyExecutive(
+    private async verifyStaff(
         rootId: string,
-        executiveId: string,
+        staffId: string,
     ) {
 
-        const doc = await this.db
-            .collection('user')
-            .doc(executiveId)
-            .get();
+        const doc =
+            await this.db
+                .collection('user')
+                .doc(staffId)
+                .get();
 
-        const data = doc.data();
 
+        const data =
+            doc.data();
+
+
+        /*
+         * Attendance is staff based,
+         * not executive based.
+         *
+         * Any user belonging to the
+         * same organization can have
+         * attendance records.
+         */
         if (
             !doc.exists ||
-            data?.rootId !== rootId ||
-            data?.role !== 'field_executive'
+            data?.rootId !== rootId
         ) {
 
             this.logger.warn(
-                `Executive validation failed | executive=${executiveId} | root=${rootId}`,
+                `Staff validation failed | staff=${staffId} | root=${rootId}`,
             );
 
+
             throw new NotFoundException(
-                'Executive not found',
+                'Staff not found',
             );
         }
+
     }
+
 }

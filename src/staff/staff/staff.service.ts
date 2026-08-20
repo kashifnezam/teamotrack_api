@@ -841,47 +841,130 @@ export class StaffService {
         if (role === 'manager') {
 
             permissions = {
+
+                // ==================================================
+                // MANAGERS
+                // ==================================================
+
                 'manager.create': true,
                 'manager.edit': true,
-                'manager.delete': false,
-                'manager.manage_permissions': true,
+                // 'manager.delete': false,
+                // 'manager.manage_permissions': true,
+
+
+                // ==================================================
+                // HR
+                // ==================================================
 
                 'hr.create': true,
                 'hr.edit': true,
-                'hr.delete': false,
+                // 'hr.delete': false,
                 'hr.manage_permissions': true,
+
+
+                // ==================================================
+                // FIELD EXECUTIVES
+                // ==================================================
 
                 'field_executive.create': true,
                 'field_executive.edit': true,
-                'field_executive.delete': true,
+                // 'field_executive.delete': true,
+
+
+                // ==================================================
+                // TEAMS
+                // ==================================================
+
+                'team.create': true,
+                'team.edit': true,
+                'team.delete': false,
+
+
+                // ==================================================
+                // ATTENDANCE
+                // ==================================================
 
                 'attendance.view': true,
                 'attendance.manage': true,
 
+                // ==================================================
+                // TASK
+                // ==================================================
+
+                'task.create': true,
+                'task.edit': true,
+                'task.delete': false,
+
+                // ==================================================
+                // LEAVE
+                // ==================================================
+                
+                'leave.approve': false,
+                'leave.view': false,
+                // ==================================================
+                // TRACKING
+                // ==================================================
+
                 'tracking.view': true,
+
             };
 
         } else if (role === 'hr') {
 
             permissions = {
+
+                // ==================================================
+                // MANAGERS
+                // ==================================================
+
                 'manager.create': false,
                 'manager.edit': false,
                 'manager.delete': false,
                 'manager.manage_permissions': false,
+
+
+                // ==================================================
+                // HR
+                // ==================================================
 
                 'hr.create': false,
                 'hr.edit': false,
                 'hr.delete': false,
                 'hr.manage_permissions': false,
 
+
+                // ==================================================
+                // FIELD EXECUTIVES
+                // ==================================================
+
                 'field_executive.create': false,
                 'field_executive.edit': false,
                 'field_executive.delete': false,
 
+
+                // ==================================================
+                // TEAMS
+                // ==================================================
+
+                'team.create': false,
+                'team.edit': false,
+                'team.delete': false,
+
+
+                // ==================================================
+                // ATTENDANCE
+                // ==================================================
+
                 'attendance.view': true,
                 'attendance.manage': true,
 
+
+                // ==================================================
+                // TRACKING
+                // ==================================================
+
                 'tracking.view': true,
+
             };
 
         } else {

@@ -12,11 +12,16 @@ import { ExecutiveDto } from './dto/executive.dto';
 export class ExecutivesService {
 
     private readonly logger =
-        new Logger(ExecutivesService.name);
+        new Logger(
+            ExecutivesService.name,
+        );
+
 
     constructor(
-        private readonly firebase: FirebaseService,
-    ) {}
+        private readonly firebase:
+            FirebaseService,
+    ) { }
+
 
     private get db() {
         return this.firebase.firestore;
@@ -24,119 +29,491 @@ export class ExecutivesService {
 
 
     // ==================================================
-    // GET ALL
+    // GET EXECUTIVES
     // ==================================================
 
-    async getAll(rootId: string) {
+    async getAll(
+        userId: string,
+    ) {
 
-        this.logger.log(
-            `Fetching executives | rootId=${rootId}`,
-        );
-
-        try {
-
-            const [execSnap, teamSnap] =
-                await Promise.all([
-
-                    this.db
-                        .collection('user')
-                        .where(
-                            'role',
-                            '==',
-                            'field_executive',
-                        )
-                        .where(
-                            'rootId',
-                            '==',
-                            rootId,
-                        )
-                        .select(
-                            'fullName',
-                            'mobile',
-                            'email',
-                            'teamId',
-                            'isActive',
-                            'isTrackingEnable',
-                            'gpsPriority',
-                        )
-                        .get(),
-
-                    this.db
-                        .collection('teams')
-                        .where(
-                            'rootId',
-                            '==',
-                            rootId,
-                        )
-                        .select('name')
-                        .get(),
-
-                ]);
-
-
-            this.logger.log(
-                `Executives fetched | executives=${execSnap.size} teams=${teamSnap.size}`,
+        const user =
+            await this.getUser(
+                userId,
             );
 
 
-            return {
+        const rootId =
+            this.getRootId(
+                user,
+            );
 
-                executives:
-                    execSnap.docs.map(doc => {
 
-                        const data =
-                            doc.data();
+        /*
+         * Load complete organization
+         * hierarchy once.
+         */
+        const [userSnap, teamSnap] =
+            await Promise.all([
 
-                        return {
-                            id: doc.id,
+                this.db
+                    .collection('user')
+                    .where(
+                        'rootId',
+                        '==',
+                        rootId,
+                    )
+                    .get(),
 
-                            fullName:
-                                data.fullName ?? '',
+                this.db
+                    .collection('teams')
+                    .where(
+                        'rootId',
+                        '==',
+                        rootId,
+                    )
+                    .get(),
 
-                            mobile:
-                                data.mobile ?? '',
+            ]);
 
-                            email:
-                                data.email ?? '',
 
-                            teamId:
-                                data.teamId ?? '',
+        const users =
+            userSnap.docs.map(doc => ({
 
-                            isActive:
-                                data.isActive !== false,
+                id:
+                    doc.id,
 
-                            isTrackingEnable:
-                                data.isTrackingEnable === true,
+                ...doc.data(),
 
-                            gpsPriority:
-                                data.gpsPriority ?? 'low',
-                        };
+            })) as any[];
 
-                    }),
 
-                teams:
-                    teamSnap.docs.map(doc => ({
+        /*
+         * --------------------------------------------------
+         * USER MAP
+         * --------------------------------------------------
+         */
 
-                        id: doc.id,
+        const userMap =
+            new Map<string, any>(
+                users.map(item => [
+
+                    item.id,
+
+                    item,
+
+                ]),
+            );
+
+
+        /*
+         * --------------------------------------------------
+         * PARENT -> CHILDREN
+         * --------------------------------------------------
+         */
+
+        const byParent =
+            new Map<
+                string,
+                any[]
+            >();
+
+
+        for (
+            const item of users
+        ) {
+
+            if (!item.parentId) {
+                continue;
+            }
+
+
+            if (
+                !byParent.has(
+                    item.parentId,
+                )
+            ) {
+
+                byParent.set(
+                    item.parentId,
+                    [],
+                );
+
+            }
+
+
+            byParent
+                .get(
+                    item.parentId,
+                )!
+                .push(item);
+
+        }
+
+
+        /*
+         * --------------------------------------------------
+         * VISIBLE MANAGERS
+         * --------------------------------------------------
+         */
+
+        const visibleManagerIds =
+            new Set<string>();
+
+
+        /*
+         * Root can see every manager.
+         */
+        if (
+            this.isRoot(user)
+        ) {
+
+            for (
+                const item of users
+            ) {
+
+                if (
+                    [
+                        'manager',
+                        'child_manager',
+                    ].includes(
+                        item.role,
+                    )
+                ) {
+
+                    visibleManagerIds.add(
+                        item.id,
+                    );
+
+                }
+
+            }
+
+        } else {
+
+            /*
+             * Non-root manager can see:
+             *
+             * self
+             * descendants
+             */
+            visibleManagerIds.add(
+                userId,
+            );
+
+
+            const walkManagers =
+                (
+                    parentId: string,
+                ) => {
+
+                    for (
+                        const child
+                        of
+                        byParent.get(
+                            parentId,
+                        ) || []
+                    ) {
+
+                        if (
+                            [
+                                'manager',
+                                'child_manager',
+                            ].includes(
+                                child.role,
+                            )
+                        ) {
+
+                            visibleManagerIds.add(
+                                child.id,
+                            );
+
+                        }
+
+
+                        walkManagers(
+                            child.id,
+                        );
+
+                    }
+
+                };
+
+
+            walkManagers(
+                userId,
+            );
+
+        }
+
+
+        /*
+         * --------------------------------------------------
+         * VISIBLE EXECUTIVES
+         * --------------------------------------------------
+         */
+
+        const visibleExecutives =
+            new Set<string>();
+
+
+        if (
+            this.isRoot(user)
+        ) {
+
+            for (
+                const item of users
+            ) {
+
+                if (
+                    item.role ===
+                    'field_executive'
+                ) {
+
+                    visibleExecutives.add(
+                        item.id,
+                    );
+
+                }
+
+            }
+
+        } else {
+
+            const walkExecutives =
+                (
+                    parentId: string,
+                ) => {
+
+                    for (
+                        const child
+                        of
+                        byParent.get(
+                            parentId,
+                        ) || []
+                    ) {
+
+                        if (
+                            child.role ===
+                            'field_executive'
+                        ) {
+
+                            visibleExecutives.add(
+                                child.id,
+                            );
+
+                        }
+
+
+                        walkExecutives(
+                            child.id,
+                        );
+
+                    }
+
+                };
+
+
+            walkExecutives(
+                userId,
+            );
+
+        }
+
+
+        /*
+         * --------------------------------------------------
+         * EXECUTIVES
+         * --------------------------------------------------
+         */
+
+        const executives =
+            users
+                .filter(item =>
+
+                    item.role ===
+                    'field_executive'
+
+                )
+                .filter(item =>
+
+                    visibleExecutives.has(
+                        item.id,
+                    )
+
+                )
+                .map(item => {
+
+                    const parent =
+                        userMap.get(
+                            item.parentId,
+                        );
+
+
+                    const team =
+                        teamSnap.docs
+                            .find(
+                                doc =>
+                                    doc.id ===
+                                    item.teamId,
+                            );
+
+
+                    const teamData =
+                        team?.data() || {};
+
+
+                    return {
+
+                        id:
+                            item.id,
+
+                        fullName:
+                            item.fullName ??
+                            '',
+
+                        mobile:
+                            item.mobile ??
+                            '',
+
+                        email:
+                            item.email ??
+                            '',
+
+                        teamId:
+                            item.teamId ??
+                            '',
+
+                        teamName:
+                            teamData.name ??
+                            '',
+
+                        parentId:
+                            item.parentId ??
+                            '',
+
+                        parentName:
+                            parent?.fullName ??
+                            'Root',
+
+                        isActive:
+                            item.isActive !==
+                            false,
+
+                        isTrackingEnable:
+                            item.isTrackingEnable ===
+                            true,
+
+                        gpsPriority:
+                            item.gpsPriority ??
+                            'low',
+
+                    };
+
+                });
+
+
+        /*
+         * --------------------------------------------------
+         * TEAMS
+         *
+         * Only expose teams that the
+         * requester can actually manage.
+         * --------------------------------------------------
+         */
+
+        const teams =
+            teamSnap.docs
+                .map(doc => {
+
+                    const data =
+                        doc.data();
+
+
+                    const leadId =
+                        data.leadId ??
+                        '';
+
+
+                    const lead =
+                        leadId
+                            ? userMap.get(
+                                leadId,
+                            )
+                            : null;
+
+
+                    return {
+
+                        id:
+                            doc.id,
 
                         name:
-                            doc.data().name ?? '',
+                            data.name ??
+                            '',
 
-                    })),
+                        leadId,
 
-            };
+                        leadName:
+                            lead?.fullName ??
+                            'Root',
 
-        } catch (error) {
+                        totalExecutives:
+                            users.filter(
+                                item =>
+                                    item.role ===
+                                    'field_executive' &&
+                                    item.teamId ===
+                                    doc.id,
+                            ).length,
 
-            this.logger.error(
-                `Failed to fetch executives | rootId=${rootId}`,
-                error instanceof Error
-                    ? error.stack
-                    : undefined,
-            );
+                    };
 
-            throw error;
-        }
+                })
+                .filter(team => {
+
+                    /*
+                     * Root can see every team.
+                     */
+                    if (
+                        this.isRoot(user)
+                    ) {
+
+                        return true;
+
+                    }
+
+
+                    /*
+                     * Root-owned/unassigned team
+                     * is not available to a
+                     * child manager.
+                     */
+                    if (!team.leadId) {
+
+                        return false;
+
+                    }
+
+
+                    /*
+                     * Team must be led by
+                     * requester or descendant.
+                     */
+                    return visibleManagerIds.has(
+                        team.leadId,
+                    );
+
+                });
+
+
+        return {
+
+            executives,
+
+            teams,
+
+        };
+
     }
 
 
@@ -145,36 +522,140 @@ export class ExecutivesService {
     // ==================================================
 
     async create(
-        rootId: string,
+        userId: string,
         dto: ExecutiveDto,
     ) {
 
         this.logger.log(
-            `Creating executive | rootId=${rootId} | email=${dto.email} | teamId=${dto.teamId}`,
+            `Creating executive | user=${userId} | email=${dto.email} | teamId=${dto.teamId}`,
         );
 
+
+        const requester =
+            await this.getUser(
+                userId,
+            );
+
+
+        /*
+         * HR cannot create executives.
+         */
+        if (
+            requester.role ===
+            'hr'
+        ) {
+
+            throw new BadRequestException(
+                'HR cannot create field executives',
+            );
+
+        }
+
+
+        /*
+         * Field executive cannot
+         * manage anyone.
+         */
+        if (
+            requester.role ===
+            'field_executive'
+        ) {
+
+            throw new BadRequestException(
+                'Executive has no management permission',
+            );
+
+        }
+
+
+        /*
+         * Permission.
+         */
+        if (
+            !this.isRoot(
+                requester,
+            )
+        ) {
+
+            await this.authorize(
+                userId,
+                'field_executive.create',
+            );
+
+        }
+
+
+        /*
+         * Authentication credentials.
+         */
         if (
             !dto.email ||
             !dto.password
         ) {
 
-            this.logger.warn(
-                `Executive creation rejected | missing credentials | rootId=${rootId}`,
-            );
-
             throw new BadRequestException(
                 'Email and password are required',
             );
+
         }
 
 
-        await this.verifyTeam(
-            rootId,
-            dto.teamId,
+        const rootId =
+            this.getRootId(
+                requester,
+            );
+
+
+        /*
+         * Get the team and verify
+         * that requester can manage it.
+         */
+        const team =
+            await this.verifyTeam(
+                requester,
+                dto.teamId,
+            );
+
+
+        /*
+         * Team MUST have a manager.
+         *
+         * An executive cannot belong
+         * to a root-only/unassigned team.
+         */
+        if (!team.leadId) {
+
+            throw new BadRequestException(
+                'Selected team has no manager',
+            );
+
+        }
+
+
+        /*
+         * IMPORTANT:
+         *
+         * Executive parent is ALWAYS
+         * the team's lead.
+         *
+         * Never requester.
+         */
+        const parentId =
+            team.leadId;
+
+
+        /*
+         * Ensure selected team lead
+         * is inside requester's
+         * management hierarchy.
+         */
+        await this.verifyManagerAccess(
+            requester,
+            parentId,
         );
 
 
-        const user =
+        const authUser =
             await this.firebase.auth.createUser({
 
                 email:
@@ -190,69 +671,88 @@ export class ExecutivesService {
 
             await this.db
                 .collection('user')
-                .doc(user.uid)
+                .doc(authUser.uid)
                 .set({
 
                     uid:
-                        user.uid,
-
-                    email:
-                        dto.email,
-
-                    fullName:
-                        dto.fullName,
-
-                    mobile:
-                        dto.mobile,
-
-                    teamId:
-                        dto.teamId,
+                        authUser.uid,
 
                     rootId,
+
+                    parentId,
 
                     role:
                         'field_executive',
 
+                    fullName:
+                        dto.fullName,
+
+                    email:
+                        dto.email,
+
+                    mobile:
+                        dto.mobile ??
+                        '',
+
+                    teamId:
+                        dto.teamId,
+
                     isActive:
-                        dto.isActive,
+                        dto.isActive !==
+                        false,
 
                     isTrackingEnable:
-                        dto.isTrackingEnable,
+                        dto.isTrackingEnable ===
+                        true,
 
                     gpsPriority:
-                        dto.gpsPriority ?? 'low',
+                        dto.gpsPriority ??
+                        'low',
 
                     createdAt:
+                        new Date(),
+
+                    updatedAt:
                         new Date(),
 
                 });
 
 
             this.logger.log(
-                `Executive created | id=${user.uid} | rootId=${rootId}`,
+                `Executive created | id=${authUser.uid} | parent=${parentId} | team=${dto.teamId} | root=${rootId}`,
             );
-
 
         } catch (error) {
 
             this.logger.error(
-                `Firestore failed after Auth user creation | id=${user.uid}`,
+                `Firestore failed after Auth creation | id=${authUser.uid}`,
                 error instanceof Error
                     ? error.stack
                     : undefined,
             );
 
+
             await this.firebase.auth
-                .deleteUser(user.uid);
+                .deleteUser(
+                    authUser.uid,
+                );
+
 
             throw error;
+
         }
 
 
         return {
-            success: true,
-            id: user.uid,
+
+            success:
+                true,
+
+            id:
+                authUser.uid,
+
         };
+
     }
 
 
@@ -261,73 +761,203 @@ export class ExecutivesService {
     // ==================================================
 
     async update(
-        rootId: string,
+        userId: string,
         id: string,
         dto: ExecutiveDto,
     ) {
 
-        this.logger.log(
-            `Updating executive | id=${id} | rootId=${rootId}`,
-        );
+        const requester =
+            await this.getUser(
+                userId,
+            );
 
-        const ref =
-            this.db
-                .collection('user')
-                .doc(id);
 
-        const doc =
-            await ref.get();
+        const target =
+            await this.getUser(
+                id,
+            );
 
+
+        /*
+         * Target must be executive.
+         */
         if (
-            !doc.exists ||
-            doc.data()?.rootId !== rootId ||
-            doc.data()?.role !==
+            target.role !==
             'field_executive'
         ) {
-
-            this.logger.warn(
-                `Executive update rejected | id=${id} | rootId=${rootId}`,
-            );
 
             throw new NotFoundException(
                 'Executive not found',
             );
+
         }
 
 
-        await this.verifyTeam(
-            rootId,
-            dto.teamId,
+        /*
+         * Same organization.
+         */
+        if (
+            this.getRootId(
+                requester,
+            ) !==
+            this.getRootId(
+                target,
+            )
+        ) {
+
+            throw new NotFoundException(
+                'Executive not found',
+            );
+
+        }
+
+
+        /*
+         * HR cannot manage executives.
+         */
+        if (
+            requester.role ===
+            'hr'
+        ) {
+
+            throw new BadRequestException(
+                'HR cannot manage field executives',
+            );
+
+        }
+
+
+        /*
+         * Field executive cannot
+         * manage anyone.
+         */
+        if (
+            requester.role ===
+            'field_executive'
+        ) {
+
+            throw new BadRequestException(
+                'Executive has no management permission',
+            );
+
+        }
+
+
+        /*
+         * Target must be inside
+         * requester's hierarchy.
+         */
+        if (
+            !this.isRoot(
+                requester,
+            )
+        ) {
+
+            await this.verifyDescendant(
+                userId,
+                id,
+            );
+
+
+            await this.authorize(
+                userId,
+                'field_executive.edit',
+            );
+
+        }
+
+
+        /*
+         * Verify selected team.
+         */
+        const team =
+            await this.verifyTeam(
+                requester,
+                dto.teamId,
+            );
+
+
+        /*
+         * Executive cannot belong
+         * to an unassigned/root-only team.
+         */
+        if (!team.leadId) {
+
+            throw new BadRequestException(
+                'Selected team has no manager',
+            );
+
+        }
+
+
+        /*
+         * Parent is always derived
+         * from team.leadId.
+         */
+        const parentId =
+            team.leadId;
+
+
+        /*
+         * Ensure requester has
+         * authority over new parent.
+         */
+        await this.verifyManagerAccess(
+            requester,
+            parentId,
         );
 
 
-        await ref.update({
+        /*
+         * If team changes, parent can
+         * change only because the new
+         * team has a different manager.
+         *
+         * This keeps:
+         *
+         * parentId === team.leadId
+         */
+        await this.db
+            .collection('user')
+            .doc(id)
+            .update({
 
-            fullName:
-                dto.fullName,
+                fullName:
+                    dto.fullName,
 
-            mobile:
-                dto.mobile,
+                mobile:
+                    dto.mobile ??
+                    '',
 
-            teamId:
-                dto.teamId,
+                teamId:
+                    dto.teamId,
 
-            isActive:
-                dto.isActive,
+                parentId,
 
-            isTrackingEnable:
-                dto.isTrackingEnable,
+                isActive:
+                    dto.isActive !==
+                    false,
 
-            gpsPriority:
-                dto.gpsPriority ?? 'low',
+                isTrackingEnable:
+                    dto.isTrackingEnable ===
+                    true,
 
-            updatedAt:
-                new Date(),
+                gpsPriority:
+                    dto.gpsPriority ??
+                    'low',
 
-        });
+                updatedAt:
+                    new Date(),
+
+            });
 
 
-        if (dto.password) {
+        /*
+         * Password is optional on update.
+         */
+        if (
+            dto.password
+        ) {
 
             await this.firebase.auth
                 .updateUser(
@@ -342,78 +972,806 @@ export class ExecutivesService {
 
 
         this.logger.log(
-            `Executive updated | id=${id} | rootId=${rootId}`,
+            `Executive updated | id=${id} | requester=${userId} | parent=${parentId} | team=${dto.teamId}`,
         );
 
 
         return {
-            success: true,
+
+            success:
+                true,
+
             id,
+
         };
+
     }
 
+
+    // ==================================================
+    // DELETE
+    // ==================================================
+
+    async remove(
+        userId: string,
+        id: string,
+    ) {
+
+        const requester =
+            await this.getUser(
+                userId,
+            );
+
+
+        const target =
+            await this.getUser(
+                id,
+            );
+
+
+        if (
+            target.role !== 'field_executive'
+        ) {
+
+            throw new NotFoundException(
+                'Executive not found',
+            );
+
+        }
+
+
+        if (
+            this.getRootId(
+                requester,
+            ) !==
+            this.getRootId(
+                target,
+            )
+        ) {
+
+            throw new NotFoundException(
+                'Executive not found',
+            );
+
+        }
+
+
+        if (
+            requester.role === 'hr') {
+
+            throw new BadRequestException(
+                'HR cannot delete field executives',
+            );
+
+        }
+
+
+        if (
+            requester.role === 'field_executive') {
+
+            throw new BadRequestException(
+                'Executive has no management permission',
+            );
+
+        }
+
+
+        if (!this.isRoot(requester)) {
+
+            await this.verifyDescendant(
+                userId,
+                id,
+            );
+
+
+            await this.authorize(
+                userId,
+                'field_executive.delete',
+            );
+
+        }
+
+
+        await Promise.all([
+
+            this.db
+                .collection('user')
+                .doc(id)
+                .delete(),
+
+            this.firebase.auth.deleteUser(id),
+
+        ]);
+
+
+        this.logger.log(
+            `Executive deleted | id=${id} | requester=${userId}`,
+        );
+
+
+        return {
+
+            success:
+                true,
+
+            id,
+
+        };
+
+    }
 
     // ==================================================
     // VERIFY TEAM
     // ==================================================
 
     private async verifyTeam(
-        rootId: string,
+        requester: any,
         teamId: string,
-    ) {
+    ): Promise<any> {
 
-        const team =
+        if (!teamId) {
+
+            throw new BadRequestException(
+                'Team is required',
+            );
+
+        }
+
+
+        const rootId =
+            this.getRootId(
+                requester,
+            );
+
+
+        const doc =
             await this.db
                 .collection('teams')
                 .doc(teamId)
                 .get();
 
 
-        if (
-            !team.exists ||
-            team.data()?.rootId !== rootId
-        ) {
-
-            this.logger.warn(
-                `Invalid team | teamId=${teamId} | rootId=${rootId}`,
-            );
+        if (!doc.exists) {
 
             throw new BadRequestException(
                 'Invalid team',
             );
+
         }
-    }
 
 
-    // ==================================================
-    // PICK
-    // ==================================================
+        const data =
+            doc.data() as any;
 
-    private pick(data: any) {
+
+        /*
+         * Same organization.
+         */
+        if (
+            data.rootId !== rootId
+        ) {
+
+            throw new BadRequestException(
+                'Invalid team',
+            );
+
+        }
+
+
+        /*
+         * Root can use any team
+         * in the organization.
+         */
+        if (
+            this.isRoot(requester)
+        ) {
+
+            return {
+
+                id:
+                    doc.id,
+
+                ...data,
+
+            };
+
+        }
+
+
+        /*
+         * Root-only / unassigned teams
+         * cannot be used by child managers.
+         */
+        if (!data.leadId) {
+
+            throw new BadRequestException(
+                'Invalid team',
+            );
+
+        }
+
+
+        /*
+         * Team lead must be inside
+         * requester's hierarchy.
+         */
+        await this.verifyManagerAccess(
+            requester,
+            data.leadId,
+        );
+
 
         return {
 
-            fullName:
-                data.fullName ?? '',
+            id:
+                doc.id,
 
-            mobile:
-                data.mobile ?? '',
-
-            email:
-                data.email ?? '',
-
-            teamId:
-                data.teamId ?? '',
-
-            isActive:
-                data.isActive !== false,
-
-            isTrackingEnable:
-                data.isTrackingEnable === true,
-
-            gpsPriority:
-                data.gpsPriority ?? 'low',
+            ...data,
 
         };
+
     }
+
+
+    // ==================================================
+    // VERIFY MANAGER ACCESS
+    // ==================================================
+
+    private async verifyManagerAccess(
+        requester: any,
+        managerId: string,
+    ) {
+
+        if (!managerId) {
+
+            throw new BadRequestException(
+                'Team manager is required',
+            );
+
+        }
+
+
+        const manager =
+            await this.getUser(
+                managerId,
+            );
+
+
+        /*
+         * Only normal managers can
+         * own a team / executive.
+         */
+        if (
+            ![
+                'manager',
+                'child_manager',
+            ].includes(
+                manager.role,
+            )
+        ) {
+
+            throw new BadRequestException(
+                'Invalid team manager',
+            );
+
+        }
+
+
+        /*
+         * Same organization.
+         */
+        if (
+            this.getRootId(
+                requester,
+            ) !==
+            this.getRootId(
+                manager,
+            )
+        ) {
+
+            throw new BadRequestException(
+                'Invalid team manager',
+            );
+
+        }
+
+
+        /*
+         * Root can access every manager
+         * in the organization.
+         */
+        if (
+            this.isRoot(
+                requester,
+            )
+        ) {
+
+            return;
+
+        }
+
+
+        /*
+         * Requester can manage:
+         *
+         * - self
+         * - descendants
+         */
+        if (
+            requester.uid ===
+            manager.uid
+        ) {
+
+            return;
+
+        }
+
+
+        await this.verifyManagerDescendant(
+            requester.uid,
+            manager.uid,
+        );
+
+    }
+
+
+    // ==================================================
+    // VERIFY MANAGER DESCENDANT
+    // ==================================================
+
+    private async verifyManagerDescendant(
+        parentId: string,
+        targetId: string,
+    ) {
+
+        const target =
+            await this.getUser(
+                targetId,
+            );
+
+
+        if (
+            target.role !==
+            'manager' &&
+            target.role !==
+            'child_manager'
+        ) {
+
+            throw new NotFoundException(
+                'Manager not found',
+            );
+
+        }
+
+
+        let current =
+            target;
+
+
+        const visited =
+            new Set<string>();
+
+
+        while (
+            current.parentId &&
+            !visited.has(
+                current.uid,
+            )
+        ) {
+
+            visited.add(
+                current.uid,
+            );
+
+
+            if (
+                current.parentId ===
+                parentId
+            ) {
+
+                return;
+
+            }
+
+
+            current =
+                await this.getUser(
+                    current.parentId,
+                );
+
+        }
+
+
+        throw new NotFoundException(
+            'Manager not found',
+        );
+
+    }
+
+
+    // ==================================================
+    // VERIFY EXECUTIVE DESCENDANT
+    // ==================================================
+
+    private async verifyDescendant(
+        parentId: string,
+        targetId: string,
+    ) {
+
+        if (
+            parentId ===
+            targetId
+        ) {
+
+            throw new BadRequestException(
+                'Cannot manage yourself',
+            );
+
+        }
+
+
+        const parent =
+            await this.getUser(
+                parentId,
+            );
+
+
+        const target =
+            await this.getUser(
+                targetId,
+            );
+
+
+        if (
+            this.getRootId(
+                parent,
+            ) !==
+            this.getRootId(
+                target,
+            )
+        ) {
+
+            throw new NotFoundException(
+                'Executive not found',
+            );
+
+        }
+
+
+        let current =
+            target;
+
+
+        const visited =
+            new Set<string>();
+
+
+        while (
+            current.parentId &&
+            !visited.has(
+                current.uid,
+            )
+        ) {
+
+            visited.add(
+                current.uid,
+            );
+
+
+            if (
+                current.parentId ===
+                parentId
+            ) {
+
+                return;
+
+            }
+
+
+            current =
+                await this.getUser(
+                    current.parentId,
+                );
+
+        }
+
+
+        throw new NotFoundException(
+            'Executive not found',
+        );
+
+    }
+
+
+    // ==================================================
+    // AUTHORIZATION
+    // ==================================================
+
+    private async authorize(
+        userId: string,
+        permission: string,
+    ) {
+
+        const user =
+            await this.getUser(
+                userId,
+            );
+
+
+        if (
+            this.isRoot(user)
+        ) {
+
+            return;
+
+        }
+
+
+        if (
+            user.role ===
+            'hr'
+        ) {
+
+            throw new BadRequestException(
+                'HR cannot manage field executives',
+            );
+
+        }
+
+
+        if (
+            user.role ===
+            'field_executive'
+        ) {
+
+            throw new BadRequestException(
+                'Executive has no management permission',
+            );
+
+        }
+
+
+        const permissions =
+            await this.permissions(
+                userId,
+            );
+
+
+        if (
+            permissions[
+            permission
+            ] !== true
+        ) {
+
+            this.logger.warn(
+                `Permission denied | user=${userId} permission=${permission}`,
+            );
+
+
+            throw new BadRequestException(
+                'Permission denied',
+            );
+
+        }
+
+
+        await this.verifyAuthorityChain(
+            userId,
+            permission,
+        );
+
+    }
+
+
+    // ==================================================
+    // AUTHORITY CHAIN
+    // ==================================================
+
+    private async verifyAuthorityChain(
+        userId: string,
+        permission: string,
+    ) {
+
+        let current =
+            await this.getUser(
+                userId,
+            );
+
+
+        const visited =
+            new Set<string>();
+
+
+        while (
+            current.parentId &&
+            !visited.has(
+                current.uid,
+            )
+        ) {
+
+            visited.add(
+                current.uid,
+            );
+
+
+            const parent =
+                await this.getUser(
+                    current.parentId,
+                );
+
+
+            if (
+                this.getRootId(
+                    current,
+                ) !==
+                this.getRootId(
+                    parent,
+                )
+            ) {
+
+                throw new BadRequestException(
+                    'Invalid hierarchy',
+                );
+
+            }
+
+
+            if (
+                this.isRoot(parent)
+            ) {
+
+                return;
+
+            }
+
+
+            const permissions =
+                await this.permissions(
+                    parent.uid,
+                );
+
+
+            if (
+                permissions[
+                permission
+                ] !== true
+            ) {
+
+                this.logger.warn(
+                    `Parent authority denied | parent=${parent.uid} permission=${permission}`,
+                );
+
+
+                throw new BadRequestException(
+                    'Parent authority denied',
+                );
+
+            }
+
+
+            current =
+                parent;
+
+        }
+
+    }
+
+
+    // ==================================================
+    // USER
+    // ==================================================
+
+    private async getUser(
+        uid: string,
+    ) {
+
+        const doc =
+            await this.db
+                .collection('user')
+                .doc(uid)
+                .get();
+
+
+        if (
+            !doc.exists
+        ) {
+
+            throw new NotFoundException(
+                'User not found',
+            );
+
+        }
+
+
+        return {
+
+            uid:
+                doc.id,
+
+            ...doc.data(),
+
+        } as any;
+
+    }
+
+
+    // ==================================================
+    // ROOT
+    // ==================================================
+
+    private isRoot(
+        user: any,
+    ) {
+
+        return [
+
+            'root_manager',
+            'root_hr',
+            'root',
+            'admin',
+
+        ].includes(
+            user.role,
+        );
+
+    }
+
+
+    private getRootId(
+        user: any,
+    ): string {
+
+        if (
+            this.isRoot(user)
+        ) {
+
+            return user.uid;
+
+        }
+
+
+        if (
+            !user.rootId
+        ) {
+
+            this.logger.error(
+                `Missing rootId | uid=${user.uid} role=${user.role} parent=${user.parentId}`,
+            );
+
+
+            throw new BadRequestException(
+                'Invalid hierarchy',
+            );
+
+        }
+
+
+        return user.rootId;
+
+    }
+
+
+    // ==================================================
+    // PERMISSIONS
+    // ==================================================
+
+    private async permissions(
+        uid: string,
+    ) {
+
+        const doc =
+            await this.db
+                .collection('user')
+                .doc(uid)
+                .collection('settings')
+                .doc('permissions')
+                .get();
+
+
+        return doc.exists
+            ? doc.data() ?? {}
+            : {};
+
+    }
+
 }

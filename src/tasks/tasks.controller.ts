@@ -23,11 +23,17 @@ export class TasksController {
 
     constructor(
         private readonly service: TasksService,
-    ) {}
+    ) { }
 
-    // SPA shell
+
+    // ==================================================
+    // SPA SHELL
+    // ==================================================
+
     @Get()
-    page(@Res() res: Response) {
+    page(
+        @Res() res: Response,
+    ) {
 
         return res.sendFile(
             'shell.html',
@@ -35,10 +41,14 @@ export class TasksController {
                 root: './public/dashboard',
             },
         );
+
     }
 
 
-    // Monthly tasks API
+    // ==================================================
+    // GET
+    // ==================================================
+
     @Get('data')
     @UseGuards(FirebaseAuthGuard)
     get(
@@ -47,17 +57,25 @@ export class TasksController {
         @Query('month') month?: string,
     ) {
 
-        const now = new Date();
+        const now =
+            new Date();
+
 
         return this.service.getAll(
             user.uid,
-            Number(year) || now.getFullYear(),
-            Number(month) || now.getMonth() + 1,
+            Number(year) ||
+            now.getFullYear(),
+            Number(month) ||
+            now.getMonth() + 1,
         );
+
     }
 
 
-    // Create
+    // ==================================================
+    // CREATE
+    // ==================================================
+
     @Post()
     @UseGuards(FirebaseAuthGuard)
     create(
@@ -69,10 +87,14 @@ export class TasksController {
             user.uid,
             dto,
         );
+
     }
 
 
-    // Update
+    // ==================================================
+    // UPDATE
+    // ==================================================
+
     @Patch(':id')
     @UseGuards(FirebaseAuthGuard)
     update(
@@ -86,10 +108,14 @@ export class TasksController {
             id,
             dto,
         );
+
     }
 
 
-    // Delete
+    // ==================================================
+    // DELETE
+    // ==================================================
+
     @Delete(':id')
     @UseGuards(FirebaseAuthGuard)
     remove(
@@ -101,10 +127,14 @@ export class TasksController {
             user.uid,
             id,
         );
+
     }
 
 
-    // Status
+    // ==================================================
+    // STATUS
+    // ==================================================
+
     @Patch(':id/status')
     @UseGuards(FirebaseAuthGuard)
     status(
@@ -118,5 +148,7 @@ export class TasksController {
             id,
             status,
         );
+
     }
+
 }

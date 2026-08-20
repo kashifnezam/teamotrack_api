@@ -37,6 +37,14 @@
             );
 
 
+        document
+            .getElementById("teamId")
+            ?.addEventListener(
+                "change",
+                updateParentFromTeam
+            );
+
+
         initializePasswordToggle();
 
     };
@@ -142,15 +150,25 @@
 
 
             executives =
-                data.executives || [];
+                Array.isArray(
+                    data.executives
+                )
+                    ? data.executives
+                    : [];
+
 
             teams =
-                data.teams || [];
+                Array.isArray(
+                    data.teams
+                )
+                    ? data.teams
+                    : [];
 
 
             populateTeams();
 
             renderExecutives();
+
 
         } catch (error) {
 
@@ -172,54 +190,198 @@
 
     function populateTeams() {
 
-        const selects = [
-
+        const filter =
             document.getElementById(
                 "teamFilter"
-            ),
+            );
 
+
+        const select =
             document.getElementById(
                 "teamId"
-            )
-
-        ];
+            );
 
 
-        selects.forEach(
-            (select, index) => {
+        if (filter) {
 
-                if (!select) {
-                    return;
-                }
-
-
-                const first =
-                    index === 0
-                        ? "All Teams"
-                        : "Select Team";
+            filter.innerHTML =
+                `
+                    <option value="">
+                        All Teams
+                    </option>
+                `;
 
 
-                select.innerHTML =
-                    `<option value="">${first}</option>`;
+            teams.forEach(team => {
+
+                filter.insertAdjacentHTML(
+                    "beforeend",
+                    `
+                        <option value="${escapeHtml(
+                            team.id
+                        )}">
+                            ${escapeHtml(
+                                team.name ||
+                                "Unnamed Team"
+                            )}
+                        </option>
+                    `
+                );
+
+            });
+
+        }
 
 
-                teams.forEach(team => {
+        if (select) {
 
-                    select.insertAdjacentHTML(
-                        "beforeend",
-                        `
-                            <option value="${team.id}">
-                                ${escapeHtml(
-                                    team.name
-                                )}
-                            </option>
-                        `
-                    );
+            select.innerHTML =
+                `
+                    <option value="">
+                        Select Team
+                    </option>
+                `;
 
-                });
+
+            teams.forEach(team => {
+
+                select.insertAdjacentHTML(
+                    "beforeend",
+                    `
+                        <option value="${escapeHtml(
+                            team.id
+                        )}">
+                            ${escapeHtml(
+                                team.name ||
+                                "Unnamed Team"
+                            )}
+                        </option>
+                    `
+                );
+
+            });
+
+        }
+
+    }
+
+
+    /* ==========================================================
+       Parent Manager
+    ========================================================== */
+
+    function updateParentFromTeam() {
+
+        const teamId =
+            document.getElementById(
+                "teamId"
+            )?.value || "";
+
+
+        const parentSelect =
+            document.getElementById(
+                "parentId"
+            );
+
+
+        const hint =
+            document.getElementById(
+                "parentHint"
+            );
+
+
+        if (!parentSelect) {
+            return;
+        }
+
+
+        parentSelect.innerHTML = "";
+
+
+        if (!teamId) {
+
+            parentSelect.innerHTML =
+                `
+                    <option value="">
+                        Select Team first
+                    </option>
+                `;
+
+            parentSelect.disabled = true;
+
+
+            if (hint) {
+
+                hint.textContent =
+                    "Parent manager is determined by the selected team's manager.";
 
             }
-        );
+
+            return;
+
+        }
+
+
+        const team =
+            teams.find(
+                item =>
+                    item.id === teamId
+            );
+
+
+        if (!team) {
+
+            parentSelect.innerHTML =
+                `
+                    <option value="">
+                        Manager unavailable
+                    </option>
+                `;
+
+            parentSelect.disabled = true;
+
+            return;
+
+        }
+
+
+        /*
+         * Team's leadId is the executive's
+         * parent manager.
+         */
+        const leadId =
+            team.leadId || "";
+
+
+        const parentName =
+            team.leadName ||
+            team.managerName ||
+            "No Manager";
+
+
+        parentSelect.innerHTML =
+            `
+                <option value="${escapeHtml(
+                    leadId
+                )}">
+                    ${escapeHtml(
+                        parentName
+                    )}
+                </option>
+            `;
+
+
+        parentSelect.disabled = true;
+
+
+        if (hint) {
+
+            hint.textContent =
+                leadId
+                    ? "Parent manager is automatically inherited from the team's manager."
+                    : "This team has no manager.";
+
+        }
 
     }
 
@@ -235,10 +397,12 @@
                 "searchInput"
             );
 
+
         const teamFilter =
             document.getElementById(
                 "teamFilter"
             );
+
 
         const tbody =
             document.getElementById(
@@ -261,7 +425,7 @@
                 .toLowerCase();
 
 
-        const team =
+        const teamFilterId =
             teamFilter.value;
 
 
@@ -274,16 +438,24 @@
                         exec.fullName
                             ?.toLowerCase()
                             .includes(search) ||
+
                         exec.mobile
-                            ?.includes(search) ||
+                            ?.toLowerCase()
+                            .includes(search) ||
+
                         exec.email
+                            ?.toLowerCase()
+                            .includes(search) ||
+
+                        exec.parentName
                             ?.toLowerCase()
                             .includes(search);
 
 
                     const matchesTeam =
-                        !team ||
-                        exec.teamId === team;
+                        !teamFilterId ||
+                        exec.teamId ===
+                        teamFilterId;
 
 
                     return (
@@ -302,127 +474,210 @@
 
 
         if (count) {
+
             count.textContent =
                 list.length;
+
         }
 
 
         if (!list.length) {
 
-            tbody.innerHTML = `
-                <tr>
-                    <td
-                        colspan="6"
-                        class="empty-state"
-                    >
-                        No executives found
-                    </td>
-                </tr>
-            `;
-
-            return;
-        }
-
-
-        tbody.innerHTML =
-            list.map(exec => {
-
-                const teamName =
-                    teams.find(
-                        t =>
-                            t.id ===
-                            exec.teamId
-                    )?.name ||
-                    "No Team";
-
-
-                return `
+            tbody.innerHTML =
+                `
                     <tr>
 
-                        <td>
+                        <td
+                            colspan="7"
+                            class="empty-state"
+                        >
 
-                            <div class="exec-name">
-                                ${escapeHtml(
-                                    exec.fullName ||
-                                    "Unknown"
-                                )}
-                            </div>
-
-                            <div class="exec-email">
-                                ${escapeHtml(
-                                    exec.email ||
-                                    ""
-                                )}
-                            </div>
-
-                        </td>
-
-                        <td>
-                            ${escapeHtml(
-                                exec.mobile ||
-                                "-"
-                            )}
-                        </td>
-
-                        <td>
-                            ${escapeHtml(
-                                teamName
-                            )}
-                        </td>
-
-                        <td>
-
-                            <span
-                                class="tracking-badge ${
-                                    exec.isTrackingEnable
-                                        ? "tracking-on"
-                                        : "tracking-off"
-                                }"
-                            >
-                                ${
-                                    exec.isTrackingEnable
-                                        ? "Enabled"
-                                        : "Disabled"
-                                }
-                            </span>
-
-                        </td>
-
-                        <td>
-
-                            <span
-                                class="status-badge ${
-                                    exec.isActive
-                                        ? "status-active"
-                                        : "status-inactive"
-                                }"
-                            >
-                                ${
-                                    exec.isActive
-                                        ? "Active"
-                                        : "Inactive"
-                                }
-                            </span>
-
-                        </td>
-
-                        <td class="text-end">
-
-                            <button
-                                type="button"
-                                class="action-btn"
-                                title="Edit"
-                                onclick="editExecutive('${exec.id}')"
-                            >
-                                <i class="bi bi-pencil"></i>
-                            </button>
+                            No executives found
 
                         </td>
 
                     </tr>
                 `;
 
-            }).join("");
+            return;
+
+        }
+
+
+        tbody.innerHTML =
+            list
+                .map(renderExecutiveRow)
+                .join("");
+
+    }
+
+
+    /* ==========================================================
+       Executive Row
+    ========================================================== */
+
+    function renderExecutiveRow(exec) {
+
+        const team =
+            teams.find(
+                item =>
+                    item.id ===
+                    exec.teamId
+            );
+
+
+        const teamName =
+            exec.teamName ||
+            team?.name ||
+            "No Team";
+
+
+        const parentName =
+            exec.parentName ||
+            team?.leadName ||
+            team?.managerName ||
+            "No Manager";
+
+
+        return `
+            <tr>
+
+                <!-- Executive -->
+
+                <td>
+
+                    <div class="exec-name">
+
+                        ${escapeHtml(
+                            exec.fullName ||
+                            "Unknown"
+                        )}
+
+                    </div>
+
+                    <div class="exec-email">
+
+                        ${escapeHtml(
+                            exec.email ||
+                            ""
+                        )}
+
+                    </div>
+
+                </td>
+
+
+                <!-- Parent -->
+
+                <td>
+
+                    <div class="exec-parent">
+
+                        ${escapeHtml(
+                            parentName
+                        )}
+
+                    </div>
+
+                    <div class="exec-parent-label">
+
+                        Parent Manager
+
+                    </div>
+
+                </td>
+
+
+                <!-- Mobile -->
+
+                <td>
+
+                    ${escapeHtml(
+                        exec.mobile ||
+                        "-"
+                    )}
+
+                </td>
+
+
+                <!-- Team -->
+
+                <td>
+
+                    ${escapeHtml(
+                        teamName
+                    )}
+
+                </td>
+
+
+                <!-- Tracking -->
+
+                <td>
+
+                    <span
+                        class="tracking-badge ${
+                            exec.isTrackingEnable
+                                ? "tracking-on"
+                                : "tracking-off"
+                        }"
+                    >
+
+                        ${
+                            exec.isTrackingEnable
+                                ? "Enabled"
+                                : "Disabled"
+                        }
+
+                    </span>
+
+                </td>
+
+
+                <!-- Status -->
+
+                <td>
+
+                    <span
+                        class="status-badge ${
+                            exec.isActive
+                                ? "status-active"
+                                : "status-inactive"
+                        }"
+                    >
+
+                        ${
+                            exec.isActive
+                                ? "Active"
+                                : "Inactive"
+                        }
+
+                    </span>
+
+                </td>
+
+
+                <!-- Action -->
+
+                <td class="text-end">
+
+                    <button
+                        type="button"
+                        class="action-btn"
+                        title="Edit"
+                        onclick="editExecutive('${escapeJs(
+                            exec.id
+                        )}')"
+                    >
+
+                        <i class="bi bi-pencil"></i>
+
+                    </button>
+
+                </td>
+
+            </tr>
+        `;
 
     }
 
@@ -435,7 +690,8 @@
         id = null
     ) {
 
-        editingId = id;
+        editingId =
+            id;
 
 
         document.getElementById(
@@ -488,6 +744,19 @@
             ).value = "";
 
             document.getElementById(
+                "parentId"
+            ).innerHTML =
+                `
+                    <option value="">
+                        Select Team first
+                    </option>
+                `;
+
+            document.getElementById(
+                "parentId"
+            ).disabled = true;
+
+            document.getElementById(
                 "gpsPriority"
             ).value = "low";
 
@@ -521,7 +790,8 @@
 
         const exec =
             executives.find(
-                e => e.id === id
+                item =>
+                    item.id === id
             );
 
 
@@ -575,6 +845,9 @@
             "isTrackingEnable"
         ).checked =
             exec.isTrackingEnable === true;
+
+
+        updateParentFromTeam();
 
 
         openExecutiveModal(id);
@@ -651,6 +924,47 @@
             );
 
             return;
+
+        }
+
+
+        const team =
+            teams.find(
+                item =>
+                    item.id === teamId
+            );
+
+
+        if (!team) {
+
+            AppAlert.warning(
+                "Invalid team selected"
+            );
+
+            return;
+
+        }
+
+
+        /*
+         * Parent is NOT taken from
+         * an independently editable field.
+         *
+         * Backend should derive it from
+         * team.leadId.
+         */
+        const parentId =
+            team.leadId || "";
+
+
+        if (!parentId) {
+
+            AppAlert.warning(
+                "Selected team has no manager"
+            );
+
+            return;
+
         }
 
 
@@ -661,6 +975,8 @@
             mobile,
 
             teamId,
+
+            parentId,
 
             isActive:
                 document.getElementById(
@@ -728,6 +1044,7 @@
                 AppAlert.close();
 
                 return;
+
             }
 
 
@@ -752,11 +1069,14 @@
 
             await loadExecutives();
 
+
         } catch (error) {
 
             console.error(error);
 
+
             AppAlert.close();
+
 
             AppAlert.error(
                 error.message ||
@@ -774,7 +1094,7 @@
 
 
     /* ==========================================================
-       Escape
+       Escape HTML
     ========================================================== */
 
     function escapeHtml(value) {
@@ -801,6 +1121,35 @@
             .replaceAll(
                 "'",
                 "&#039;"
+            );
+
+    }
+
+
+    /* ==========================================================
+       Escape JS
+    ========================================================== */
+
+    function escapeJs(value) {
+
+        return String(
+            value ?? ""
+        )
+            .replaceAll(
+                "\\",
+                "\\\\"
+            )
+            .replaceAll(
+                "'",
+                "\\'"
+            )
+            .replaceAll(
+                "\n",
+                "\\n"
+            )
+            .replaceAll(
+                "\r",
+                "\\r"
             );
 
     }

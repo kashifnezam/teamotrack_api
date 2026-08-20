@@ -1,21 +1,34 @@
 /* ==========================================================
    TeamoTrack HR
    HR has no hierarchy.
-
-   Parent:
-   - Root Manager
-   - Manager
+   Parent: Root Manager / Manager
 ========================================================== */
 
 (function () {
 
     "use strict";
 
-
     let hr = [];
     let managers = [];
     let editingId = null;
     let defaultParentId = "";
+
+
+    /* ======================================================
+       HELPERS
+    ====================================================== */
+
+    const $ = id =>
+        document.getElementById(id);
+
+
+    const value = id =>
+        $(id)?.value.trim() || "";
+
+
+    const setValue = (id, val = "") => {
+        if ($(id)) $(id).value = val;
+    };
 
 
     /* ======================================================
@@ -26,12 +39,10 @@
 
         await Promise.all([
             loadHr(),
-            loadManagers(),
+            loadManagers()
         ]);
 
-
-        document
-            .getElementById("hrSearch")
+        $("hrSearch")
             ?.addEventListener(
                 "input",
                 renderHr
@@ -53,8 +64,7 @@
 
             if (!data) return;
 
-            hr =
-                data.users || [];
+            hr = data.users || [];
 
             renderHr();
 
@@ -71,13 +81,8 @@
 
 
     /* ======================================================
-       LOAD PARENTS
-       Called only once during page initialization.
+       LOAD MANAGERS
     ====================================================== */
-
-    /* ======================================================
-   LOAD PARENTS
-====================================================== */
 
     async function loadManagers() {
 
@@ -88,62 +93,41 @@
 
             if (!data) return;
 
-
             managers =
                 data.users || [];
 
 
-            console.log(
-                "HR Parents:",
-                managers
-            );
-
-
-            /*
-             * Backend preferred parent.
-             */
             defaultParentId =
                 data.defaultParentId || "";
 
 
             /*
-             * If backend didn't provide one,
-             * find Root Manager.
+             * Find Root Manager if backend
+             * did not provide default parent.
              */
             if (!defaultParentId) {
 
-                const rootManager =
-                    managers.find(manager => {
-
-                        const role =
+                const root =
+                    managers.find(manager =>
+                        [
+                            "root_manager",
+                            "rootmanager"
+                        ].includes(
                             String(
                                 manager.role || ""
-                            ).toLowerCase();
+                            ).toLowerCase()
+                        )
+                    );
 
-                        return (
-                            role === "root_manager" ||
-                            role === "rootmanager"
-                        );
-
-                    });
-
-
-                if (rootManager) {
-
-                    defaultParentId =
-                        rootManager.uid ||
-                        rootManager.id ||
-                        "";
-
-                }
-
+                defaultParentId =
+                    root?.uid ||
+                    root?.id ||
+                    "";
             }
 
 
             /*
-             * Last fallback:
-             * if there is only one parent,
-             * use that parent.
+             * Single-parent fallback.
              */
             if (
                 !defaultParentId &&
@@ -156,12 +140,6 @@
                     "";
 
             }
-
-
-            console.log(
-                "Default HR Parent:",
-                defaultParentId
-            );
 
 
             renderParentOptions(
@@ -181,72 +159,50 @@
 
 
     /* ======================================================
-       RENDER HR TABLE
+       RENDER HR
     ====================================================== */
 
     function renderHr() {
 
-        const tbody =
-            document.getElementById(
-                "hrTable"
-            );
+        const tbody = $("hrTable");
 
         if (!tbody) return;
 
 
         const search =
-            document.getElementById(
-                "hrSearch"
-            )?.value
-                .trim()
-                .toLowerCase() || "";
+            value("hrSearch").toLowerCase();
 
 
         const list =
-            hr.filter(item =>
+            hr.filter(item => {
 
-                !search ||
+                if (!search) return true;
 
-                item.fullName
-                    ?.toLowerCase()
-                    .includes(search) ||
+                return [
+                    item.fullName,
+                    item.email,
+                    item.mobile,
+                    item.parentName
+                ]
+                    .some(v =>
+                        String(v || "")
+                            .toLowerCase()
+                            .includes(search)
+                    );
 
-                item.email
-                    ?.toLowerCase()
-                    .includes(search) ||
-
-                item.mobile
-                    ?.toLowerCase()
-                    .includes(search) ||
-
-                item.parentName
-                    ?.toLowerCase()
-                    .includes(search)
-
-            );
+            });
 
 
-        const count =
-            document.getElementById(
-                "hrCount"
-            );
-
-        if (count) {
-
-            count.textContent =
-                list.length;
-
-        }
+        $("hrCount").textContent =
+            list.length;
 
 
         if (!list.length) {
 
             tbody.innerHTML = `
                 <tr>
-                    <td
-                        colspan="5"
-                        class="empty-state"
-                    >
+                    <td colspan="5"
+                        class="empty-state">
                         No HR found
                     </td>
                 </tr>
@@ -263,143 +219,97 @@
                     item.fullName ||
                     "Unnamed";
 
+                const active =
+                    item.isActive;
+
 
                 return `
+                    <tr>
 
-            <tr>
+                        <td>
+                            <div class="hr-user">
 
-                <!-- HR MEMBER -->
-
-                <td>
-
-                    <div class="hr-user">
-
-                        <div class="hr-avatar">
-
-                            ${escapeHtml(
+                                <div class="hr-avatar">
+                                    ${escapeHtml(
                     getInitials(name)
                 )}
+                                </div>
 
-                        </div>
+                                <div>
 
-                        <div>
+                                    <div class="hr-name">
+                                        ${escapeHtml(name)}
+                                    </div>
 
-                            <div class="hr-name">
-
-                                ${escapeHtml(
-                    name
-                )}
-
-                            </div>
-
-                            <div class="hr-email">
-
-                                ${escapeHtml(
+                                    <div class="hr-email">
+                                        ${escapeHtml(
                     item.email || ""
                 )}
+                                    </div>
+
+                                </div>
 
                             </div>
-
-                        </div>
-
-                    </div>
-
-                </td>
+                        </td>
 
 
-                <!-- PARENT -->
-
-                <td>
-
-                    <span class="hr-parent">
-
-                        ${escapeHtml(
-                    item.parentName ||
-                    "—"
+                        <td>
+                            <span class="hr-parent">
+                                ${escapeHtml(
+                    item.parentName || "—"
                 )}
-
-                    </span>
-
-                </td>
+                            </span>
+                        </td>
 
 
-                <!-- MOBILE -->
-
-                <td>
-
-                    ${escapeHtml(
+                        <td>
+                            ${escapeHtml(
                     item.mobile || "--"
                 )}
+                        </td>
 
-                </td>
 
+                        <td>
 
-                <!-- STATUS -->
-
-                <td>
-
-                    <span
-                        class="hr-status ${item.isActive
+                            <span class="hr-status ${active
                         ? "active"
                         : "inactive"
-                    }"
-                    >
+                    }">
 
-                        <i
-                            class="bi ${item.isActive
+                                <i class="bi ${active
                         ? "bi-check-circle"
                         : "bi-pause-circle"
-                    }"
-                        ></i>
+                    }"></i>
 
-                        ${item.isActive
+                                ${active
                         ? "Active"
                         : "Inactive"
                     }
 
-                    </span>
+                            </span>
 
-                </td>
-
-
-                <!-- ACTIONS -->
-
-                <td>
-
-                    <div class="hr-actions">
-
-                        <button
-                            type="button"
-                            class="hr-action"
-                            title="Edit HR"
-                            aria-label="Edit HR"
-                            onclick="editHr('${item.id}')"
-                        >
-
-                            <i class="bi bi-pencil"></i>
-
-                        </button>
+                        </td>
 
 
-                        <button
-                            type="button"
-                            class="hr-action"
-                            title="Delete HR"
-                            aria-label="Delete HR"
-                            onclick="deleteHr('${item.id}')"
-                        >
+                        <td>
 
-                            <i class="bi bi-trash"></i>
+                            <div class="hr-actions">
 
-                        </button>
+                                <button
+                                    type="button"
+                                    class="hr-action"
+                                    title="Edit HR"
+                                    onclick="editHr('${item.id}')"
+                                >
+                                    <i class="bi bi-pencil"></i>
+                                </button>
 
-                    </div>
+                            </div>
 
-                </td>
+                        </td>
 
-            </tr>
-
-        `;
+                    </tr>
+                `;
 
             }).join("");
 
@@ -407,128 +317,93 @@
 
 
     /* ======================================================
-       OPEN HR MODAL
+       OPEN MODAL
     ====================================================== */
 
     function openHrModal(id = null) {
 
         editingId = id;
 
-
-        const item =
-            hr.find(
-                x => x.id === id
-            );
+        const item = hr.find(x => x.id === id);
+        const edit = !!item;
 
 
-        const isEdit =
-            !!id;
+        text(
+            "hrModalTitle",
+            edit ? "Edit HR" : "Add HR"
+        );
+
+        text(
+            "saveHrBtn",
+            edit ? "Update HR" : "Save HR"
+        );
 
 
-        document.getElementById(
-            "hrModalTitle"
-        ).textContent =
-            isEdit
-                ? "Edit HR"
-                : "Add HR";
+        setValue(
+            "hrName",
+            item?.fullName
+        );
+
+        setValue(
+            "hrEmail",
+            item?.email
+        );
+
+        setValue(
+            "hrMobile",
+            item?.mobile
+        );
+
+        setValue("hrPassword");
 
 
-        document.getElementById(
-            "saveHrBtn"
-        ).textContent =
-            isEdit
-                ? "Update HR"
-                : "Save HR";
-
-
-        document.getElementById(
-            "hrName"
-        ).value =
-            item?.fullName || "";
-
-
-        document.getElementById(
-            "hrEmail"
-        ).value =
-            item?.email || "";
-
-
-        document.getElementById(
-            "hrMobile"
-        ).value =
-            item?.mobile || "";
-
-
-        document.getElementById(
-            "hrPassword"
-        ).value =
-            "";
-
-
-        document.getElementById(
-            "hrActive"
-        ).checked =
+        $("hrActive").checked =
             item?.isActive !== false;
 
 
-        document.getElementById(
-            "hrEmail"
-        ).disabled =
-            isEdit;
+        $("hrEmail").disabled =
+            edit;
 
 
-        document.getElementById(
-            "hrPasswordHint"
-        ).textContent =
-            isEdit
+        $("hrPasswordHint").textContent =
+            edit
                 ? "Leave blank to keep current password."
                 : "Required when creating.";
 
 
-        const parentSelect =
-            document.getElementById(
-                "hrParentId"
-            );
+        const parent = $("hrParentId");
 
 
-        if (parentSelect) {
+        if (edit) {
 
             /*
-             * ADD:
-             * select Root Manager.
-             *
-             * EDIT:
-             * select existing parent.
+             * Parent cannot be changed during edit.
+             * Keep the existing option and select it.
              */
-            const selectedParentId =
-                isEdit
-                    ? (
-                        item?.parentId ||
-                        item?.parentUid ||
-                        ""
-                    )
-                    : defaultParentId;
+            parent.value =
+                item?.parentId ||
+                item?.parentUid ||
+                "";
 
+            parent.disabled = true;
 
+        } else {
+
+            /*
+             * Populate only when creating.
+             */
             renderParentOptions(
-                selectedParentId
+                defaultParentId
             );
 
-
-            /*
-             * HR cannot be moved while editing.
-             */
-            parentSelect.disabled =
-                isEdit;
+            parent.disabled = false;
 
         }
 
 
         bootstrap.Modal
             .getOrCreateInstance(
-                document.getElementById(
-                    "hrModal"
-                )
+                $("hrModal")
             )
             .show();
 
@@ -536,17 +411,12 @@
 
 
     /* ======================================================
-       RENDER PARENT DROPDOWN
+       PARENT OPTIONS
     ====================================================== */
 
-    function renderParentOptions(
-        selectedId = ""
-    ) {
+    function renderParentOptions(selectedId = "") {
 
-        const select =
-            document.getElementById(
-                "hrParentId"
-            );
+        const select = $("hrParentId");
 
         if (!select) return;
 
@@ -560,66 +430,46 @@
 
         managers.forEach(manager => {
 
-            const managerId =
+            const id =
                 manager.uid ||
                 manager.id ||
                 "";
 
 
-            const role =
-                String(
-                    manager.role || ""
-                ).toLowerCase();
-
-
-            const isRootManager =
-                role === "root_manager" ||
-                role === "rootmanager";
-
-
-            const roleLabel =
-                isRootManager
-                    ? "Root Manager"
-                    : "Manager";
-
-
-            const isSelected =
-                String(managerId) ===
-                String(selectedId);
+            const root =
+                [
+                    "root_manager",
+                    "rootmanager"
+                ].includes(
+                    String(
+                        manager.role || ""
+                    ).toLowerCase()
+                );
 
 
             select.insertAdjacentHTML(
                 "beforeend",
                 `
                 <option
-                    value="${escapeHtml(
-                    managerId
-                )}"
-                    ${isSelected ? "selected" : ""}
+                    value="${escapeHtml(id)}"
+                    ${id == selectedId
+                    ? "selected"
+                    : ""}
                 >
                     ${escapeHtml(
-                    manager.fullName ||
-                    manager.name ||
-                    "Unnamed"
-                )}
-                    (${roleLabel})
+                        manager.fullName ||
+                        manager.name ||
+                        "Unnamed"
+                    )}
+                    (${root
+                    ? "Root Manager"
+                    : "Manager"
+                })
                 </option>
             `
             );
 
         });
-
-
-        /*
-         * Make absolutely sure the selected
-         * option is applied after rendering.
-         */
-        if (selectedId) {
-
-            select.value =
-                String(selectedId);
-
-        }
 
     }
 
@@ -631,50 +481,26 @@
     async function saveHr() {
 
         const name =
-            document.getElementById(
-                "hrName"
-            ).value.trim();
-
+            value("hrName");
 
         const email =
-            document.getElementById(
-                "hrEmail"
-            ).value.trim();
-
+            value("hrEmail");
 
         const mobile =
-            document.getElementById(
-                "hrMobile"
-            ).value.trim();
-
+            value("hrMobile");
 
         const password =
-            document.getElementById(
-                "hrPassword"
-            ).value;
-
+            $("hrPassword")?.value || "";
 
         const parentId =
-            document.getElementById(
-                "hrParentId"
-            ).value;
-
+            value("hrParentId");
 
         const isActive =
-            document.getElementById(
-                "hrActive"
-            ).checked;
-
+            $("hrActive").checked;
 
         const button =
-            document.getElementById(
-                "saveHrBtn"
-            );
+            $("saveHrBtn");
 
-
-        /* --------------------------------------------------
-           Validation
-        -------------------------------------------------- */
 
         if (!name || !email) {
 
@@ -686,10 +512,7 @@
         }
 
 
-        if (
-            !editingId &&
-            !parentId
-        ) {
+        if (!editingId && !parentId) {
 
             AppAlert.warning(
                 "Please select a manager"
@@ -699,10 +522,7 @@
         }
 
 
-        if (
-            !editingId &&
-            !password
-        ) {
+        if (!editingId && !password) {
 
             AppAlert.warning(
                 "Password is required"
@@ -714,38 +534,24 @@
 
         try {
 
-            button.disabled =
-                true;
+            button.disabled = true;
 
 
             AppAlert.loading(
-
                 editingId
-
                     ? "Updating HR..."
-
                     : "Creating HR..."
-
             );
 
 
             const body = {
-
-                fullName:
-                    name,
-
+                fullName: name,
                 email,
-
                 mobile,
-
-                isActive,
-
+                isActive
             };
 
 
-            /*
-             * Parent is only sent during creation.
-             */
             if (!editingId) {
 
                 body.parentId =
@@ -754,17 +560,7 @@
                 body.password =
                     password;
 
-            }
-
-
-            /*
-             * Password can still be changed
-             * during edit.
-             */
-            if (
-                editingId &&
-                password
-            ) {
+            } else if (password) {
 
                 body.password =
                     password;
@@ -773,7 +569,6 @@
 
 
             const data =
-
                 editingId
 
                     ? await Api.patch(
@@ -794,48 +589,33 @@
 
 
             AppAlert.success(
-
                 editingId
-
                     ? "HR updated successfully"
-
                     : "HR created successfully"
-
             );
 
 
             bootstrap.Modal
                 .getInstance(
-                    document.getElementById(
-                        "hrModal"
-                    )
+                    $("hrModal")
                 )
                 ?.hide();
 
 
-            /*
-             * Refresh only after
-             * successful operation.
-             */
             await loadHr();
 
         } catch (error) {
 
             AppAlert.close();
 
-
             AppAlert.error(
-
                 error.message ||
-
                 "Unable to save HR"
-
             );
 
         } finally {
 
-            button.disabled =
-                false;
+            button.disabled = false;
 
         }
 
@@ -843,35 +623,24 @@
 
 
     /* ======================================================
-       DELETE HR
+       DELETE
     ====================================================== */
 
     async function deleteHr(id) {
 
         const item =
-            hr.find(
-                x => x.id === id
-            );
-
+            hr.find(x => x.id === id);
 
         if (!item) return;
 
 
-        const confirmed =
+        const result =
             await AppAlert.confirm(
-
                 `Delete "${item.fullName}"?`
-
             );
 
 
-        if (
-            !confirmed.isConfirmed
-        ) {
-
-            return;
-
-        }
+        if (!result.isConfirmed) return;
 
 
         try {
@@ -892,7 +661,6 @@
 
             AppAlert.close();
 
-
             AppAlert.success(
                 "HR deleted successfully"
             );
@@ -904,13 +672,9 @@
 
             AppAlert.close();
 
-
             AppAlert.error(
-
                 error.message ||
-
                 "Unable to delete HR"
-
             );
 
         }
@@ -925,20 +689,11 @@
     function getInitials(name) {
 
         return name
-
-            .split(" ")
-
+            .split(/\s+/)
             .filter(Boolean)
-
             .slice(0, 2)
-
-            .map(
-                value =>
-                    value[0]
-            )
-
+            .map(x => x[0])
             .join("")
-
             .toUpperCase();
 
     }
@@ -946,56 +701,26 @@
 
     function escapeHtml(value) {
 
-        return String(
-            value ?? ""
-        )
-
-            .replaceAll(
-                "&",
-                "&amp;"
-            )
-
-            .replaceAll(
-                "<",
-                "&lt;"
-            )
-
-            .replaceAll(
-                ">",
-                "&gt;"
-            )
-
-            .replaceAll(
-                '"',
-                "&quot;"
-            )
-
-            .replaceAll(
-                "'",
-                "&#039;"
-            );
+        return String(value ?? "")
+            .replaceAll("&", "&amp;")
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;")
+            .replaceAll('"', "&quot;")
+            .replaceAll("'", "&#039;");
 
     }
 
+    const text = (id, val = "") => {
+        if ($(id)) $(id).textContent = val;
+    };
 
     /* ======================================================
-       GLOBAL FUNCTIONS
+       GLOBAL
     ====================================================== */
 
-    window.openHrModal =
-        openHrModal;
-
-
-    window.editHr =
-        openHrModal;
-
-
-    window.saveHr =
-        saveHr;
-
-
-    window.deleteHr =
-        deleteHr;
-
+    window.openHrModal = openHrModal;
+    window.editHr = openHrModal;
+    window.saveHr = saveHr;
+    window.deleteHr = deleteHr;
 
 })();

@@ -9,30 +9,38 @@
 }
 
 
-/* =========================
+/* ==========================================================
    Header
-========================= */
+========================================================== */
 
-.page-header {
+.executives-page .page-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 15px;
+    gap: 16px;
     margin-bottom: 18px;
 }
 
-.page-header h4 {
-    margin: 0;
-    font-weight: 600;
+.executives-page .page-header h4 {
     color: var(--text-primary);
+    font-weight: var(--fw-semibold);
+}
+
+.executives-page .page-header p {
+    font-size: 13px;
+}
+
+.executives-page .page-header .text-primary {
+    font-size: 11px;
+    letter-spacing: .04em;
 }
 
 
-/* =========================
+/* ==========================================================
    Filters
-========================= */
+========================================================== */
 
-.filter-card {
+.executives-page .filter-card {
     background: var(--surface);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-md);
@@ -41,11 +49,11 @@
     box-shadow: var(--shadow-sm);
 }
 
-.search-box {
+.executives-page .search-box {
     position: relative;
 }
 
-.search-box i {
+.executives-page .search-box i {
     position: absolute;
     left: 13px;
     top: 50%;
@@ -54,14 +62,26 @@
     z-index: 2;
 }
 
-.search-box input {
+.executives-page .search-box input {
     padding-left: 38px;
 }
 
+.executive-count {
+    color: var(--text-secondary);
+    font-size: 14px;
+}
 
-/* =========================
-   Table
-========================= */
+.executive-count strong {
+    color: var(--text-primary);
+    font-size: 18px;
+    font-weight: var(--fw-semibold);
+    margin-right: 4px;
+}
+
+
+/* ==========================================================
+   Card
+========================================================== */
 
 .executive-card {
     background: var(--surface);
@@ -71,15 +91,40 @@
     overflow: hidden;
 }
 
-.executive-card .table-responsive {
-    max-height: calc(100vh - 245px);
+.executive-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border-color);
 }
 
-.table {
+.executive-card-header h6 {
+    color: var(--text-primary);
+    font-weight: var(--fw-semibold);
+}
+
+.executive-card-header small {
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+
+/* ==========================================================
+   Table
+========================================================== */
+
+.executive-card .table-responsive {
+    max-height: calc(100vh - 285px);
+    overflow: auto;
+}
+
+.executive-card .table {
     margin: 0;
 }
 
-.table th {
+.executive-card .table th {
     background: var(--surface-soft);
     color: var(--text-secondary);
     font-size: 12px;
@@ -88,24 +133,34 @@
     border-bottom: 1px solid var(--border-color);
 }
 
-.table td {
+.executive-card .table td,
+.executive-card .table th {
+    padding: 13px 15px;
+}
+
+.executive-card .table td {
     color: var(--text-primary);
     font-size: 14px;
     vertical-align: middle;
 }
 
-.table td,
-.table th {
-    padding: 13px 15px;
+.executive-card .table tbody tr {
+    transition: var(--transition-fast);
+}
+
+.executive-card .table tbody tr:hover {
+    background: var(--surface-soft);
 }
 
 
-/* =========================
+/* ==========================================================
    Executive
-========================= */
+========================================================== */
 
 .exec-name {
+    color: var(--text-primary);
     font-weight: 600;
+    white-space: nowrap;
 }
 
 .exec-email {
@@ -115,9 +170,25 @@
 }
 
 
-/* =========================
+/* ==========================================================
+   Parent
+========================================================== */
+
+.exec-parent {
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.exec-parent-label {
+    color: var(--text-muted);
+    font-size: 11px;
+    margin-top: 2px;
+}
+
+
+/* ==========================================================
    Badges
-========================= */
+========================================================== */
 
 .status-badge,
 .tracking-badge {
@@ -152,13 +223,14 @@
 }
 
 
-/* =========================
+/* ==========================================================
    Action
-========================= */
+========================================================== */
 
-.action-btn {
+.executive-card .action-btn {
     width: 34px;
     height: 34px;
+    padding: 0;
     border: 0;
     border-radius: 8px;
     background: var(--surface-soft);
@@ -166,52 +238,104 @@
     transition: var(--transition-fast);
 }
 
-.action-btn:hover {
+.executive-card .action-btn:hover {
     background: rgba(37, 99, 235, .10);
     color: var(--primary);
 }
 
 
-/* =========================
+/* ==========================================================
    Empty
-========================= */
+========================================================== */
 
-.empty-state {
+.executive-card .empty-state {
     padding: 50px 20px !important;
     text-align: center;
     color: var(--text-muted);
 }
 
 
-/* =========================
-   Modal
-========================= */
+/* ==========================================================
+   Executive Modal
+========================================================== */
 
-.modal-content {
+.teamo-executive-modal {
     border: 0;
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-lg);
+    overflow: hidden;
 }
 
-.modal-header {
+.teamo-executive-header {
+    padding: 18px 20px;
     border-bottom: 1px solid var(--border-color);
 }
 
-.modal-footer {
-    border-top: 1px solid var(--border-color);
+.executive-modal-eyebrow {
+    color: var(--primary);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .05em;
+    margin-bottom: 3px;
 }
 
-.modal-body label {
+.teamo-executive-header .modal-title {
+    color: var(--text-primary);
+    font-weight: var(--fw-semibold);
+}
+
+.executive-modal-subtitle {
+    color: var(--text-muted);
+    font-size: 12px;
+    margin-top: 3px;
+}
+
+.teamo-executive-modal .modal-body {
+    padding: 20px;
+}
+
+.teamo-executive-modal .modal-body label {
     display: block;
     margin-bottom: 6px;
+    color: var(--text-primary);
     font-size: 12px;
     font-weight: 600;
+}
+
+.teamo-executive-modal .form-control,
+.teamo-executive-modal .form-select {
+    min-height: 42px;
+    border-color: var(--border-color);
     color: var(--text-primary);
+    background: var(--surface);
+}
+
+.teamo-executive-modal .form-control:focus,
+.teamo-executive-modal .form-select:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 .2rem rgba(37, 99, 235, .10);
+}
+
+.teamo-executive-modal .form-select:disabled {
+    background: var(--surface-soft);
+    color: var(--text-secondary);
+    cursor: not-allowed;
+}
+
+.teamo-executive-modal .form-text {
+    color: var(--text-muted);
+    font-size: 11px;
+    margin-top: 5px;
+}
+
+.teamo-executive-footer {
+    padding: 14px 20px;
+    border-top: 1px solid var(--border-color);
 }
 
 
 /* ==========================================================
-   Tablet
+   Mobile
 ========================================================== */
 
 @media (max-width: 992px) {
@@ -227,35 +351,27 @@
 }
 
 
-/* ==========================================================
-   Mobile
-========================================================== */
-
 @media (max-width: 768px) {
 
     .executives-page {
         padding: 15px;
     }
 
-    .page-header {
+    .executives-page .page-header {
         align-items: flex-start;
     }
 
-    .page-header h4 {
+    .executives-page .page-header h4 {
         font-size: 18px;
     }
 
-    .page-header small {
-        font-size: 12px;
-    }
-
-    .page-header .btn {
+    .executives-page .page-header .btn {
         padding: 8px 11px;
         font-size: 13px;
         white-space: nowrap;
     }
 
-    .filter-card {
+    .executives-page .filter-card {
         padding: 12px;
     }
 
@@ -263,16 +379,12 @@
         max-height: none;
     }
 
-    .table {
-        min-width: 700px;
+    .executive-card .table {
+        min-width: 850px;
     }
 
 }
 
-
-/* ==========================================================
-   Small Mobile
-========================================================== */
 
 @media (max-width: 576px) {
 
@@ -280,68 +392,43 @@
         padding: 12px;
     }
 
-    .page-header {
+    .executives-page .page-header {
         flex-direction: column;
         align-items: stretch;
     }
 
-    .page-header .btn {
-        width: 100%;
-    }
-
-    .filter-card .row > div {
+    .executives-page .page-header .btn {
         width: 100%;
     }
 
     .executive-count {
         display: block;
-        text-align: left !important;
+        text-align: left;
         padding: 4px 0;
+    }
+
+    .executive-card-header {
+        padding: 12px;
+    }
+
+    .teamo-executive-modal {
+        border-radius: var(--radius-md);
     }
 
     .modal-dialog {
         margin: 10px;
     }
 
-    .modal-body {
+    .teamo-executive-modal .modal-body {
         padding: 15px;
     }
 
-}
-
-/* =========================
-   Executive Card Header
-========================= */
-
-.executive-card-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-
-    padding: 14px 16px;
-
-    border-bottom: 1px solid var(--border-color);
-}
-
-.executive-card-header h6 {
-    color: var(--text-primary);
-    font-weight: var(--fw-semibold);
-}
-
-
-/* =========================
-   Mobile
-========================= */
-
-@media (max-width: 576px) {
-
-    .executive-card-header {
-        padding: 12px;
+    .teamo-executive-header {
+        padding: 15px;
     }
 
-    .executive-card-header .btn {
-        white-space: nowrap;
+    .teamo-executive-footer {
+        padding: 12px 15px;
     }
 
 }

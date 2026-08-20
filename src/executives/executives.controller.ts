@@ -1,6 +1,7 @@
 import {
     Body,
     Controller,
+    Delete,
     Get,
     Param,
     Patch,
@@ -21,7 +22,7 @@ export class ExecutivesController {
 
     constructor(
         private readonly service: ExecutivesService,
-    ) {}
+    ) { }
 
 
     // SPA shell
@@ -78,4 +79,18 @@ export class ExecutivesController {
             dto,
         );
     }
+
+    // @Delete(':id')
+    // @UseGuards(FirebaseAuthGuard)
+    // remove(
+    //     @CurrentUser() user: any,
+    //     @Param('id') id: string,
+    // ) {
+
+    //     return this.service.remove(
+    //         user.uid,
+    //         id,
+    //     );
+
+    // }
 }

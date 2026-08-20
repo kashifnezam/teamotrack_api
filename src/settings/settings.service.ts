@@ -12,11 +12,15 @@ import { SettingsDto } from './dto/settings.dto';
 export class SettingsService {
 
     private readonly logger =
-        new Logger(SettingsService.name);
+        new Logger(
+            SettingsService.name,
+        );
+
 
     constructor(
-        private readonly firebase: FirebaseService,
-    ) {}
+        private readonly firebase:
+            FirebaseService,
+    ) { }
 
 
     private get db() {
@@ -25,77 +29,126 @@ export class SettingsService {
 
 
     // ==================================================
+    // GET USER
+    // ==================================================
+
+    private async getUser(
+        userId: string,
+    ) {
+
+        const doc =
+            await this.db
+                .collection('user')
+                .doc(userId)
+                .get();
+
+
+        if (!doc.exists) {
+
+            throw new NotFoundException(
+                'User not found',
+            );
+
+        }
+
+
+        return {
+
+            uid:
+                doc.id,
+
+            ...doc.data(),
+
+        } as any;
+
+    }
+
+
+    // ==================================================
+    // ROOT
+    // ==================================================
+
+    private getRootId(
+        user: any,
+    ): string {
+
+        if (
+            [
+                'root',
+                'admin',
+                'root_manager',
+                'root_hr',
+            ].includes(
+                user.role,
+            )
+        ) {
+
+            return (
+                user.rootId ||
+                user.uid
+            );
+
+        }
+
+
+        if (!user.rootId) {
+
+            throw new BadRequestException(
+                'Invalid organization',
+            );
+
+        }
+
+
+        return user.rootId;
+
+    }
+
+
+    // ==================================================
     // GET DATA
     // ==================================================
 
-    async getData(rootId: string) {
+    async getData(
+        userId: string,
+    ) {
 
         this.logger.log(
-            `Fetching settings | rootId=${rootId}`,
+            `Fetching settings | userId=${userId}`,
         );
+
 
         try {
 
-            const [
-                userSnap,
-                companySnap,
-                permissionSnap,
-            ] = await Promise.all([
-
-                this.db
-                    .collection('user')
-                    .doc(rootId)
-                    .get(),
-
-                this.db
-                    .collection('businesses')
-                    .doc(rootId)
-                    .get(),
-
-                this.db
-                    .collection('businesses')
-                    .doc(rootId)
-                    .collection('settings')
-                    .doc('permissions')
-                    .get(),
-
-            ]);
-
-
-            if (!userSnap.exists) {
-
-                this.logger.warn(
-                    `Settings user not found | rootId=${rootId}`,
-                );
-
-                throw new NotFoundException(
-                    'User not found',
-                );
-            }
-
-
             const user =
-                userSnap.data() || {};
+                await this.getUser(
+                    userId,
+                );
 
-            const company =
-                companySnap.exists
-                    ? companySnap.data() || {}
+
+            const rootId =
+                this.getRootId(
+                    user,
+                );
+
+
+            const organizationSnap =
+                await this.db
+                    .collection('organization')
+                    .doc(rootId)
+                    .get();
+
+
+            const organization =
+                organizationSnap.exists
+                    ? organizationSnap.data() || {}
                     : {};
-
-            const permissions =
-                permissionSnap.exists
-                    ? permissionSnap.data() || {}
-                    : this.defaultPermissions();
-
-
-            this.logger.log(
-                `Settings fetched | rootId=${rootId}`,
-            );
 
 
             return {
 
                 profile: {
+
                     fullName:
                         user.fullName ||
                         user.name ||
@@ -103,38 +156,48 @@ export class SettingsService {
                         'Unknown',
 
                     email:
-                        user.email ?? '',
+                        user.email ??
+                        '',
 
                     mobile:
-                        user.mobile ?? '',
+                        user.mobile ??
+                        '',
 
                     role:
-                        user.role ?? '',
+                        user.role ??
+                        '',
+
                 },
 
+
                 company: {
+
                     businessName:
-                        company.businessName ??
+                        organization.businessName ??
                         'My Company',
 
                     logo:
-                        company.logo ?? '',
+                        organization.logo ??
+                        '',
+
                 },
 
-                permissions,
             };
 
         } catch (error) {
 
             this.logger.error(
-                `Failed to fetch settings | rootId=${rootId}`,
+                `Failed to fetch settings | userId=${userId}`,
+
                 error instanceof Error
                     ? error.stack
                     : undefined,
             );
 
+
             throw error;
         }
+
     }
 
 
@@ -143,31 +206,26 @@ export class SettingsService {
     // ==================================================
 
     async updateProfile(
-        rootId: string,
+        userId: string,
         dto: SettingsDto,
     ) {
 
-        this.logger.log(
-            `Updating profile | rootId=${rootId}`,
-        );
-
-
-        if (!dto.fullName?.trim()) {
-
-            this.logger.warn(
-                `Profile update rejected | name missing | rootId=${rootId}`,
-            );
+        if (
+            !dto.fullName?.trim()
+        ) {
 
             throw new BadRequestException(
                 'Name is required',
             );
+
         }
 
 
         const ref =
             this.db
                 .collection('user')
-                .doc(rootId);
+                .doc(userId);
+
 
         const snap =
             await ref.get();
@@ -175,13 +233,10 @@ export class SettingsService {
 
         if (!snap.exists) {
 
-            this.logger.warn(
-                `Profile update failed | user not found | rootId=${rootId}`,
-            );
-
             throw new NotFoundException(
                 'User not found',
             );
+
         }
 
 
@@ -196,47 +251,191 @@ export class SettingsService {
         });
 
 
-        this.logger.log(
-            `Profile updated | rootId=${rootId}`,
-        );
-
-
         return {
-            success: true,
+
+            success:
+                true,
+
         };
+
     }
 
 
     // ==================================================
-    // UPDATE COMPANY
+    // UPLOAD ORGANIZATION LOGO
     // ==================================================
 
-    async updateCompany(
-        rootId: string,
-        dto: SettingsDto,
+    async uploadLogo(
+        userId: string,
+        file: any,
     ) {
 
-        this.logger.log(
-            `Updating company | rootId=${rootId}`,
+        if (!file) {
+
+            throw new BadRequestException(
+                'Logo is required',
+            );
+
+        }
+
+
+        const allowedTypes = [
+            'image/jpeg',
+            'image/png',
+            'image/webp',
+        ];
+
+
+        if (
+            !allowedTypes.includes(
+                file.mimetype,
+            )
+        ) {
+
+            throw new BadRequestException(
+                'Invalid logo format',
+            );
+
+        }
+
+
+        const user =
+            await this.getUser(
+                userId,
+            );
+
+
+        const rootId =
+            this.getRootId(
+                user,
+            );
+
+
+        const organizationRef =
+            this.db
+                .collection('organization')
+                .doc(rootId);
+
+
+        const organizationSnap =
+            await organizationRef.get();
+
+
+        if (!organizationSnap.exists) {
+
+            throw new NotFoundException(
+                'Organization not found',
+            );
+
+        }
+
+
+        const bucket =
+            this.firebase.storage.bucket();
+
+
+        const extension =
+            file.originalname
+                ?.split('.')
+                .pop()
+                ?.toLowerCase() ||
+            'png';
+
+
+        const filePath =
+            `family_room/image/companyLogo/${rootId}_${Date.now()}.${extension}`;
+
+
+        const storageFile =
+            bucket.file(
+                filePath,
+            );
+
+
+        await storageFile.save(
+            file.buffer,
+            {
+                metadata: {
+
+                    contentType:
+                        file.mimetype,
+
+                },
+            },
         );
 
 
-        if (!dto.businessName?.trim()) {
+        await storageFile.makePublic();
 
-            this.logger.warn(
-                `Company update rejected | name missing | rootId=${rootId}`,
-            );
+
+        const logo =
+            `https://storage.googleapis.com/${bucket.name}/${filePath}`;
+
+
+        await organizationRef.update({
+
+            logo,
+
+            updatedAt:
+                new Date(),
+
+        });
+
+
+        this.logger.log(
+            `Organization logo updated | rootId=${rootId} | path=${filePath}`,
+        );
+
+
+        return {
+
+            success:
+                true,
+
+            logo,
+
+        };
+
+    }
+
+
+    // ==================================================
+    // UPDATE ORGANIZATION
+    // ==================================================
+
+    async updateCompany(
+        userId: string,
+        dto: SettingsDto,
+    ) {
+
+        if (
+            !dto.businessName?.trim()
+        ) {
 
             throw new BadRequestException(
                 'Company name is required',
             );
+
         }
+
+
+        const user =
+            await this.getUser(
+                userId,
+            );
+
+
+        const rootId =
+            this.getRootId(
+                user,
+            );
 
 
         const ref =
             this.db
-                .collection('businesses')
+                .collection('organization')
                 .doc(rootId);
+
 
         const snap =
             await ref.get();
@@ -246,8 +445,7 @@ export class SettingsService {
 
             await ref.set({
 
-                ownerId:
-                    rootId,
+                rootId,
 
                 businessName:
                     dto.businessName.trim(),
@@ -258,11 +456,10 @@ export class SettingsService {
                 createdAt:
                     new Date(),
 
-            });
+                updatedAt:
+                    new Date(),
 
-            this.logger.log(
-                `Company created | rootId=${rootId}`,
-            );
+            });
 
         } else {
 
@@ -280,8 +477,10 @@ export class SettingsService {
             if (
                 dto.logo !== undefined
             ) {
+
                 data.logo =
                     dto.logo;
+
             }
 
 
@@ -289,98 +488,16 @@ export class SettingsService {
                 data,
             );
 
-            this.logger.log(
-                `Company updated | rootId=${rootId}`,
-            );
         }
 
 
         return {
-            success: true,
-        };
-    }
 
-
-    // ==================================================
-    // UPDATE PERMISSIONS
-    // ==================================================
-
-    async updatePermissions(
-        rootId: string,
-        dto: SettingsDto,
-    ) {
-
-        this.logger.log(
-            `Updating root permissions | rootId=${rootId}`,
-        );
-
-
-        const permissions = {
-
-            canCreateTask:
-                dto.canCreateTask ?? false,
-
-            canEditTask:
-                dto.canEditTask ?? false,
-
-            canDeleteTask:
-                dto.canDeleteTask ?? false,
-
-            canApproveLeave:
-                dto.canApproveLeave ?? false,
-
-            canMarkAttendance:
-                dto.canMarkAttendance ?? false,
-
-        };
-
-
-        await this.db
-            .collection('businesses')
-            .doc(rootId)
-            .collection('settings')
-            .doc('permissions')
-            .set(
-                permissions,
-                { merge: true },
-            );
-
-
-        this.logger.log(
-            `Root permissions updated | rootId=${rootId}`,
-        );
-
-
-        return {
-            success: true,
-        };
-    }
-
-
-    // ==================================================
-    // DEFAULT PERMISSIONS
-    // ==================================================
-
-    private defaultPermissions() {
-
-        return {
-
-            canCreateTask:
+            success:
                 true,
 
-            canEditTask:
-                true,
-
-            canDeleteTask:
-                false,
-
-            canApproveLeave:
-                true,
-
-            canMarkAttendance:
-                false,
-
         };
+
     }
 
 }

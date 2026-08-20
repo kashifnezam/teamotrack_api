@@ -452,3 +452,644 @@
     }
 
 }
+
+/* ==========================================================
+   TEAMOTRACK MANAGER MODALS
+========================================================== */
+
+#staffModal .modal-dialog,
+#permissionModal .modal-dialog {
+    width: 100%;
+    max-width: 760px;
+    margin: 16px auto;
+}
+
+
+.teamo-manager-modal {
+    overflow: hidden;
+
+    border: 0;
+    border-radius: 16px;
+
+    background: #fff;
+
+    box-shadow:
+        0 18px 55px rgba(0, 0, 0, .16);
+}
+
+
+/* ==========================================================
+   HEADER
+========================================================== */
+
+.teamo-manager-header {
+    display: flex;
+
+    align-items: flex-start;
+    justify-content: space-between;
+
+    gap: 15px;
+
+    padding: 18px 22px 15px;
+
+    border-bottom: 1px solid #edf0f4;
+
+    background: #fff;
+}
+
+
+.manager-modal-eyebrow {
+    margin-bottom: 3px;
+
+    color: var(--bs-primary);
+
+    font-size: 9px;
+    font-weight: 700;
+
+    letter-spacing: .12em;
+}
+
+
+.teamo-manager-modal .modal-title {
+    margin: 0;
+
+    color: #182230;
+
+    font-size: 19px;
+    font-weight: 700;
+}
+
+
+.manager-modal-subtitle {
+    margin-top: 2px;
+
+    color: #7b8491;
+
+    font-size: 11px;
+}
+
+
+/* ==========================================================
+   BODY
+========================================================== */
+
+.teamo-manager-modal .modal-body {
+    padding: 18px 22px;
+
+    background: #fff;
+}
+
+
+.teamo-manager-modal .form-label {
+    display: block;
+
+    margin-bottom: 5px;
+
+    color: #374151;
+
+    font-size: 11px;
+    font-weight: 600;
+}
+
+
+.teamo-manager-modal .form-control,
+.teamo-manager-modal .form-select {
+    width: 100%;
+
+    min-height: 40px;
+
+    padding: 8px 11px;
+
+    border: 1px solid #dfe3e8;
+
+    border-radius: 8px;
+
+    background: #fff;
+
+    color: #1f2937;
+
+    font-size: 12px;
+
+    box-shadow: none;
+}
+
+
+.teamo-manager-modal .form-control::placeholder {
+    color: #9aa1aa;
+}
+
+
+.teamo-manager-modal .form-control:focus,
+.teamo-manager-modal .form-select:focus {
+    border-color: var(--bs-primary);
+
+    box-shadow:
+        0 0 0 3px
+        rgba(var(--bs-primary-rgb), .08);
+}
+
+
+.teamo-manager-modal .form-control:disabled,
+.teamo-manager-modal .form-select:disabled {
+    background: #f5f6f8;
+
+    color: #7b8491;
+
+    cursor: not-allowed;
+}
+
+
+.manager-form-hint {
+    margin-top: 4px;
+
+    color: #8a929d;
+
+    font-size: 9px;
+
+    line-height: 1.4;
+}
+
+
+/* ==========================================================
+   ACCOUNT STATUS
+========================================================== */
+
+.manager-status-box {
+    min-height: 62px;
+    height: 100%;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: space-between;
+
+    gap: 10px;
+
+    padding: 10px 12px;
+
+    border: 1px solid #e4e7eb;
+
+    border-radius: 9px;
+
+    background: #fafbfc;
+}
+
+
+.manager-status-content {
+    min-width: 0;
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 8px;
+}
+
+
+.manager-status-dot {
+    width: 8px;
+    height: 8px;
+
+    flex: 0 0 8px;
+
+    border-radius: 50%;
+
+    background: #22c55e;
+}
+
+
+.manager-status-title {
+    color: #374151;
+
+    font-size: 11px;
+    font-weight: 600;
+}
+
+
+.manager-status-description {
+    margin-top: 2px;
+
+    color: #8a929d;
+
+    font-size: 9px;
+}
+
+
+/* ==========================================================
+   SWITCH
+========================================================== */
+
+.teamo-manager-modal .form-check-input {
+    margin: 0;
+
+    cursor: pointer;
+}
+
+
+.teamo-manager-modal .form-check-input:focus {
+    box-shadow:
+        0 0 0 .2rem
+        rgba(var(--bs-primary-rgb), .12);
+}
+
+
+/* ==========================================================
+   FOOTER
+========================================================== */
+
+.teamo-manager-footer {
+    display: flex;
+
+    align-items: center;
+    justify-content: flex-end;
+
+    gap: 8px;
+
+    padding: 12px 22px;
+
+    border-top: 1px solid #edf0f4;
+
+    background: #fafbfc;
+}
+
+
+.teamo-manager-footer .btn {
+    min-height: 38px;
+
+    padding: 7px 16px;
+
+    border-radius: 8px;
+
+    font-size: 12px;
+    font-weight: 600;
+}
+
+
+/* ==========================================================
+   PERMISSIONS
+========================================================== */
+
+.manager-permission-body {
+    padding: 16px 22px 18px !important;
+}
+
+
+.manager-permission-header {
+    display: flex;
+
+    align-items: center;
+    justify-content: space-between;
+
+    gap: 15px;
+
+    margin-bottom: 12px;
+}
+
+
+.manager-permission-title {
+    color: #1f2937;
+
+    font-size: 13px;
+    font-weight: 700;
+}
+
+
+.manager-permission-description {
+    max-width: 560px;
+
+    margin-top: 2px;
+
+    color: #8a929d;
+
+    font-size: 10px;
+
+    line-height: 1.4;
+}
+
+
+.manager-permission-badge {
+    flex: 0 0 auto;
+
+    padding: 5px 8px;
+
+    border-radius: 6px;
+
+    background:
+        rgba(var(--bs-primary-rgb), .08);
+
+    color: var(--bs-primary);
+
+    font-size: 8px;
+    font-weight: 700;
+
+    letter-spacing: .06em;
+}
+
+
+/* ==========================================================
+   PERMISSION LIST
+========================================================== */
+
+.manager-permission-list {
+    display: grid;
+
+    grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+
+    gap: 8px;
+
+    max-height: 330px;
+
+    overflow-y: auto;
+
+    padding: 2px;
+
+    scrollbar-width: thin;
+}
+
+
+/* ==========================================================
+   PERMISSION GROUP
+========================================================== */
+
+.manager-permission-list .permission-group {
+    grid-column: 1 / -1;
+
+    margin-top: 6px;
+    margin-bottom: 2px;
+
+    color: #8a929d;
+
+    font-size: 9px;
+    font-weight: 700;
+
+    text-transform: uppercase;
+
+    letter-spacing: .06em;
+}
+
+
+.manager-permission-list
+.permission-group:first-child {
+    margin-top: 0;
+}
+
+
+/* ==========================================================
+   PERMISSION ITEM
+========================================================== */
+
+.manager-permission-list .permission-item {
+    display: flex;
+
+    align-items: center;
+    justify-content: space-between;
+
+    gap: 10px;
+
+    min-height: 45px;
+
+    padding: 9px 11px;
+
+    border: 1px solid #e4e7eb;
+
+    border-radius: 8px;
+
+    background: #fff;
+
+    transition:
+        background .15s ease,
+        border-color .15s ease;
+}
+
+
+.manager-permission-list .permission-item:hover {
+    background: #fafbfc;
+
+    border-color: #d9dee5;
+}
+
+
+/* ==========================================================
+   PERMISSION LABEL
+========================================================== */
+
+.manager-permission-list .permission-title,
+.manager-permission-list .permission-label {
+    color: #374151;
+
+    font-size: 11px;
+    font-weight: 600;
+
+    text-transform: capitalize;
+}
+
+
+/* ==========================================================
+   CHECKBOX / SWITCH
+========================================================== */
+
+.manager-permission-list .form-check {
+    margin: 0;
+}
+
+
+.manager-permission-list .form-check-input {
+    margin: 0;
+
+    cursor: pointer;
+}
+
+
+.manager-permission-list .form-check-input:focus {
+    box-shadow:
+        0 0 0 .2rem
+        rgba(var(--bs-primary-rgb), .10);
+}
+
+
+/* ==========================================================
+   TABLET
+========================================================== */
+
+@media (max-width: 991.98px) {
+
+    #staffModal .modal-dialog,
+    #permissionModal .modal-dialog {
+        max-width: 700px;
+    }
+
+}
+
+
+/* ==========================================================
+   MOBILE
+========================================================== */
+
+@media (max-width: 767.98px) {
+
+    #staffModal .modal-dialog,
+    #permissionModal .modal-dialog {
+        width: auto;
+
+        max-width: none;
+
+        margin: 10px;
+    }
+
+
+    .teamo-manager-modal {
+        border-radius: 14px;
+    }
+
+
+    .teamo-manager-header {
+        padding: 15px 17px 13px;
+    }
+
+
+    .teamo-manager-modal .modal-body {
+        padding: 15px 17px;
+    }
+
+
+    .teamo-manager-footer {
+        padding: 11px 17px;
+    }
+
+
+    .manager-permission-body {
+        padding: 14px 17px 16px !important;
+    }
+
+
+    .manager-permission-list {
+        grid-template-columns: 1fr;
+
+        max-height: 300px;
+    }
+
+}
+
+
+/* ==========================================================
+   SMALL MOBILE
+========================================================== */
+
+@media (max-width: 575.98px) {
+
+    #staffModal .modal-dialog,
+    #permissionModal .modal-dialog {
+        margin: 8px;
+    }
+
+
+    .teamo-manager-header {
+        padding: 14px 15px 12px;
+    }
+
+
+    .teamo-manager-modal .modal-body {
+        padding: 14px 15px;
+    }
+
+
+    .manager-permission-body {
+        padding: 13px 15px !important;
+    }
+
+
+    .manager-modal-eyebrow {
+        font-size: 8px;
+    }
+
+
+    .teamo-manager-modal .modal-title {
+        font-size: 17px;
+    }
+
+
+    .manager-modal-subtitle {
+        max-width: 240px;
+
+        font-size: 10px;
+    }
+
+
+    /*
+     * Stack all Manager fields.
+     */
+
+    #staffModal .row.g-3 > [class*="col-md-"] {
+        width: 100%;
+    }
+
+
+    .manager-status-box {
+        min-height: 58px;
+    }
+
+
+    .manager-permission-header {
+        align-items: flex-start;
+    }
+
+
+    .manager-permission-description {
+        max-width: 220px;
+    }
+
+
+    .teamo-manager-footer {
+        flex-direction: column-reverse;
+
+        align-items: stretch;
+    }
+
+
+    .teamo-manager-footer .btn {
+        width: 100%;
+    }
+
+}
+
+
+/* ==========================================================
+   VERY SMALL MOBILE
+========================================================== */
+
+@media (max-width: 380px) {
+
+    #staffModal .modal-dialog,
+    #permissionModal .modal-dialog {
+        margin: 6px;
+    }
+
+
+    .teamo-manager-header {
+        padding: 12px 13px 10px;
+    }
+
+
+    .teamo-manager-modal .modal-body {
+        padding: 12px 13px;
+    }
+
+
+    .manager-permission-body {
+        padding: 12px 13px !important;
+    }
+
+
+    .teamo-manager-footer {
+        padding: 10px 13px;
+    }
+
+
+    .manager-permission-list .permission-item {
+        min-height: 43px;
+
+        padding: 8px 10px;
+    }
+
+}

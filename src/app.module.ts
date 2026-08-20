@@ -17,6 +17,14 @@ import { AttendanceModule } from './attendance/attendance.module';
 import { LiveTrackingModule } from './live-tracking/live-tracking.module';
 import { SettingsModule } from './settings/settings.module';
 import { StaffModule } from './staff/staff.module';
+import { LeaveModule } from './leave/leave.module';
+import { HolidayModule } from './holiday/holiday.module';
+import { SalaryStructureModule } from './salary-structure/salary-structure.module';
+import { SalaryAssignmentModule } from './salary-assignment/salary-assignment.module';
+import { PayrollPeriodModule } from './payroll-period/payroll-period.module';
+import { PayrollCalculationModule } from './payroll-calculation/payroll-calculation.module';
+import { PaymentModule } from './payment/payment.module';
+import { PayslipModule } from './payslip/payslip.module';
 
 @Module({
 
@@ -75,6 +83,22 @@ import { StaffModule } from './staff/staff.module';
         SettingsModule,
 
         StaffModule,
+
+        LeaveModule,
+
+        HolidayModule,
+
+        SalaryStructureModule,
+
+        SalaryAssignmentModule,
+
+        PayrollPeriodModule,
+
+        PayrollCalculationModule,
+
+        PaymentModule,
+
+        PayslipModule,
 
     ],
 

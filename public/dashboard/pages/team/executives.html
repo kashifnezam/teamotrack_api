@@ -1,44 +1,80 @@
 <!-- PAGE CONTENT -->
-<section class="executives-page">
+<section class="executives-page p-3">
 
     <div class="container-fluid">
 
-        <!-- Page Header -->
+        <!-- ==================================================
+             PAGE HEADER
+        ================================================== -->
+
         <div class="page-header">
 
-            <h4 class="mb-0">
-                Executives
-            </h4>
+            <div>
+
+                <div class="text-primary small fw-semibold mb-1">
+                    TEAMOTRACK • WORKFORCE
+                </div>
+
+                <h4 class="mb-1">
+                    Executives
+                </h4>
+
+                <p class="text-muted mb-0">
+                    Manage field executives within your team hierarchy.
+                </p>
+
+            </div>
+
+
+            <button
+                type="button"
+                class="btn btn-primary"
+                onclick="openExecutiveModal()"
+            >
+
+                <i class="bi bi-person-plus me-1"></i>
+
+                Add Executive
+
+            </button>
 
         </div>
 
 
-        <!-- FILTER -->
+        <!-- ==================================================
+             FILTER
+        ================================================== -->
+
         <div class="filter-card">
 
             <div class="row g-2 align-items-center">
 
                 <div class="col-lg-5 col-md-6">
 
-                    <form autocomplete="off">
+                    <div class="search-box">
 
-                        <div class="search-box">
+                        <i class="bi bi-search"></i>
 
-                            <i class="bi bi-search"></i>
+                        <input
+                            id="searchInput"
+                            type="search"
+                            name="executiveSearch"
+                            class="form-control"
+                            placeholder="Search executive..."
+                            autocomplete="off"
+                        >
 
-                            <input id="searchInput" type="search" name="executiveSearch" class="form-control"
-                                placeholder="Search executive...">
-
-                        </div>
-
-                    </form>
+                    </div>
 
                 </div>
 
 
                 <div class="col-lg-3 col-md-6">
 
-                    <select id="teamFilter" class="form-select">
+                    <select
+                        id="teamFilter"
+                        class="form-select"
+                    >
 
                         <option value="">
                             All Teams
@@ -68,29 +104,29 @@
         </div>
 
 
-        <!-- EXECUTIVE TABLE -->
+        <!-- ==================================================
+             EXECUTIVE TABLE
+        ================================================== -->
+
         <div class="executive-card">
 
-            <!-- Table Header -->
             <div class="executive-card-header">
 
                 <div>
-                    <h6 class="mb-0">
+
+                    <h6 class="mb-1">
                         Executive List
                     </h6>
+
+                    <small class="text-muted">
+                        Executives within your management hierarchy
+                    </small>
+
                 </div>
-
-                <button type="button" class="btn btn-primary btn-sm" onclick="openExecutiveModal()">
-
-                    <i class="bi bi-person-plus me-1"></i>
-                    Add Executive
-
-                </button>
 
             </div>
 
 
-            <!-- Table -->
             <div class="table-responsive">
 
                 <table class="table align-middle mb-0">
@@ -99,11 +135,29 @@
 
                         <tr>
 
-                            <th>Executive</th>
-                            <th>Mobile</th>
-                            <th>Team</th>
-                            <th>Tracking</th>
-                            <th>Status</th>
+                            <th>
+                                Executive
+                            </th>
+
+                            <th>
+                                Parent
+                            </th>
+
+                            <th>
+                                Mobile
+                            </th>
+
+                            <th>
+                                Team
+                            </th>
+
+                            <th>
+                                Tracking
+                            </th>
+
+                            <th>
+                                Status
+                            </th>
 
                             <th class="text-end">
                                 Action
@@ -118,7 +172,10 @@
 
                         <tr>
 
-                            <td colspan="6" class="empty-state">
+                            <td
+                                colspan="7"
+                                class="empty-state"
+                            >
 
                                 Loading executives...
 
@@ -138,74 +195,198 @@
 
 </section>
 
-<!-- MODAL -->
 
-<div class="modal fade" id="executiveModal" tabindex="-1">
+<!-- ==========================================================
+     EXECUTIVE MODAL
+========================================================== -->
 
-    <div class="modal-dialog modal-dialog-centered">
+<div
+    class="modal fade"
+    id="executiveModal"
+    tabindex="-1"
+>
 
-        <div class="modal-content">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
 
-            <div class="modal-header">
+        <div class="modal-content teamo-executive-modal">
 
-                <h5 class="modal-title" id="modalTitle">
+            <!-- ==================================================
+                 HEADER
+            ================================================== -->
 
-                    Add Executive
+            <div class="modal-header teamo-executive-header">
 
-                </h5>
+                <div>
 
-                <button type="button" class="btn-close" data-bs-dismiss="modal">
+                    <div class="executive-modal-eyebrow">
+                        TEAMOTRACK • WORKFORCE
+                    </div>
+
+                    <h5
+                        class="modal-title"
+                        id="modalTitle"
+                    >
+                        Add Executive
+                    </h5>
+
+                    <div class="executive-modal-subtitle">
+                        Create and manage a field executive within your hierarchy
+                    </div>
+
+                </div>
+
+
+                <button
+                    type="button"
+                    class="btn-close"
+                    data-bs-dismiss="modal"
+                >
                 </button>
 
             </div>
 
 
+            <!-- ==================================================
+                 BODY
+            ================================================== -->
+
             <div class="modal-body">
 
-                <input type="hidden" id="executiveId">
+                <input
+                    type="hidden"
+                    id="executiveId"
+                >
 
 
                 <div class="row g-3">
 
-                    <div class="col-12">
+                    <!-- Full Name -->
 
-                        <label>Full Name</label>
+                    <div class="col-md-6">
 
-                        <input id="fullName" class="form-control" type="text">
+                        <label
+                            for="fullName"
+                            class="form-label"
+                        >
+                            Full Name
+                        </label>
+
+                        <input
+                            id="fullName"
+                            class="form-control"
+                            type="text"
+                            placeholder="Enter full name"
+                            autocomplete="name"
+                        >
 
                     </div>
 
 
+                    <!-- Parent Manager -->
+
                     <div class="col-md-6">
 
-                        <label>Mobile</label>
+                        <label
+                            for="parentId"
+                            class="form-label"
+                        >
+                            Parent Manager
+                        </label>
 
-                        <input id="mobile" class="form-control" type="text">
+                        <select
+                            id="parentId"
+                            class="form-select"
+                            disabled
+                        >
+
+                            <option value="">
+                                Select Team first
+                            </option>
+
+                        </select>
+
+                        <div
+                            id="parentHint"
+                            class="form-text"
+                        >
+                            Parent manager is determined by the selected team's manager.
+                        </div>
 
                     </div>
 
 
+                    <!-- Mobile -->
+
                     <div class="col-md-6">
 
-                        <label>Email</label>
+                        <label
+                            for="mobile"
+                            class="form-label"
+                        >
+                            Mobile
+                        </label>
 
-                        <input id="email" class="form-control" type="email">
+                        <input
+                            id="mobile"
+                            class="form-control"
+                            type="text"
+                            placeholder="Enter mobile number"
+                            autocomplete="tel"
+                        >
 
                     </div>
 
 
+                    <!-- Email -->
+
                     <div class="col-md-6">
 
-                        <label for="password" class="form-label">
+                        <label
+                            for="email"
+                            class="form-label"
+                        >
+                            Email
+                        </label>
+
+                        <input
+                            id="email"
+                            class="form-control"
+                            type="email"
+                            placeholder="name@example.com"
+                            autocomplete="email"
+                        >
+
+                    </div>
+
+
+                    <!-- Password -->
+
+                    <div class="col-md-6">
+
+                        <label
+                            for="password"
+                            class="form-label"
+                        >
                             Password
                         </label>
 
                         <div class="input-group">
 
-                            <input id="password" class="form-control" type="password" autocomplete="new-password">
+                            <input
+                                id="password"
+                                class="form-control"
+                                type="password"
+                                autocomplete="new-password"
+                                placeholder="Enter password"
+                            >
 
-                            <button type="button" class="btn btn-outline-secondary" id="togglePassword"
-                                title="Show password" aria-label="Show password">
+                            <button
+                                type="button"
+                                class="btn btn-outline-secondary"
+                                id="togglePassword"
+                                title="Show password"
+                                aria-label="Show password"
+                            >
 
                                 <i class="bi bi-eye"></i>
 
@@ -213,14 +394,31 @@
 
                         </div>
 
+                        <div
+                            id="passwordHint"
+                            class="form-text"
+                        >
+                            Required when creating a new executive.
+                        </div>
+
                     </div>
 
 
+                    <!-- Team -->
+
                     <div class="col-md-6">
 
-                        <label>Team</label>
+                        <label
+                            for="teamId"
+                            class="form-label"
+                        >
+                            Team
+                        </label>
 
-                        <select id="teamId" class="form-select">
+                        <select
+                            id="teamId"
+                            class="form-select"
+                        >
 
                             <option value="">
                                 Select Team
@@ -228,14 +426,28 @@
 
                         </select>
 
+                        <div class="form-text">
+                            The team's manager becomes the executive's parent.
+                        </div>
+
                     </div>
 
 
+                    <!-- GPS Priority -->
+
                     <div class="col-md-6">
 
-                        <label>GPS Priority</label>
+                        <label
+                            for="gpsPriority"
+                            class="form-label"
+                        >
+                            GPS Priority
+                        </label>
 
-                        <select id="gpsPriority" class="form-select">
+                        <select
+                            id="gpsPriority"
+                            class="form-select"
+                        >
 
                             <option value="low">
                                 Low
@@ -250,26 +462,49 @@
                     </div>
 
 
+                    <!-- Active -->
+
                     <div class="col-md-3">
 
-                        <label>Active</label>
+                        <label
+                            for="isActive"
+                            class="form-label"
+                        >
+                            Active
+                        </label>
 
                         <div class="form-check form-switch">
 
-                            <input id="isActive" class="form-check-input" type="checkbox" checked>
+                            <input
+                                id="isActive"
+                                class="form-check-input"
+                                type="checkbox"
+                                checked
+                            >
 
                         </div>
 
                     </div>
 
 
+                    <!-- Tracking -->
+
                     <div class="col-md-3">
 
-                        <label>Tracking</label>
+                        <label
+                            for="isTrackingEnable"
+                            class="form-label"
+                        >
+                            Tracking
+                        </label>
 
                         <div class="form-check form-switch">
 
-                            <input id="isTrackingEnable" class="form-check-input" type="checkbox">
+                            <input
+                                id="isTrackingEnable"
+                                class="form-check-input"
+                                type="checkbox"
+                            >
 
                         </div>
 
@@ -280,18 +515,27 @@
             </div>
 
 
-            <div class="modal-footer">
+            <!-- ==================================================
+                 FOOTER
+            ================================================== -->
 
-                <button class="btn btn-light" data-bs-dismiss="modal">
+            <div class="modal-footer teamo-executive-footer">
 
+                <button
+                    type="button"
+                    class="btn btn-light"
+                    data-bs-dismiss="modal"
+                >
                     Cancel
-
                 </button>
 
-                <button class="btn btn-primary" id="saveExecutiveBtn" onclick="saveExecutive()">
-
+                <button
+                    type="button"
+                    class="btn btn-primary px-4"
+                    id="saveExecutiveBtn"
+                    onclick="saveExecutive()"
+                >
                     Save Executive
-
                 </button>
 
             </div>

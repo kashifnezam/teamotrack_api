@@ -9,25 +9,39 @@
 }
 
 
-/* =========================
+/* ==========================================================
    Page Header
-========================= */
+========================================================== */
 
-.page-header {
+.teams-page .page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
     margin-bottom: 18px;
 }
 
-.page-header h4 {
+.teams-page .page-header h4 {
     color: var(--text-primary);
     font-weight: var(--fw-semibold);
 }
 
+.teams-page .page-header p {
+    color: var(--text-muted);
+    font-size: 13px;
+}
 
-/* =========================
+.teams-page .page-header .text-primary {
+    font-size: 11px;
+    letter-spacing: .04em;
+}
+
+
+/* ==========================================================
    Filter
-========================= */
+========================================================== */
 
-.filter-card {
+.hr-filter-card {
     background: var(--surface);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-md);
@@ -36,11 +50,11 @@
     box-shadow: var(--shadow-sm);
 }
 
-.search-box {
+.hr-search-box {
     position: relative;
 }
 
-.search-box i {
+.hr-search-box i {
     position: absolute;
     left: 13px;
     top: 50%;
@@ -49,21 +63,28 @@
     z-index: 2;
 }
 
-.search-box input {
+.hr-search-box input {
     padding-left: 38px;
 }
 
-.team-count {
+.hr-count {
     color: var(--text-secondary);
     font-size: 14px;
 }
 
+.hr-count strong {
+    color: var(--text-primary);
+    font-size: 18px;
+    font-weight: var(--fw-semibold);
+    margin-right: 4px;
+}
 
-/* =========================
-   Card
-========================= */
 
-.team-card {
+/* ==========================================================
+   Team Card
+========================================================== */
+
+.hr-card {
     background: var(--surface);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-md);
@@ -71,7 +92,7 @@
     overflow: hidden;
 }
 
-.team-card-header {
+.hr-card-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -80,21 +101,31 @@
     border-bottom: 1px solid var(--border-color);
 }
 
-.team-card-header h6 {
+.hr-card-header h6 {
     color: var(--text-primary);
     font-weight: var(--fw-semibold);
 }
 
-
-/* =========================
-   Table
-========================= */
-
-.team-card .table-responsive {
-    max-height: calc(100vh - 245px);
+.hr-card-header small {
+    color: var(--text-muted);
+    font-size: 12px;
 }
 
-.table th {
+
+/* ==========================================================
+   Table
+========================================================== */
+
+.hr-card .table-responsive {
+    max-height: calc(100vh - 285px);
+    overflow: auto;
+}
+
+.hr-card .table {
+    margin-bottom: 0;
+}
+
+.hr-card .table th {
     background: var(--surface-soft);
     color: var(--text-secondary);
     font-size: 12px;
@@ -103,18 +134,34 @@
     border-bottom: 1px solid var(--border-color);
 }
 
-.table td,
-.table th {
+.hr-card .table td,
+.hr-card .table th {
     padding: 13px 15px;
 }
 
-.table td {
+.hr-card .table td {
     color: var(--text-primary);
     font-size: 14px;
+    vertical-align: middle;
 }
 
+.hr-card .table tbody tr {
+    transition: var(--transition-fast);
+}
+
+.hr-card .table tbody tr:hover {
+    background: var(--surface-soft);
+}
+
+
+/* ==========================================================
+   Team Name
+========================================================== */
+
 .team-name {
+    color: var(--text-primary);
     font-weight: 600;
+    white-space: nowrap;
 }
 
 .team-meta {
@@ -124,23 +171,21 @@
 }
 
 
-/* =========================
+/* ==========================================================
    Badges
-========================= */
+========================================================== */
 
 .team-badge {
     display: inline-flex;
     align-items: center;
+    gap: 4px;
     padding: 5px 9px;
     border-radius: 20px;
     font-size: 11px;
     font-weight: 600;
     white-space: nowrap;
-}
-
-.team-active {
-    color: #15803d;
-    background: #dcfce7;
+    background: var(--surface-soft);
+    color: var(--text-secondary);
 }
 
 .team-no-shift {
@@ -149,13 +194,14 @@
 }
 
 
-/* =========================
-   Action
-========================= */
+/* ==========================================================
+   Action Buttons
+========================================================== */
 
 .action-btn {
     width: 34px;
     height: 34px;
+    padding: 0;
     border: 0;
     border-radius: 8px;
     background: var(--surface-soft);
@@ -168,10 +214,14 @@
     color: var(--primary);
 }
 
+.action-btn + .action-btn {
+    margin-left: 4px;
+}
 
-/* =========================
-   Empty
-========================= */
+
+/* ==========================================================
+   Empty State
+========================================================== */
 
 .empty-state {
     padding: 50px 20px !important;
@@ -179,10 +229,14 @@
     color: var(--text-muted);
 }
 
+.empty-state i {
+    color: var(--text-muted);
+}
 
-/* =========================
-   No Shift
-========================= */
+
+/* ==========================================================
+   No Shift Message
+========================================================== */
 
 .no-shift-message {
     margin-top: 10px;
@@ -204,71 +258,186 @@
 }
 
 
-/* =========================
-   Modal
-========================= */
+/* ==========================================================
+   Team Modal
+========================================================== */
 
-.modal-content {
+.teamo-modal {
     border: 0;
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-lg);
+    overflow: hidden;
 }
 
-.modal-header {
+.teamo-modal-header {
     border-bottom: 1px solid var(--border-color);
+    padding: 18px 20px;
 }
 
-.modal-footer {
-    border-top: 1px solid var(--border-color);
+.teamo-modal-header .modal-title {
+    color: var(--text-primary);
+    font-weight: var(--fw-semibold);
 }
 
-.modal-body label {
+.modal-eyebrow {
+    color: var(--primary);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .05em;
+    margin-bottom: 3px;
+}
+
+.modal-subtitle {
+    color: var(--text-muted);
+    font-size: 12px;
+    margin-top: 3px;
+}
+
+.teamo-modal .modal-body {
+    padding: 20px;
+}
+
+.teamo-modal .modal-body label {
+    color: var(--text-primary);
     font-size: 12px;
     font-weight: 600;
+}
+
+.teamo-modal .form-control,
+.teamo-modal .form-select {
+    min-height: 42px;
+    border-color: var(--border-color);
     color: var(--text-primary);
+    background: var(--surface);
+}
+
+.teamo-modal .form-control:focus,
+.teamo-modal .form-select:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 .2rem rgba(37, 99, 235, .10);
+}
+
+.teamo-modal .form-text {
+    color: var(--text-muted);
+    font-size: 11px;
+    margin-top: 5px;
+}
+
+.teamo-modal-footer {
+    border-top: 1px solid var(--border-color);
+    padding: 14px 20px;
 }
 
 
-/* =========================
+/* ==========================================================
+   Modal Buttons
+========================================================== */
+
+.teamo-modal .btn {
+    min-height: 38px;
+}
+
+.teamo-modal .btn-light {
+    background: var(--surface-soft);
+    border-color: var(--border-color);
+    color: var(--text-secondary);
+}
+
+
+/* ==========================================================
    Mobile
-========================= */
+========================================================== */
 
 @media (max-width: 768px) {
 
     .teams-page {
-        padding: 15px;
+        padding: 15px !important;
     }
 
-    .team-card .table-responsive {
+
+    .teams-page .page-header {
+        align-items: flex-start;
+    }
+
+
+    .teams-page .page-header .btn {
+        white-space: nowrap;
+    }
+
+
+    .hr-card .table-responsive {
         max-height: none;
     }
 
-    .table {
+
+    .hr-card .table {
         min-width: 700px;
     }
 
 }
 
+
+/* ==========================================================
+   Small Mobile
+========================================================== */
+
 @media (max-width: 576px) {
 
     .teams-page {
+        padding: 12px !important;
+    }
+
+
+    .teams-page .page-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+    }
+
+
+    .teams-page .page-header .btn {
+        width: 100%;
+    }
+
+
+    .hr-filter-card {
         padding: 12px;
     }
 
-    .team-card-header {
+
+    .hr-card-header {
         padding: 12px;
+        align-items: flex-start;
     }
 
-    .team-card-header .btn {
-        white-space: nowrap;
+
+    .hr-card-header .badge {
+        display: none;
     }
+
+
+    .teamo-modal {
+        border-radius: var(--radius-md);
+    }
+
 
     .modal-dialog {
         margin: 10px;
     }
 
-    .modal-body {
+
+    .teamo-modal .modal-body {
         padding: 15px;
+    }
+
+
+    .teamo-modal-header {
+        padding: 15px;
+    }
+
+
+    .teamo-modal-footer {
+        padding: 12px 15px;
     }
 
 }

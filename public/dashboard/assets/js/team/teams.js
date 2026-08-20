@@ -10,6 +10,8 @@
     let teams = [];
     let managers = [];
     let shifts = [];
+    let isRoot = false;
+
     let editingId = null;
 
 
@@ -20,6 +22,7 @@
     window.initializeTeamsPage = async function () {
 
         await loadTeams();
+
 
         document
             .getElementById("searchInput")
@@ -42,25 +45,45 @@
             const data =
                 await Api.get("/teams/data");
 
-            if (!data) return;
+
+            if (!data) {
+                return;
+            }
+
 
             teams =
-                data.teams || [];
+                Array.isArray(data.teams)
+                    ? data.teams
+                    : [];
+
 
             managers =
-                data.managers || [];
+                Array.isArray(data.managers)
+                    ? data.managers
+                    : [];
+
 
             shifts =
-                data.shifts || [];
+                Array.isArray(data.shifts)
+                    ? data.shifts
+                    : [];
+
+
+            isRoot =
+                data.isRoot === true;
 
 
             populateManagers();
+
             populateShifts();
+
             renderTeams();
+
 
         } catch (error) {
 
             console.error(error);
+
 
             AppAlert.error(
                 error.message ||
@@ -74,32 +97,108 @@
 
     /* ==========================================================
        Managers
+       ==========================================================
+
+       IMPORTANT:
+
+       Backend already filters managers according
+       to the logged-in user's hierarchy.
+
+       Therefore frontend must NOT try to calculate
+       parentId / rootId hierarchy itself.
+
+       data.managers contains only managers the
+       current user is allowed to select.
     ========================================================== */
 
     function populateManagers() {
 
         const select =
-            document.getElementById("leadId");
-
-        if (!select) return;
-
-
-        select.innerHTML =
-            `<option value="">No Manager</option>`;
+            document.getElementById(
+                "leadId"
+            );
 
 
-        managers.forEach(manager => {
+        if (!select) {
+            return;
+        }
+
+
+        select.innerHTML = "";
+
+
+        /*
+         * ONLY ROOT can create a team
+         * without a manager.
+         */
+        if (isRoot) {
 
             select.insertAdjacentHTML(
                 "beforeend",
                 `
-                    <option value="${manager.id}">
-                        ${escapeHtml(manager.fullName)}
-                    </option>
+                <option value="">
+                    No Manager — Root only
+                </option>
+            `
+            );
+
+        } else {
+
+            select.insertAdjacentHTML(
+                "beforeend",
                 `
+                <option value="">
+                    Select Team Manager
+                </option>
+            `
+            );
+
+        }
+
+
+        managers.forEach(manager => {
+
+            if (!manager?.id) {
+                return;
+            }
+
+
+            select.insertAdjacentHTML(
+                "beforeend",
+                `
+                <option value="${escapeHtml(
+                    manager.id
+                )}">
+                    ${escapeHtml(
+                    manager.fullName ||
+                    "Unnamed Manager"
+                )}
+                </option>
+            `
             );
 
         });
+
+
+        if (
+            !isRoot &&
+            !managers.length
+        ) {
+
+            select.innerHTML =
+                `
+                <option value="">
+                    No manager available
+                </option>
+            `;
+
+            select.disabled = true;
+
+        } else {
+
+            select.disabled = false;
+
+        }
 
     }
 
@@ -113,25 +212,41 @@
         const select =
             document.getElementById("shiftId");
 
+
         const message =
             document.getElementById(
                 "noShiftMessage"
             );
 
-        if (!select) return;
+
+        if (!select) {
+            return;
+        }
 
 
         select.innerHTML =
-            `<option value="">Select Shift</option>`;
+            `
+                <option value="">
+                    Select Shift
+                </option>
+            `;
 
 
         shifts.forEach(shift => {
 
+            if (!shift?.id) {
+                return;
+            }
+
+
             select.insertAdjacentHTML(
                 "beforeend",
                 `
-                    <option value="${shift.id}">
-                        ${escapeHtml(shift.name)}
+                    <option value="${escapeHtml(shift.id)}">
+                        ${escapeHtml(
+                    shift.name ||
+                    "Unnamed Shift"
+                )}
                     </option>
                 `
             );
@@ -143,7 +258,7 @@
 
             select.disabled = true;
 
-            message?.classList.add(
+            message?.classList.remove(
                 "d-none"
             );
 
@@ -161,7 +276,7 @@
 
 
     /* ==========================================================
-       Render
+       Render Teams
     ========================================================== */
 
     function renderTeams() {
@@ -171,10 +286,12 @@
                 "searchInput"
             );
 
+
         const tbody =
             document.getElementById(
                 "teamTable"
             );
+
 
         if (!searchInput || !tbody) {
             return;
@@ -187,177 +304,371 @@
                 .toLowerCase();
 
 
+        /*
+         * Search across:
+         *
+         * Team
+         * Manager
+         * Shift
+         */
         const list =
-            teams.filter(team =>
-                !search ||
-                team.name
-                    ?.toLowerCase()
-                    .includes(search)
-            );
+            teams.filter(team => {
+
+                if (!search) {
+                    return true;
+                }
 
 
+                const manager =
+                    getManagerName(
+                        team.leadId
+                    );
+
+
+                const shift =
+                    getShiftName(
+                        team.shiftId
+                    );
+
+
+                return (
+
+                    String(
+                        team.name || ""
+                    )
+                        .toLowerCase()
+                        .includes(search)
+
+                    ||
+
+                    manager
+                        .toLowerCase()
+                        .includes(search)
+
+                    ||
+
+                    shift
+                        .toLowerCase()
+                        .includes(search)
+
+                );
+
+            });
+
+
+        /*
+         * Count filtered teams.
+         */
         const count =
             document.getElementById(
                 "teamCount"
             );
 
+
         if (count) {
+
             count.textContent =
                 list.length;
+
         }
 
 
+        /*
+         * Empty state.
+         */
         if (!list.length) {
 
-            tbody.innerHTML = `
-                <tr>
-                    <td
-                        colspan="5"
-                        class="empty-state"
-                    >
-                        No teams found
-                    </td>
-                </tr>
-            `;
-
-            return;
-        }
-
-
-        tbody.innerHTML =
-            list.map(team => {
-
-                const manager =
-                    managers.find(
-                        m =>
-                            m.id ===
-                            team.leadId
-                    )?.fullName ||
-                    "No Manager";
-
-
-                const shift =
-                    shifts.find(
-                        s =>
-                            s.id ===
-                            team.shiftId
-                    )?.name ||
-                    "No Shift";
-
-
-                return `
+            tbody.innerHTML =
+                `
                     <tr>
 
-                        <td>
-                            <div class="team-name">
-                                ${escapeHtml(
-                                    team.name ||
-                                    "Unnamed"
-                                )}
+                        <td
+                            colspan="5"
+                            class="empty-state"
+                        >
+
+                            <div class="py-3">
+
+                                <i
+                                    class="bi bi-people fs-4 d-block mb-2"
+                                ></i>
+
+                                ${search
+                    ? "No teams match your search"
+                    : "No teams found"
+                }
+
                             </div>
-                        </td>
-
-                        <td>
-                            ${escapeHtml(manager)}
-                        </td>
-
-                        <td>
-                            ${
-                                team.shiftId
-                                    ? escapeHtml(shift)
-                                    : `
-                                        <span class="team-badge team-no-shift">
-                                            No Shift
-                                        </span>
-                                    `
-                            }
-                        </td>
-
-                        <td>
-                            ${team.totalExecutives || 0}
-                        </td>
-
-                        <td class="text-end">
-
-                            <button
-                                type="button"
-                                class="action-btn"
-                                title="Edit"
-                                onclick="editTeam('${team.id}')"
-                            >
-                                <i class="bi bi-pencil"></i>
-                            </button>
-
-                            <button
-                                type="button"
-                                class="action-btn"
-                                title="Delete"
-                                onclick="deleteTeam('${team.id}')"
-                            >
-                                <i class="bi bi-trash"></i>
-                            </button>
 
                         </td>
 
                     </tr>
                 `;
 
-            }).join("");
+            return;
+
+        }
+
+
+        /*
+         * Render rows.
+         */
+        tbody.innerHTML =
+            list
+                .map(renderTeamRow)
+                .join("");
 
     }
 
 
     /* ==========================================================
-       Modal
+       Render Team Row
+    ========================================================== */
+
+    function renderTeamRow(team) {
+
+        const manager =
+            getManagerName(
+                team.leadId
+            );
+
+
+        const shift =
+            getShiftName(
+                team.shiftId
+            );
+
+
+        const hasShift =
+            Boolean(
+                team.shiftId
+            );
+
+
+        const executiveCount =
+            Number(
+                team.totalExecutives || 0
+            );
+
+
+        return `
+            <tr>
+
+                <!-- Team -->
+
+                <td>
+
+                    <div class="team-name">
+
+                        ${escapeHtml(
+            team.name ||
+            "Unnamed"
+        )}
+
+                    </div>
+
+                </td>
+
+
+                <!-- Manager -->
+
+                <td>
+
+                    ${team.leadId
+                ? `
+                                <div class="fw-medium">
+                                    ${escapeHtml(manager)}
+                                </div>
+                            `
+                : `
+                                <span class="team-badge">
+                                    No Manager
+                                </span>
+                            `
+            }
+
+                </td>
+
+
+                <!-- Shift -->
+
+                <td>
+
+                    ${hasShift
+                ? escapeHtml(shift)
+                : `
+                                <span
+                                    class="team-badge team-no-shift"
+                                >
+                                    No Shift
+                                </span>
+                            `
+            }
+
+                </td>
+
+
+                <!-- Executives -->
+
+                <td>
+
+                    <span class="fw-medium">
+                        ${executiveCount}
+                    </span>
+
+                </td>
+
+
+                <!-- Actions -->
+
+                <td class="text-end">
+
+                    <button
+                        type="button"
+                        class="action-btn"
+                        title="Edit Team"
+                        onclick="editTeam('${escapeJs(team.id)}')"
+                    >
+
+                        <i class="bi bi-pencil"></i>
+
+                    </button>
+
+
+                    <button
+                        type="button"
+                        class="action-btn"
+                        title="Delete Team"
+                        onclick="deleteTeam('${escapeJs(team.id)}')"
+                    >
+
+                        <i class="bi bi-trash"></i>
+
+                    </button>
+
+                </td>
+
+            </tr>
+        `;
+
+    }
+
+
+    /* ==========================================================
+       Get Manager
+    ========================================================== */
+
+    function getManagerName(leadId) {
+
+        if (!leadId) {
+            return "No Manager";
+        }
+
+
+        return (
+            managers.find(
+                manager =>
+                    manager.id === leadId
+            )?.fullName ||
+
+            "Manager unavailable"
+        );
+
+    }
+
+
+    /* ==========================================================
+       Get Shift
+    ========================================================== */
+
+    function getShiftName(shiftId) {
+
+        if (!shiftId) {
+            return "No Shift";
+        }
+
+
+        return (
+            shifts.find(
+                shift =>
+                    shift.id === shiftId
+            )?.name ||
+
+            "Shift unavailable"
+        );
+
+    }
+
+
+    /* ==========================================================
+       Open Team Modal
     ========================================================== */
 
     function openTeamModal(id = null) {
 
-        editingId = id;
+        editingId =
+            id || null;
 
 
-        document.getElementById(
-            "modalTitle"
-        ).textContent =
-            id
-                ? "Edit Team"
-                : "Add Team";
+        const modalTitle =
+            document.getElementById(
+                "modalTitle"
+            );
 
 
-        document.getElementById(
-            "saveTeamBtn"
-        ).textContent =
-            id
-                ? "Update Team"
-                : "Save Team";
+        const saveButton =
+            document.getElementById(
+                "saveTeamBtn"
+            );
 
 
+        if (modalTitle) {
+
+            modalTitle.textContent =
+                id
+                    ? "Edit Team"
+                    : "Add Team";
+
+        }
+
+
+        if (saveButton) {
+
+            saveButton.textContent =
+                id
+                    ? "Update Team"
+                    : "Save Team";
+
+        }
+
+
+        /*
+         * New team.
+         */
         if (!id) {
 
-            document.getElementById(
-                "teamId"
-            ).value = "";
+            resetTeamForm();
 
-            document.getElementById(
-                "teamName"
-            ).value = "";
+        }
 
-            document.getElementById(
-                "leadId"
-            ).value = "";
 
+        /*
+         * Show modal.
+         */
+        const modalElement =
             document.getElementById(
-                "shiftId"
-            ).value = "";
+                "teamModal"
+            );
 
+
+        if (!modalElement) {
+            return;
         }
 
 
         bootstrap.Modal
             .getOrCreateInstance(
-                document.getElementById(
-                    "teamModal"
-                )
+                modalElement
             )
             .show();
 
@@ -365,40 +676,191 @@
 
 
     /* ==========================================================
-       Edit
+       Reset Form
+    ========================================================== */
+
+    function resetTeamForm() {
+
+        const teamId =
+            document.getElementById(
+                "teamId"
+            );
+
+
+        const teamName =
+            document.getElementById(
+                "teamName"
+            );
+
+
+        const leadId =
+            document.getElementById(
+                "leadId"
+            );
+
+
+        const shiftId =
+            document.getElementById(
+                "shiftId"
+            );
+
+
+        if (teamId) {
+            teamId.value = "";
+        }
+
+
+        if (teamName) {
+            teamName.value = "";
+        }
+
+
+        if (leadId) {
+            leadId.value = "";
+        }
+
+
+        if (shiftId) {
+            shiftId.value = "";
+        }
+
+    }
+
+
+    /* ==========================================================
+       Edit Team
     ========================================================== */
 
     function editTeam(id) {
 
         const team =
             teams.find(
-                t => t.id === id
+                item =>
+                    item.id === id
             );
 
-        if (!team) return;
+
+        if (!team) {
+
+            AppAlert.warning(
+                "Team is no longer available"
+            );
+
+            return;
+
+        }
 
 
-        document.getElementById(
-            "teamId"
-        ).value = id;
+        const teamId =
+            document.getElementById(
+                "teamId"
+            );
 
 
-        document.getElementById(
-            "teamName"
-        ).value =
-            team.name || "";
+        const teamName =
+            document.getElementById(
+                "teamName"
+            );
 
 
-        document.getElementById(
-            "leadId"
-        ).value =
-            team.leadId || "";
+        const leadSelect =
+            document.getElementById(
+                "leadId"
+            );
 
 
-        document.getElementById(
-            "shiftId"
-        ).value =
-            team.shiftId || "";
+        const shiftSelect =
+            document.getElementById(
+                "shiftId"
+            );
+
+
+        const executiveCount =
+            Number(
+                team.totalExecutives || 0
+            );
+
+
+        if (teamId) {
+            teamId.value = id;
+        }
+
+
+        if (teamName) {
+
+            teamName.value =
+                team.name || "";
+
+        }
+
+
+        if (leadSelect) {
+
+            /*
+             * Make sure current lead exists
+             * in the selectable hierarchy.
+             */
+            if (
+                team.leadId &&
+                !managers.some(
+                    manager =>
+                        manager.id ===
+                        team.leadId
+                )
+            ) {
+
+                AppAlert.warning(
+                    "You no longer have access to this team's manager"
+                );
+
+                return;
+
+            }
+
+
+            leadSelect.value =
+                team.leadId || "";
+
+
+            /*
+             * IMPORTANT:
+             *
+             * If executives are attached,
+             * manager cannot be changed.
+             */
+            leadSelect.disabled =
+                executiveCount > 0;
+
+
+            /*
+             * Update helper text if available.
+             */
+            const hint =
+                document.getElementById(
+                    "teamLeadHint"
+                );
+
+
+            if (hint) {
+
+                hint.textContent =
+                    executiveCount > 0
+
+                        ? "Manager cannot be changed while executives are assigned to this team."
+
+                        : "The selected manager will be responsible for this team.";
+
+            }
+
+        }
+
+
+        if (shiftSelect) {
+
+            shiftSelect.value =
+                team.shiftId || "";
+
+        }
 
 
         openTeamModal(id);
@@ -407,28 +869,38 @@
 
 
     /* ==========================================================
-       Save
+       Save Team
     ========================================================== */
+
+    /* ==========================================================
+   Save Team
+========================================================== */
 
     async function saveTeam() {
 
         const name =
             document
-                .getElementById("teamName")
-                .value
-                .trim();
+                .getElementById(
+                    "teamName"
+                )
+                ?.value
+                .trim() || "";
+
+
+        const leadSelect =
+            document.getElementById(
+                "leadId"
+            );
 
 
         const leadId =
-            document.getElementById(
-                "leadId"
-            ).value;
+            leadSelect?.value || "";
 
 
         const shiftId =
             document.getElementById(
                 "shiftId"
-            ).value;
+            )?.value || "";
 
 
         const button =
@@ -437,6 +909,10 @@
             );
 
 
+        /* ======================================================
+           BASIC VALIDATION
+        ====================================================== */
+
         if (!name) {
 
             AppAlert.warning(
@@ -444,6 +920,7 @@
             );
 
             return;
+
         }
 
 
@@ -454,12 +931,65 @@
             );
 
             return;
+
         }
 
 
+        /* ======================================================
+           ROOT / MANAGER VALIDATION
+        ====================================================== */
+
+        /*
+         * Non-root managers MUST select
+         * a team manager.
+         *
+         * They cannot create a root-owned
+         * unassigned team.
+         */
+        if (
+            !isRoot &&
+            !leadId
+        ) {
+
+            AppAlert.warning(
+                "Please select a team manager"
+            );
+
+            return;
+
+        }
+
+
+        /*
+         * Selected manager must be one of
+         * the managers returned by backend.
+         */
+        if (
+            leadId &&
+            !managers.some(
+                manager =>
+                    manager.id === leadId
+            )
+        ) {
+
+            AppAlert.warning(
+                "Invalid team manager"
+            );
+
+            return;
+
+        }
+
+
+        /* ======================================================
+           SAVE
+        ====================================================== */
+
         try {
 
-            button.disabled = true;
+            if (button) {
+                button.disabled = true;
+            }
 
 
             AppAlert.loading(
@@ -469,11 +999,25 @@
             );
 
 
+            /*
+             * Only send fields the client
+             * is allowed to control.
+             *
+             * NEVER send:
+             *
+             * rootId
+             * parentId
+             * createdBy
+             */
             const body = {
+
                 name,
+
                 leadId:
                     leadId || undefined,
-                shiftId
+
+                shiftId,
+
             };
 
 
@@ -496,6 +1040,7 @@
                 AppAlert.close();
 
                 return;
+
             }
 
 
@@ -518,22 +1063,35 @@
                 ?.hide();
 
 
+            editingId = null;
+
+
             await loadTeams();
+
 
         } catch (error) {
 
             console.error(error);
 
+
             AppAlert.close();
+
 
             AppAlert.error(
                 error.message ||
-                "Failed to save team"
+                (
+                    editingId
+                        ? "Unable to update team"
+                        : "Unable to create team"
+                )
             );
+
 
         } finally {
 
-            button.disabled = false;
+            if (button) {
+                button.disabled = false;
+            }
 
         }
 
@@ -541,21 +1099,36 @@
 
 
     /* ==========================================================
-       Delete
+       Delete Team
     ========================================================== */
 
     async function deleteTeam(id) {
 
         const team =
             teams.find(
-                t => t.id === id
+                item =>
+                    item.id === id
             );
 
-        if (!team) return;
+
+        if (!team) {
+
+            AppAlert.warning(
+                "Team is no longer available"
+            );
+
+            return;
+
+        }
 
 
-        const confirmed = await AppAlert.confirm(
-                `Are you sure you want to delete the team "${team.name}"? This action cannot be undone.`
+        const confirmed =
+            await AppAlert.confirm(
+                `
+                    Are you sure you want to delete
+                    the team "${team.name}"?
+                    This action cannot be undone.
+                `
             );
 
 
@@ -582,6 +1155,7 @@
                 AppAlert.close();
 
                 return;
+
             }
 
 
@@ -595,11 +1169,14 @@
 
             await loadTeams();
 
+
         } catch (error) {
 
             console.error(error);
 
+
             AppAlert.close();
+
 
             AppAlert.error(
                 error.message ||
@@ -612,7 +1189,7 @@
 
 
     /* ==========================================================
-       Escape
+       Escape HTML
     ========================================================== */
 
     function escapeHtml(value) {
@@ -645,17 +1222,49 @@
 
 
     /* ==========================================================
-       GLOBAL HTML HANDLERS
+       Escape JavaScript
+    ========================================================== */
+
+    function escapeJs(value) {
+
+        return String(
+            value ?? ""
+        )
+            .replaceAll(
+                "\\",
+                "\\\\"
+            )
+            .replaceAll(
+                "'",
+                "\\'"
+            )
+            .replaceAll(
+                "\n",
+                "\\n"
+            )
+            .replaceAll(
+                "\r",
+                "\\r"
+            );
+
+    }
+
+
+    /* ==========================================================
+       Global HTML Handlers
     ========================================================== */
 
     window.editTeam =
         editTeam;
 
+
     window.deleteTeam =
         deleteTeam;
 
+
     window.openTeamModal =
         openTeamModal;
+
 
     window.saveTeam =
         saveTeam;

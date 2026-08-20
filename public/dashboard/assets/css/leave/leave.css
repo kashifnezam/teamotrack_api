@@ -1,0 +1,334 @@
+/* ==========================================================
+   TeamoTrack Leave
+   leave.css
+=========================================================== */
+
+
+/* ==========================================================
+   PAGE
+=========================================================== */
+
+.leave-tab {
+    width: 100%;
+}
+
+
+/* ==========================================================
+   SUMMARY CARDS
+=========================================================== */
+
+#availableLeave,
+#pendingLeave,
+#approvedLeave,
+#rejectedLeave {
+    font-weight: 700;
+    letter-spacing: -0.5px;
+}
+
+
+/* ==========================================================
+   LEAVE TABLE
+=========================================================== */
+
+#leaveTable td,
+#approvalTable td {
+    white-space: nowrap;
+}
+
+
+#leaveTable td:first-child,
+#approvalTable td:first-child {
+    white-space: normal;
+}
+
+
+#leaveTable .badge,
+#approvalTable .badge {
+    font-weight: 500;
+    padding: 0.45em 0.7em;
+}
+
+
+/* ==========================================================
+   TABS
+=========================================================== */
+
+#leaveTabs {
+    gap: 4px;
+}
+
+
+#leaveTabs .nav-link {
+    color: #6c757d;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    font-weight: 500;
+    padding: 0.75rem 1rem;
+}
+
+
+#leaveTabs .nav-link:hover {
+    color: var(--bs-primary);
+}
+
+
+#leaveTabs .nav-link.active {
+    color: var(--bs-primary);
+    background: transparent;
+    border-bottom-color: var(--bs-primary);
+}
+
+
+/* ==========================================================
+   LEAVE TYPE CARDS
+=========================================================== */
+
+#leaveTypes .card {
+    transition:
+        transform 0.15s ease,
+        box-shadow 0.15s ease;
+}
+
+
+#leaveTypes .card:hover {
+    transform: translateY(-2px);
+    box-shadow:
+        0 0.35rem 1rem rgba(0, 0, 0, 0.08);
+}
+
+
+#leaveTypes hr {
+    margin: 0.9rem 0;
+}
+
+
+/* ==========================================================
+   MODALS
+=========================================================== */
+
+#leaveModal .modal-content,
+#leaveTypeModal .modal-content {
+    border: 0;
+    border-radius: 0.75rem;
+}
+
+
+#leaveModal .modal-header,
+#leaveTypeModal .modal-header {
+    border-bottom: 1px solid #eee;
+}
+
+
+#leaveModal .modal-footer,
+#leaveTypeModal .modal-footer {
+    border-top: 1px solid #eee;
+}
+
+
+/* ==========================================================
+   FORM
+=========================================================== */
+
+#leaveForm .form-label,
+#leaveTypeForm .form-label {
+    font-weight: 500;
+}
+
+
+#leaveForm .form-control,
+#leaveForm .form-select,
+#leaveTypeForm .form-control,
+#leaveTypeForm .form-select {
+    min-height: 42px;
+}
+
+
+#leaveForm textarea {
+    resize: vertical;
+    min-height: 90px;
+}
+
+
+/* ==========================================================
+   BUTTONS
+=========================================================== */
+
+#btnApplyLeave {
+    white-space: nowrap;
+}
+
+
+#btnAddLeaveType {
+    white-space: nowrap;
+}
+
+
+/* ==========================================================
+   LOADING / EMPTY
+=========================================================== */
+
+.leave-loading {
+    min-height: 180px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+}
+
+
+.leave-empty {
+    padding: 3rem 1rem;
+
+    text-align: center;
+
+    color: #6c757d;
+}
+
+
+/* ==========================================================
+   RESPONSIVE
+=========================================================== */
+
+@media (max-width: 767.98px) {
+
+    #leaveTabs {
+        overflow-x: auto;
+        flex-wrap: nowrap;
+        scrollbar-width: none;
+    }
+
+
+    #leaveTabs::-webkit-scrollbar {
+        display: none;
+    }
+
+
+    #leaveTabs .nav-item {
+        flex: 0 0 auto;
+    }
+
+
+    #leaveTabs .nav-link {
+        padding:
+            0.7rem 0.75rem;
+
+        font-size: 0.875rem;
+    }
+
+
+    #leaveTable,
+    #approvalTable {
+        min-width: 760px;
+    }
+
+
+    #leaveModal .modal-dialog,
+    #leaveTypeModal .modal-dialog {
+        margin:
+            0.75rem;
+    }
+
+
+    #leaveModal .modal-content,
+    #leaveTypeModal .modal-content {
+        border-radius:
+            0.65rem;
+    }
+
+
+    #leaveTypes .card {
+        transform: none;
+    }
+
+
+    #leaveTypes .card:hover {
+        transform: none;
+    }
+
+}
+
+
+/* ==========================================================
+   SMALL MOBILE
+=========================================================== */
+
+@media (max-width: 575.98px) {
+
+    #btnApplyLeave {
+        width: 100%;
+    }
+
+
+    #btnAddLeaveType {
+        width: auto;
+    }
+
+
+    #tabTypes
+    > .d-flex {
+        align-items: flex-start !important;
+        gap: 0.75rem;
+    }
+
+
+    #tabTypes
+    > .d-flex > div:first-child {
+        min-width: 0;
+    }
+
+
+    #tabTypes
+    > .d-flex small {
+        line-height: 1.4;
+    }
+
+
+    .card-body {
+        padding:
+            1rem;
+    }
+
+}
+
+
+/* ==========================================================
+   DARK MODE SUPPORT
+=========================================================== */
+
+[data-bs-theme="dark"] #leaveTabs .nav-link {
+    color: #adb5bd;
+}
+
+
+[data-bs-theme="dark"] #leaveTabs .nav-link:hover,
+[data-bs-theme="dark"] #leaveTabs .nav-link.active {
+    color: var(--bs-primary);
+}
+
+
+[data-bs-theme="dark"] #leaveModal .modal-header,
+[data-bs-theme="dark"] #leaveTypeModal .modal-header,
+[data-bs-theme="dark"] #leaveModal .modal-footer,
+[data-bs-theme="dark"] #leaveTypeModal .modal-footer {
+    border-color: #343a40;
+}
+
+
+[data-bs-theme="dark"] #leaveTypes .card {
+    background-color: var(--bs-body-bg);
+}
+
+
+/* ==========================================================
+   REDUCED MOTION
+=========================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+
+    #leaveTypes .card {
+        transition: none;
+    }
+
+}

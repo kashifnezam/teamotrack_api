@@ -1,0 +1,37 @@
+#payrollPeriodTableWrap {
+    overflow-x: auto;
+}
+
+#payrollPeriodTableWrap table {
+    min-width: 700px;
+}
+
+.payroll-period-card {
+    padding: 1rem;
+    border-bottom: 1px solid var(--bs-border-color);
+}
+
+.payroll-period-card:last-child {
+    border-bottom: 0;
+}
+
+.payroll-period-name {
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.payroll-period-meta {
+    font-size: .82rem;
+}
+
+@media (max-width: 767.98px) {
+
+    #payrollPeriodTableWrap {
+        display: none !important;
+    }
+
+    #payrollPeriodMobileList {
+        display: block !important;
+    }
+
+}

@@ -3,11 +3,16 @@ import {
     Controller,
     Get,
     Patch,
+    Post,
     Res,
+    UploadedFile,
     UseGuards,
+    UseInterceptors,
 } from '@nestjs/common';
 
 import type { Response } from 'express';
+
+import { FileInterceptor } from '@nestjs/platform-express';
 
 import { SettingsService } from './settings.service';
 import { SettingsDto } from './dto/settings.dto';
@@ -20,12 +25,15 @@ import { CurrentUser } from '../auth/current-user.decorator';
 export class SettingsController {
 
     constructor(
-        private readonly service: SettingsService,
-    ) {}
+        private readonly service:
+            SettingsService,
+    ) { }
 
 
-    // SPA shell
-    // SPA shell
+    // ==================================================
+    // SPA SHELL
+    // ==================================================
+
     @Get([
         '',
         'company',
@@ -40,13 +48,18 @@ export class SettingsController {
         return res.sendFile(
             'shell.html',
             {
-                root: './public/dashboard',
+                root:
+                    './public/dashboard',
             },
         );
 
     }
 
-    // Settings data
+
+    // ==================================================
+    // SETTINGS DATA
+    // ==================================================
+
     @Get('data')
     @UseGuards(FirebaseAuthGuard)
     getData(
@@ -60,7 +73,10 @@ export class SettingsController {
     }
 
 
-    // Update profile
+    // ==================================================
+    // UPDATE PROFILE
+    // ==================================================
+
     @Patch('profile')
     @UseGuards(FirebaseAuthGuard)
     updateProfile(
@@ -76,7 +92,10 @@ export class SettingsController {
     }
 
 
-    // Update company
+    // ==================================================
+    // UPDATE ORGANIZATION
+    // ==================================================
+
     @Patch('company')
     @UseGuards(FirebaseAuthGuard)
     updateCompany(
@@ -92,17 +111,23 @@ export class SettingsController {
     }
 
 
-    // Update permissions
-    @Patch('permissions')
+    // ==================================================
+    // ORGANIZATION LOGO
+    // ==================================================
+
+    @Post('company/logo')
     @UseGuards(FirebaseAuthGuard)
-    updatePermissions(
+    @UseInterceptors(
+        FileInterceptor('logo'),
+    )
+    uploadLogo(
         @CurrentUser() user: any,
-        @Body() dto: SettingsDto,
+        @UploadedFile() file: any,
     ) {
 
-        return this.service.updatePermissions(
+        return this.service.uploadLogo(
             user.uid,
-            dto,
+            file,
         );
 
     }

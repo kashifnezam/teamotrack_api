@@ -249,23 +249,23 @@
 
                                     <div class="staff-avatar">
                                         ${escapeHtml(
-                                            initials
-                                        )}
+                        initials
+                    )}
                                     </div>
 
                                     <div>
 
                                         <div class="staff-name">
                                             ${escapeHtml(
-                                                name
-                                            )}
+                        name
+                    )}
                                         </div>
 
                                         <div class="staff-email">
                                             ${escapeHtml(
-                                                manager.email ||
-                                                ""
-                                            )}
+                        manager.email ||
+                        ""
+                    )}
                                         </div>
 
                                     </div>
@@ -282,23 +282,22 @@
                                 <div class="staff-name">
 
                                     ${escapeHtml(
-                                        manager.parentName ||
-                                        "Root"
-                                    )}
+                        manager.parentName ||
+                        "Root"
+                    )}
 
                                 </div>
 
-                                ${
-                                    manager.parentRole
-                                        ? `
+                                ${manager.parentRole
+                            ? `
                                             <div class="staff-email">
                                                 ${escapeHtml(
-                                                    manager.parentRole
-                                                )}
+                                manager.parentRole
+                            )}
                                             </div>
                                         `
-                                        : ""
-                                }
+                            : ""
+                        }
 
                             </td>
 
@@ -307,9 +306,9 @@
 
                             <td>
                                 ${escapeHtml(
-                                    manager.mobile ||
-                                    "--"
-                                )}
+                            manager.mobile ||
+                            "--"
+                        )}
                             </td>
 
 
@@ -318,26 +317,23 @@
                             <td>
 
                                 <span
-                                    class="staff-status ${
-                                        manager.isActive
-                                            ? "active"
-                                            : "inactive"
-                                    }"
+                                    class="staff-status ${manager.isActive
+                            ? "active"
+                            : "inactive"
+                        }"
                                 >
 
                                     <i
-                                        class="bi ${
-                                            manager.isActive
-                                                ? "bi-check-circle"
-                                                : "bi-pause-circle"
-                                        }"
+                                        class="bi ${manager.isActive
+                            ? "bi-check-circle"
+                            : "bi-pause-circle"
+                        }"
                                     ></i>
 
-                                    ${
-                                        manager.isActive
-                                            ? "Active"
-                                            : "Inactive"
-                                    }
+                                    ${manager.isActive
+                            ? "Active"
+                            : "Inactive"
+                        }
 
                                 </span>
 
@@ -365,15 +361,6 @@
                                         onclick="openPermissions('${manager.id}')"
                                     >
                                         <i class="bi bi-shield-lock"></i>
-                                    </button>
-
-
-                                    <button
-                                        class="staff-action"
-                                        title="Delete"
-                                        onclick="deleteStaff('${manager.id}')"
-                                    >
-                                        <i class="bi bi-trash"></i>
                                     </button>
 
                                 </div>
@@ -447,12 +434,12 @@
 
                 parentSelect.innerHTML = `
                     <option value="${escapeHtml(
-                        manager?.parentId || ""
-                    )}">
+                    manager?.parentId || ""
+                )}">
                         ${escapeHtml(
-                            manager?.parentName ||
-                            "Root"
-                        )}
+                    manager?.parentName ||
+                    "Root"
+                )}
                     </option>
                 `;
 
@@ -903,22 +890,14 @@
 
 
         const groups = {
-
-            manager:
-                "Managers",
-
-            hr:
-                "HR",
-
-            field_executive:
-                "Executives",
-
-            attendance:
-                "Attendance",
-
-            tracking:
-                "Live Tracking",
-
+            manager: "Managers",
+            hr: "HR",
+            field_executive: "Executives",
+            team: "Teams",
+            leave: "Leave Approval",
+            attendance: "Attendance",
+            task: "Tasks",
+            tracking: "Live Tracking",
         };
 
 
@@ -951,22 +930,22 @@
                                 </div>
 
                                 ${keys
-                                    .map(key => {
+                                .map(key => {
 
-                                        const action =
-                                            key
-                                                .split(".")
-                                                .slice(1)
-                                                .join(" ");
+                                    const action =
+                                        key
+                                            .split(".")
+                                            .slice(1)
+                                            .join(" ");
 
 
-                                        return `
+                                    return `
                                             <div class="permission-item">
 
                                                 <span class="permission-label">
                                                     ${formatPermission(
-                                                        action
-                                                    )}
+                                        action
+                                    )}
                                                 </span>
 
                                                 <div class="form-check form-switch">
@@ -975,13 +954,12 @@
                                                         class="form-check-input permission-toggle"
                                                         type="checkbox"
                                                         data-key="${escapeHtml(
-                                                            key
-                                                        )}"
-                                                        ${
-                                                            permissions[key]
-                                                                ? "checked"
-                                                                : ""
-                                                        }
+                                        key
+                                    )}"
+                                                        ${permissions[key]
+                                            ? "checked"
+                                            : ""
+                                        }
                                                     >
 
                                                 </div>
@@ -989,8 +967,8 @@
                                             </div>
                                         `;
 
-                                    })
-                                    .join("")}
+                                })
+                                .join("")}
 
                             </div>
                         `;

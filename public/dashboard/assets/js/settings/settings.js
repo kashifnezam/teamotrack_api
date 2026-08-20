@@ -10,57 +10,65 @@
     let data = null;
 
 
-    window.initializeProfilePage = async function () {
+    // ==================================================
+    // PROFILE PAGE
+    // ==================================================
 
-        AppAlert.loading(
-            "Loading profile..."
-        );
+    window.initializeProfilePage =
+        async function () {
 
-        await loadSettings();
-
-        AppAlert.close();
-
-        renderProfile();
-
-    };
-
-
-    window.initializeCompanyPage = async function () {
-
-        AppAlert.loading(
-            "Loading company..."
-        );
-
-        await loadSettings();
-
-        AppAlert.close();
-
-        renderCompany();
-
-        document
-            .getElementById("logoInput")
-            ?.addEventListener(
-                "change",
-                uploadLogo
+            AppAlert.loading(
+                "Loading profile..."
             );
 
-    };
+
+            await loadSettings();
 
 
-    window.initializeRolesPage = async function () {
+            AppAlert.close();
 
-        AppAlert.loading(
-            "Loading permissions..."
-        );
 
-        await loadSettings();
+            renderProfile();
 
-        AppAlert.close();
+        };
 
-        renderPermissions();
 
-    };
+    // ==================================================
+    // ORGANIZATION PAGE
+    // ==================================================
 
+    window.initializeCompanyPage =
+        async function () {
+
+            AppAlert.loading(
+                "Loading organization..."
+            );
+
+
+            await loadSettings();
+
+
+            AppAlert.close();
+
+
+            renderCompany();
+
+
+            document
+                .getElementById(
+                    "logoInput",
+                )
+                ?.addEventListener(
+                    "change",
+                    uploadLogo,
+                );
+
+        };
+
+
+    // ==================================================
+    // LOAD SETTINGS
+    // ==================================================
 
     async function loadSettings() {
 
@@ -68,349 +76,481 @@
 
             data =
                 await Api.get(
-                    "/settings/data"
+                    "/settings/data",
                 );
 
         } catch (error) {
 
             AppAlert.close();
 
+
             AppAlert.error(
-                error.message ||
-                "Unable to load settings"
+                error?.message ||
+                "Unable to load settings",
             );
 
         }
 
     }
 
+
+    // ==================================================
+    // PROFILE
+    // ==================================================
 
     function renderProfile() {
 
         const profile =
             data?.profile;
 
-        if (!profile) return;
+
+        if (!profile) {
+
+            return;
+
+        }
+
 
         const fullName =
-            document.getElementById("fullName");
+            document.getElementById(
+                "fullName",
+            );
+
 
         const email =
-            document.getElementById("email");
+            document.getElementById(
+                "email",
+            );
+
 
         const mobile =
-            document.getElementById("mobile");
+            document.getElementById(
+                "mobile",
+            );
+
 
         const role =
-            document.getElementById("role");
+            document.getElementById(
+                "role",
+            );
 
 
-        if (fullName)
+        if (fullName) {
+
             fullName.value =
-                profile.fullName || "";
+                profile.fullName ||
+                "";
 
-        if (email)
+        }
+
+
+        if (email) {
+
             email.value =
-                profile.email || "";
+                profile.email ||
+                "";
 
-        if (mobile)
+        }
+
+
+        if (mobile) {
+
             mobile.value =
-                profile.mobile || "";
+                profile.mobile ||
+                "";
 
-        if (role)
+        }
+
+
+        if (role) {
+
             role.value =
-                profile.role || "";
+                profile.role ||
+                "";
+
+        }
 
     }
 
+    // ==================================================
+    // ORGANIZATION
+    // ==================================================
 
     function renderCompany() {
 
         const company =
             data?.company;
 
-        if (!company) return;
 
-        const businessName =
-            document.getElementById(
-                "businessName"
-            );
+        if (!company) {
 
-        if (businessName) {
-
-            businessName.value =
-                company.businessName || "";
+            return;
 
         }
 
+
+        const fields = {
+
+            businessName:
+                company.businessName,
+
+            legalName:
+                company.legalName,
+
+            organizationEmail:
+                company.email,
+
+            organizationPhone:
+                company.phone,
+
+            organizationWebsite:
+                company.website,
+
+            organizationAddress:
+                company.address,
+
+            organizationCity:
+                company.city,
+
+            organizationState:
+                company.state,
+
+            organizationCountry:
+                company.country,
+
+            organizationPostalCode:
+                company.postalCode,
+
+        };
+
+
+        Object.entries(fields)
+            .forEach(
+                ([id, value]) => {
+
+                    const element =
+                        document.getElementById(
+                            id,
+                        );
+
+
+                    if (element) {
+
+                        element.value =
+                            value || '';
+
+                    }
+
+                },
+            );
+
+
         renderLogo(
-            company.logo
+            company.logo,
         );
 
     }
 
 
-    function renderPermissions() {
+    // ==================================================
+    // SAVE PROFILE
+    // ==================================================
 
-        const permissions =
-            data?.permissions || {};
+    window.saveProfile =
+        async function () {
 
-        [
-            "canCreateTask",
-            "canEditTask",
-            "canDeleteTask",
-            "canApproveLeave",
-            "canMarkAttendance",
-        ].forEach(key => {
+            const button =
+                document.getElementById(
+                    "saveProfileBtn",
+                );
 
-            const input =
-                document.getElementById(key);
 
-            if (input) {
+            const fullName =
+                document
+                    .getElementById(
+                        "fullName",
+                    )
+                    ?.value
+                    .trim();
 
-                input.checked =
-                    permissions[key] === true;
+
+            if (!fullName) {
+
+                AppAlert.warning(
+                    "Name is required",
+                );
+
+                return;
 
             }
 
-        });
 
-    }
+            try {
 
-
-    window.saveProfile = async function () {
-
-        const button =
-            document.getElementById(
-                "saveProfileBtn"
-            );
-
-        const fullName =
-            document.getElementById(
-                "fullName"
-            )?.value.trim();
+                button.disabled =
+                    true;
 
 
-        if (!fullName) {
-
-            AppAlert.warning(
-                "Name is required"
-            );
-
-            return;
-
-        }
+                AppAlert.loading(
+                    "Saving profile...",
+                );
 
 
-        try {
-
-            button.disabled = true;
-
-            AppAlert.loading(
-                "Saving profile..."
-            );
-
-
-            await Api.patch(
-                "/settings/profile",
-                { fullName }
-            );
+                await Api.patch(
+                    "/settings/profile",
+                    {
+                        fullName,
+                    },
+                );
 
 
-            AppAlert.close();
-
-            AppAlert.success(
-                "Profile updated successfully"
-            );
-
-        } catch (error) {
-
-            AppAlert.close();
-
-            AppAlert.error(
-                error.message ||
-                "Unable to update profile"
-            );
-
-        } finally {
-
-            button.disabled = false;
-
-        }
-
-    };
+                AppAlert.close();
 
 
-    window.saveCompany = async function () {
-
-        const button =
-            document.getElementById(
-                "saveCompanyBtn"
-            );
-
-        const businessName =
-            document.getElementById(
-                "businessName"
-            )?.value.trim();
+                AppAlert.success(
+                    "Profile updated successfully",
+                );
 
 
-        if (!businessName) {
+                if (data?.profile) {
 
-            AppAlert.warning(
-                "Company name is required"
-            );
+                    data.profile.fullName =
+                        fullName;
 
-            return;
+                }
 
-        }
+            } catch (error) {
 
-
-        try {
-
-            button.disabled = true;
-
-            AppAlert.loading(
-                "Saving company..."
-            );
+                AppAlert.close();
 
 
-            await Api.patch(
-                "/settings/company",
-                { businessName }
-            );
+                AppAlert.error(
+                    error?.message ||
+                    "Unable to update profile",
+                );
 
+            } finally {
 
-            AppAlert.close();
+                button.disabled =
+                    false;
 
-            AppAlert.success(
-                "Company updated successfully"
-            );
-
-        } catch (error) {
-
-            AppAlert.close();
-
-            AppAlert.error(
-                error.message ||
-                "Unable to update company"
-            );
-
-        } finally {
-
-            button.disabled = false;
-
-        }
-
-    };
-
-
-    window.savePermissions = async function () {
-
-        const button =
-            document.getElementById(
-                "savePermissionsBtn"
-            );
-
-
-        const permissions = {
-
-            canCreateTask:
-                document.getElementById(
-                    "canCreateTask"
-                )?.checked || false,
-
-            canEditTask:
-                document.getElementById(
-                    "canEditTask"
-                )?.checked || false,
-
-            canDeleteTask:
-                document.getElementById(
-                    "canDeleteTask"
-                )?.checked || false,
-
-            canApproveLeave:
-                document.getElementById(
-                    "canApproveLeave"
-                )?.checked || false,
-
-            canMarkAttendance:
-                document.getElementById(
-                    "canMarkAttendance"
-                )?.checked || false,
+            }
 
         };
 
 
-        try {
+    // ==================================================
+    // SAVE ORGANIZATION
+    // ==================================================
 
-            button.disabled = true;
+    window.saveCompany =
+        async function () {
 
-            AppAlert.loading(
-                "Saving permissions..."
-            );
-
-
-            await Api.patch(
-                "/settings/permissions",
-                permissions
-            );
+            const button =
+                document.getElementById(
+                    "saveCompanyBtn",
+                );
 
 
-            AppAlert.close();
+            const dto = {
 
-            AppAlert.success(
-                "Permissions updated successfully"
-            );
+                businessName:
+                    document
+                        .getElementById(
+                            "businessName",
+                        )
+                        ?.value
+                        .trim(),
 
-        } catch (error) {
+                legalName:
+                    document
+                        .getElementById(
+                            "legalName",
+                        )
+                        ?.value
+                        .trim(),
 
-            AppAlert.close();
+                email:
+                    document
+                        .getElementById(
+                            "organizationEmail",
+                        )
+                        ?.value
+                        .trim(),
 
-            AppAlert.error(
-                error.message ||
-                "Unable to update permissions"
-            );
+                phone:
+                    document
+                        .getElementById(
+                            "organizationPhone",
+                        )
+                        ?.value
+                        .trim(),
 
-        } finally {
+                website:
+                    document
+                        .getElementById(
+                            "organizationWebsite",
+                        )
+                        ?.value
+                        .trim(),
 
-            button.disabled = false;
+                address:
+                    document
+                        .getElementById(
+                            "organizationAddress",
+                        )
+                        ?.value
+                        .trim(),
 
-        }
+                city:
+                    document
+                        .getElementById(
+                            "organizationCity",
+                        )
+                        ?.value
+                        .trim(),
 
-    };
+                state:
+                    document
+                        .getElementById(
+                            "organizationState",
+                        )
+                        ?.value
+                        .trim(),
+
+                country:
+                    document
+                        .getElementById(
+                            "organizationCountry",
+                        )
+                        ?.value
+                        .trim(),
+
+                postalCode:
+                    document
+                        .getElementById(
+                            "organizationPostalCode",
+                        )
+                        ?.value
+                        .trim(),
+
+            };
 
 
-    window.changeCompanyLogo = function () {
+            if (!dto.businessName) {
 
-        document
-            .getElementById("logoInput")
-            ?.click();
+                AppAlert.warning(
+                    "Organization name is required",
+                );
 
-    };
+                return;
+
+            }
 
 
-    async function uploadLogo(event) {
+            try {
+
+                button.disabled =
+                    true;
+
+
+                AppAlert.loading(
+                    "Saving organization...",
+                );
+
+
+                await Api.patch(
+                    "/settings/company",
+                    dto,
+                );
+
+
+                AppAlert.close();
+
+
+                AppAlert.success(
+                    "Organization updated successfully",
+                );
+
+
+                if (data?.company) {
+
+                    Object.assign(
+                        data.company,
+                        dto,
+                    );
+
+                }
+
+            } catch (error) {
+
+                AppAlert.close();
+
+
+                AppAlert.error(
+                    error?.message ||
+                    "Unable to update organization",
+                );
+
+            } finally {
+
+                button.disabled =
+                    false;
+
+            }
+
+        };
+
+
+    // ==================================================
+    // CHANGE ORGANIZATION LOGO
+    // ==================================================
+
+    window.changeCompanyLogo =
+        function () {
+
+            document
+                .getElementById(
+                    "logoInput",
+                )
+                ?.click();
+
+        };
+
+
+    // ==================================================
+    // UPLOAD LOGO
+    // ==================================================
+
+    async function uploadLogo(
+        event,
+    ) {
 
         const file =
             event.target.files?.[0];
 
-        if (!file) return;
+
+        if (!file) {
+
+            return;
+
+        }
 
 
         try {
 
             AppAlert.loading(
-                "Uploading logo..."
+                "Uploading organization logo...",
             );
 
 
             const form =
                 new FormData();
 
+
             form.append(
                 "logo",
-                file
+                file,
             );
 
 
@@ -422,13 +562,20 @@
                 await fetch(
                     "/settings/company/logo",
                     {
-                        method: "POST",
+                        method:
+                            "POST",
+
                         headers: {
+
                             Authorization:
-                                token.Authorization
+                                token.Authorization,
+
                         },
-                        body: form
-                    }
+
+                        body:
+                            form,
+
+                    },
                 );
 
 
@@ -440,29 +587,40 @@
 
                 throw new Error(
                     result?.message ||
-                    "Upload failed"
+                    "Upload failed",
                 );
 
             }
 
 
             renderLogo(
-                result.logo
+                result.logo,
             );
+
+
+            if (data?.company) {
+
+                data.company.logo =
+                    result.logo;
+
+            }
+
 
             AppAlert.close();
 
+
             AppAlert.success(
-                "Company logo updated"
+                "Organization logo updated",
             );
 
         } catch (error) {
 
             AppAlert.close();
 
+
             AppAlert.error(
-                error.message ||
-                "Unable to upload logo"
+                error?.message ||
+                "Unable to upload logo",
             );
 
         }
@@ -470,44 +628,81 @@
     }
 
 
-    function renderLogo(url) {
+    // ==================================================
+    // RENDER LOGO
+    // ==================================================
+
+    function renderLogo(
+        url,
+    ) {
 
         const logo =
             document.getElementById(
-                "companyLogo"
+                "companyLogo",
             );
 
-        if (!logo) return;
 
-
-        if (!url) {
-
-            logo.innerHTML =
-                '<i class="bi bi-building"></i>';
+        if (!logo) {
 
             return;
 
         }
 
 
-        logo.innerHTML = `
-            <img
-                src="${escapeHtml(url)}"
-                alt="Company Logo"
-            >
-        `;
+        if (!url) {
+
+            logo.innerHTML =
+                `
+                    <i class="bi bi-building"></i>
+                `;
+
+            return;
+
+        }
+
+
+        logo.innerHTML =
+            `
+                <img
+                    src="${escapeHtml(url)}"
+                    alt="Organization Logo"
+                >
+            `;
 
     }
 
 
-    function escapeHtml(value) {
+    // ==================================================
+    // ESCAPE HTML
+    // ==================================================
 
-        return String(value ?? "")
-            .replaceAll("&", "&amp;")
-            .replaceAll("<", "&lt;")
-            .replaceAll(">", "&gt;")
-            .replaceAll('"', "&quot;")
-            .replaceAll("'", "&#039;");
+    function escapeHtml(
+        value,
+    ) {
+
+        return String(
+            value ?? "",
+        )
+            .replaceAll(
+                "&",
+                "&amp;",
+            )
+            .replaceAll(
+                "<",
+                "&lt;",
+            )
+            .replaceAll(
+                ">",
+                "&gt;",
+            )
+            .replaceAll(
+                '"',
+                "&quot;",
+            )
+            .replaceAll(
+                "'",
+                "&#039;",
+            );
 
     }
 

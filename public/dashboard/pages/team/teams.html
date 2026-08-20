@@ -1,47 +1,84 @@
-<section class="teams-page">
+<section class="teams-page p-3">
 
     <div class="container-fluid">
 
-        <!-- Page Header -->
+        <!-- ==================================================
+             PAGE HEADER
+        ================================================== -->
+
         <div class="page-header">
 
-            <h4 class="mb-0">
-                Teams
-            </h4>
+            <div>
+
+                <div class="text-primary small fw-semibold mb-1">
+                    TEAMOTRACK • ORGANIZATION
+                </div>
+
+                <h4 class="mb-1">
+                    Team Management
+                </h4>
+
+                <p class="mb-0">
+                    Manage teams, managers and workforce assignments.
+                </p>
+
+            </div>
+
+
+            <button
+                type="button"
+                class="btn btn-primary"
+                onclick="openTeamModal()"
+            >
+
+                <i class="bi bi-people me-1"></i>
+
+                Add Team
+
+            </button>
 
         </div>
 
 
-        <!-- Filter -->
-        <div class="filter-card">
+        <!-- ==================================================
+             SEARCH / SUMMARY
+        ================================================== -->
 
-            <div class="row g-2 align-items-center">
+        <div class="hr-filter-card">
 
-                <div class="col-lg-5 col-md-6">
+            <div class="row g-3 align-items-center">
 
-                    <form autocomplete="off">
+                <div class="col-lg-7">
 
-                        <div class="search-box">
+                    <div class="hr-search-box">
 
-                            <i class="bi bi-search"></i>
+                        <i class="bi bi-search"></i>
 
-                            <input id="searchInput" type="search" class="form-control" placeholder="Search team...">
+                        <input
+                            id="searchInput"
+                            type="search"
+                            class="form-control"
+                            placeholder="Search by team, manager or shift..."
+                        >
 
-                        </div>
-
-                    </form>
+                    </div>
 
                 </div>
 
 
-                <div class="col-lg-7 text-lg-end">
+                <div class="col-lg-5 text-lg-end">
 
-                    <span class="team-count">
+                    <div class="hr-count">
 
-                        <strong id="teamCount">0</strong>
-                        Teams
+                        <strong id="teamCount">
+                            0
+                        </strong>
 
-                    </span>
+                        <span>
+                            Teams
+                        </span>
+
+                    </div>
 
                 </div>
 
@@ -50,21 +87,34 @@
         </div>
 
 
-        <!-- Team Card -->
-        <div class="team-card">
+        <!-- ==================================================
+             TEAM LIST
+        ================================================== -->
 
-            <div class="team-card-header">
+        <div class="hr-card">
 
-                <h6 class="mb-0">
-                    Team List
-                </h6>
+            <div class="hr-card-header">
 
-                <button type="button" class="btn btn-primary btn-sm" onclick="openTeamModal()">
+                <div>
 
-                    <i class="bi bi-plus-lg me-1"></i>
-                    Add Team
+                    <h6 class="mb-1">
+                        Teams
+                    </h6>
 
-                </button>
+                    <small class="text-muted">
+                        Teams under your management hierarchy
+                    </small>
+
+                </div>
+
+
+                <span class="badge bg-primary-subtle text-primary">
+
+                    <i class="bi bi-people me-1"></i>
+
+                    Teams
+
+                </span>
 
             </div>
 
@@ -77,11 +127,21 @@
 
                         <tr>
 
-                            <th>Team</th>
-                            <th>Manager</th>
-                            <th>Shift</th>
-                            <th>Executives</th>
-                            <!-- <th>Status</th> -->
+                            <th>
+                                Team
+                            </th>
+
+                            <th>
+                                Manager
+                            </th>
+
+                            <th>
+                                Shift
+                            </th>
+
+                            <th>
+                                Executives
+                            </th>
 
                             <th class="text-end">
                                 Action
@@ -96,9 +156,18 @@
 
                         <tr>
 
-                            <td colspan="5" class="empty-state">
+                            <td
+                                colspan="5"
+                                class="empty-state"
+                            >
 
-                                Loading teams...
+                                <div class="py-3">
+
+                                    <i class="bi bi-people fs-4 d-block mb-2"></i>
+
+                                    Loading teams...
+
+                                </div>
 
                             </td>
 
@@ -116,51 +185,108 @@
 
 </section>
 
-<!-- Team Modal -->
 
-<div class="modal fade" id="teamModal" tabindex="-1">
+<!-- ==========================================================
+     TEAM MODAL
+========================================================== -->
 
-    <div class="modal-dialog modal-dialog-centered">
+<div
+    class="modal fade"
+    id="teamModal"
+    tabindex="-1"
+>
 
-        <div class="modal-content">
+    <div
+        class="modal-dialog modal-dialog-centered modal-lg"
+    >
 
-            <div class="modal-header">
+        <div class="modal-content teamo-modal">
 
-                <h5 class="modal-title" id="modalTitle">
+            <!-- ==================================================
+                 HEADER
+            ================================================== -->
 
-                    Add Team
+            <div class="modal-header teamo-modal-header">
 
-                </h5>
+                <div>
 
-                <button type="button" class="btn-close" data-bs-dismiss="modal">
+                    <div class="modal-eyebrow">
+                        TEAMOTRACK • ORGANIZATION
+                    </div>
+
+                    <h5
+                        class="modal-title"
+                        id="modalTitle"
+                    >
+                        Add Team
+                    </h5>
+
+                    <div class="modal-subtitle">
+                        Create and manage a workforce team
+                    </div>
+
+                </div>
+
+
+                <button
+                    type="button"
+                    class="btn-close"
+                    data-bs-dismiss="modal"
+                >
                 </button>
 
             </div>
 
 
+            <!-- ==================================================
+                 BODY
+            ================================================== -->
+
             <div class="modal-body">
 
-                <input type="hidden" id="teamId">
+                <input
+                    type="hidden"
+                    id="teamId"
+                >
 
+
+                <!-- Team Name -->
 
                 <div class="mb-3">
 
-                    <label class="form-label">
+                    <label
+                        for="teamName"
+                        class="form-label"
+                    >
                         Team Name
                     </label>
 
-                    <input id="teamName" type="text" class="form-control" placeholder="Enter team name">
+                    <input
+                        id="teamName"
+                        type="text"
+                        class="form-control"
+                        placeholder="Enter team name"
+                        autocomplete="off"
+                    >
 
                 </div>
 
 
+                <!-- Team Manager -->
+
                 <div class="mb-3">
 
-                    <label class="form-label">
+                    <label
+                        for="leadId"
+                        class="form-label"
+                    >
                         Team Manager
                     </label>
 
-                    <select id="leadId" class="form-select">
+                    <select
+                        id="leadId"
+                        class="form-select"
+                    >
 
                         <option value="">
                             No Manager
@@ -168,16 +294,28 @@
 
                     </select>
 
+                    <div class="form-text">
+                        The selected manager will be responsible for this team.
+                    </div>
+
                 </div>
 
 
+                <!-- Shift -->
+
                 <div class="mb-2">
 
-                    <label class="form-label">
+                    <label
+                        for="shiftId"
+                        class="form-label"
+                    >
                         Shift Policy
                     </label>
 
-                    <select id="shiftId" class="form-select">
+                    <select
+                        id="shiftId"
+                        class="form-select"
+                    >
 
                         <option value="">
                             Select Shift
@@ -188,7 +326,12 @@
                 </div>
 
 
-                <div id="noShiftMessage" class="no-shift-message d-none">
+                <!-- No Shift -->
+
+                <div
+                    id="noShiftMessage"
+                    class="no-shift-message d-none"
+                >
 
                     <i class="bi bi-clock-history me-1"></i>
 
@@ -203,15 +346,27 @@
             </div>
 
 
-            <div class="modal-footer">
+            <!-- ==================================================
+                 FOOTER
+            ================================================== -->
 
-                <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+            <div class="modal-footer teamo-modal-footer">
 
+                <button
+                    type="button"
+                    class="btn btn-light"
+                    data-bs-dismiss="modal"
+                >
                     Cancel
-
                 </button>
 
-                <button type="button" class="btn btn-primary" id="saveTeamBtn" onclick="saveTeam()">
+
+                <button
+                    id="saveTeamBtn"
+                    type="button"
+                    class="btn btn-primary px-4"
+                    onclick="saveTeam()"
+                >
 
                     Save Team
 

@@ -1,0 +1,48 @@
+#paymentTableWrap {
+    overflow-x: auto;
+}
+
+#paymentTableWrap table {
+    min-width: 1100px;
+}
+
+.payment-mobile-card {
+    padding: 1rem;
+    border-bottom: 1px solid var(--bs-border-color);
+}
+
+.payment-mobile-card:last-child {
+    border-bottom: 0;
+}
+
+.payment-name {
+    font-weight: 600;
+}
+
+.payment-meta {
+    font-size: .82rem;
+}
+
+.payment-amount {
+    font-weight: 600;
+}
+
+.payment-action {
+    white-space: nowrap;
+}
+
+@media (max-width: 767.98px) {
+
+    #paymentTableWrap {
+        display: none !important;
+    }
+
+    #paymentMobileList {
+        display: block !important;
+    }
+
+    #paymentPeriod {
+        width: 100%;
+    }
+
+}

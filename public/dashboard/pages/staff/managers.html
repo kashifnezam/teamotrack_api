@@ -100,115 +100,172 @@
 
 
 <!-- ==========================================================
-     STAFF MODAL
+     MANAGER MODAL
 ========================================================== -->
 
 <div class="modal fade" id="staffModal" tabindex="-1">
 
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
 
-        <div class="modal-content">
+        <div class="modal-content teamo-manager-modal">
 
-            <div class="modal-header">
+            <!-- Header -->
+            <div class="modal-header teamo-manager-header">
 
-                <h5 class="modal-title" id="staffModalTitle">
-                    Add Manager
-                </h5>
+                <div>
 
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <div class="manager-modal-eyebrow">
+                        TEAMOTRACK • MANAGEMENT
+                    </div>
+
+                    <h5 class="modal-title" id="staffModalTitle">
+                        Add Manager
+                    </h5>
+
+                    <div class="manager-modal-subtitle">
+                        Create and manage a manager within your organization
+                    </div>
+
+                </div>
+
+                <button type="button" class="btn-close" data-bs-dismiss="modal">
+                </button>
 
             </div>
 
 
+            <!-- Body -->
             <div class="modal-body">
 
                 <input type="hidden" id="staffId">
 
-                <div class="mb-3">
+                <div class="row g-3">
 
-                    <label class="form-label">
-                        Parent Manager
-                    </label>
+                    <!-- Parent Manager -->
+                    <div class="col-md-6">
 
-                    <select id="staffParentId" class="form-select">
-                        <option value="">
-                            Select parent
-                        </option>
-                    </select>
+                        <label class="form-label">
+                            Parent Manager
+                        </label>
 
-                    <small class="text-muted">
-                        The new manager will belong directly under this manager.
-                    </small>
+                        <select id="staffParentId" class="form-select">
 
-                </div>
-                <div class="mb-3">
+                            <option value="">
+                                Select parent manager
+                            </option>
 
-                    <label class="form-label">
-                        Full Name
-                    </label>
+                        </select>
 
-                    <input id="staffName" type="text" class="form-control" placeholder="Enter full name">
+                        <div id="teamLeadHint" class="form-text">
+                            The selected manager will be responsible for this team.
+                        </div>
 
-                </div>
+                    </div>
 
 
-                <div class="mb-3">
+                    <!-- Full Name -->
+                    <div class="col-md-6">
 
-                    <label class="form-label">
-                        Email
-                    </label>
+                        <label class="form-label">
+                            Full Name
+                        </label>
 
-                    <input id="staffEmail" type="email" class="form-control" placeholder="Enter email">
+                        <input id="staffName" type="text" class="form-control" placeholder="Enter full name"
+                            autocomplete="name">
 
-                </div>
-
-
-                <div class="mb-3">
-
-                    <label class="form-label">
-                        Mobile
-                    </label>
-
-                    <input id="staffMobile" type="text" class="form-control" placeholder="Enter mobile number">
-
-                </div>
+                    </div>
 
 
-                <div class="mb-3">
+                    <!-- Email -->
+                    <div class="col-md-6">
 
-                    <label class="form-label">
-                        Password
-                    </label>
+                        <label class="form-label">
+                            Email
+                        </label>
 
-                    <input id="staffPassword" type="password" class="form-control" placeholder="Enter password">
+                        <input id="staffEmail" type="email" class="form-control" placeholder="name@example.com"
+                            autocomplete="email">
 
-                    <small id="passwordHint" class="text-muted">
-                        Required when creating.
-                    </small>
-
-                </div>
+                    </div>
 
 
-                <div class="form-check">
+                    <!-- Mobile -->
+                    <div class="col-md-6">
 
-                    <input id="staffActive" class="form-check-input" type="checkbox" checked>
+                        <label class="form-label">
+                            Mobile
+                        </label>
 
-                    <label class="form-check-label" for="staffActive">
-                        Active
-                    </label>
+                        <input id="staffMobile" type="tel" class="form-control" placeholder="Enter mobile number"
+                            autocomplete="tel">
+
+                    </div>
+
+
+                    <!-- Password -->
+                    <div class="col-md-8">
+
+                        <label class="form-label">
+                            Password
+                        </label>
+
+                        <input id="staffPassword" type="password" class="form-control" placeholder="Enter password"
+                            autocomplete="new-password">
+
+                        <div id="passwordHint" class="manager-form-hint">
+                            Required when creating a new manager.
+                        </div>
+
+                    </div>
+
+
+                    <!-- Account Status -->
+                    <div class="col-md-4">
+
+                        <div class="manager-status-box">
+
+                            <div class="manager-status-content">
+
+                                <span class="manager-status-dot"></span>
+
+                                <div>
+
+                                    <div class="manager-status-title">
+                                        Account Status
+                                    </div>
+
+                                    <div class="manager-status-description">
+                                        Manager can access TeamoTrack
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+
+                            <div class="form-check form-switch m-0">
+
+                                <input id="staffActive" class="form-check-input" type="checkbox" checked>
+
+                            </div>
+
+                        </div>
+
+                    </div>
 
                 </div>
 
             </div>
 
 
-            <div class="modal-footer">
+            <!-- Footer -->
+            <div class="modal-footer teamo-manager-footer">
 
                 <button type="button" class="btn btn-light" data-bs-dismiss="modal">
                     Cancel
                 </button>
 
-                <button id="saveStaffBtn" type="button" class="btn btn-primary" onclick="saveStaff()">
+                <button id="saveStaffBtn" type="button" class="btn btn-primary px-4" onclick="saveStaff()">
                     Save Manager
                 </button>
 
@@ -221,41 +278,81 @@
 </div>
 
 
+
 <!-- ==========================================================
-     PERMISSION MODAL
+     MANAGER PERMISSION MODAL
 ========================================================== -->
 
 <div class="modal fade" id="permissionModal" tabindex="-1">
 
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
 
-        <div class="modal-content">
+        <div class="modal-content teamo-manager-modal">
 
-            <div class="modal-header">
+            <!-- Header -->
+            <div class="modal-header teamo-manager-header">
 
-                <h5 class="modal-title">
-                    Manager Permissions
-                </h5>
+                <div>
 
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <div class="manager-modal-eyebrow">
+                        TEAMOTRACK • ACCESS CONTROL
+                    </div>
+
+                    <h5 class="modal-title">
+                        Manager Permissions
+                    </h5>
+
+                    <div class="manager-modal-subtitle">
+                        Control the capabilities available to this manager
+                    </div>
+
+                </div>
+
+                <button type="button" class="btn-close" data-bs-dismiss="modal">
+                </button>
 
             </div>
 
 
-            <div class="modal-body">
+            <!-- Body -->
+            <div class="modal-body manager-permission-body">
 
-                <div id="permissionList" class="permission-list"></div>
+                <div class="manager-permission-header">
+
+                    <div>
+
+                        <div class="manager-permission-title">
+                            Access &amp; Permissions
+                        </div>
+
+                        <div class="manager-permission-description">
+                            A manager can only receive permissions within
+                            the authority of their parent.
+                        </div>
+
+                    </div>
+
+                    <span class="manager-permission-badge">
+                        MANAGER
+                    </span>
+
+                </div>
+
+
+                <div id="permissionList" class="manager-permission-list">
+                </div>
 
             </div>
 
 
-            <div class="modal-footer">
+            <!-- Footer -->
+            <div class="modal-footer teamo-manager-footer">
 
                 <button type="button" class="btn btn-light" data-bs-dismiss="modal">
                     Cancel
                 </button>
 
-                <button id="savePermissionBtn" type="button" class="btn btn-primary" onclick="savePermissions()">
+                <button id="savePermissionBtn" type="button" class="btn btn-primary px-4" onclick="savePermissions()">
                     Save Permissions
                 </button>
 

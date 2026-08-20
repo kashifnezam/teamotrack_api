@@ -1,40 +1,27 @@
-import {
-    IsBoolean,
-    IsOptional,
-    IsString,
-} from 'class-validator';
-
 export class SettingsDto {
 
-    @IsOptional()
-    @IsString()
     fullName?: string;
 
-    @IsOptional()
-    @IsString()
     businessName?: string;
 
-    @IsOptional()
-    @IsString()
     logo?: string;
 
-    @IsOptional()
-    @IsBoolean()
-    canCreateTask?: boolean;
+    legalName?: string;
 
-    @IsOptional()
-    @IsBoolean()
-    canEditTask?: boolean;
+    email?: string;
 
-    @IsOptional()
-    @IsBoolean()
-    canDeleteTask?: boolean;
+    phone?: string;
 
-    @IsOptional()
-    @IsBoolean()
-    canApproveLeave?: boolean;
+    website?: string;
 
-    @IsOptional()
-    @IsBoolean()
-    canMarkAttendance?: boolean;
+    address?: string;
+
+    city?: string;
+
+    state?: string;
+
+    country?: string;
+
+    postalCode?: string;
+
 }

@@ -13,7 +13,6 @@ if (window.TeamoTrackApp) {
 
     window.TeamoTrackApp = true;
 
-
     const App = {
 
         currentPath: null,
@@ -90,7 +89,11 @@ if (window.TeamoTrackApp) {
 
             ]);
 
+            initializeUserProfile();
+
             initializeHeaderProfile();
+
+            initializePayrollVisibility();
 
             initializeSidebar();
 
@@ -694,6 +697,95 @@ if (window.TeamoTrackApp) {
 
                 },
 
+                /* ==================================================
+                LEAVE
+                ================================================== */
+
+                "/leave": {
+
+                    html:
+                        "/dashboard/pages/leave/leave.html",
+
+                    js:
+                        "/dashboard/assets/js/leave/leave.js",
+
+                    css:
+                        "/dashboard/assets/css/leave/leave.css",
+
+                    init:
+                        "initializeLeavePage",
+
+                    title:
+                        "Leave",
+
+                    description:
+                        "Manage leave requests, approvals and leave policies."
+
+                },
+
+                '/holidays': {
+                    html: '/dashboard/pages/holidays/holiday.html',
+                    js: '/dashboard/assets/js/holidays/holiday.js',
+                    css: '/dashboard/assets/css/holidays/holiday.css',
+                    init: 'initializeHolidaysPage',
+                    title: 'Company Holidays',
+                    description: 'Manage company holidays',
+                },
+
+                '/salary-structures': {
+                    html: '/dashboard/pages/salary-structures/salary-structure.html',
+                    js: '/dashboard/assets/js/salary-structures/salary-structure.js',
+                    css: '/dashboard/assets/css/salary-structures/salary-structure.css',
+                    init: 'initializeSalaryStructuresPage',
+                    title: 'Salary Structures',
+                    description: 'Manage salary structures',
+                },
+
+                '/salary-assignments': {
+                    html: '/dashboard/pages/salary-assignments/salary-assignment.html',
+                    js: '/dashboard/assets/js/salary-assignments/salary-assignment.js',
+                    css: '/dashboard/assets/css/salary-assignments/salary-assignment.css',
+                    init: 'initializeSalaryAssignmentsPage',
+                    title: 'Salary Assignments',
+                    description: 'Manage employee salary assignments',
+                },
+
+                '/payroll-periods': {
+                    html: '/dashboard/pages/payroll-periods/payroll-period.html',
+                    js: '/dashboard/assets/js/payroll-periods/payroll-period.js',
+                    css: '/dashboard/assets/css/payroll-periods/payroll-period.css',
+                    init: 'initializePayrollPeriodsPage',
+                    title: 'Payroll Periods',
+                    description: 'Manage payroll periods',
+                },
+
+                '/payroll-calculations': {
+                    html: '/dashboard/pages/payroll-calculations/payroll-calculation.html',
+                    js: '/dashboard/assets/js/payroll-calculations/payroll-calculation.js',
+                    css: '/dashboard/assets/css/payroll-calculations/payroll-calculation.css',
+                    init: 'initializePayrollCalculationsPage',
+                    title: 'Payroll Calculation',
+                    description: 'Calculate and review payroll',
+                },
+
+                '/payments': {
+                    html: '/dashboard/pages/payments/payment.html',
+                    js: '/dashboard/assets/js/payments/payment.js',
+                    css: '/dashboard/assets/css/payments/payment.css',
+                    init: 'initializePaymentsPage',
+                    title: 'Payments',
+                    description: 'Manage employee salary payments',
+                },
+
+                '/payslips': {
+                    html: '/dashboard/pages/payslips/payslip.html',
+                    js: '/dashboard/assets/js/payslips/payslip.js',
+                    css: '/dashboard/assets/css/payslips/payslip.css',
+                    init: 'initializePayslipsPage',
+                    title: 'Payslips',
+                    description: 'View employee salary payslips',
+                },
+
                 "/profile": {
 
                     html:
@@ -1198,6 +1290,143 @@ if (window.TeamoTrackApp) {
         );
 
     }
+
+    function initializeUserProfile() {
+
+        const userData =
+            JSON.parse(
+                localStorage.getItem("userData") || "{}"
+            );
+
+        const fullName =
+            userData.fullName ||
+            userData.name ||
+            "User";
+
+        const role =
+            userData.roleName ||
+            userData.role ||
+            "Administrator";
+
+
+        /*
+         * Generate initials
+         */
+        const initials =
+            fullName
+                .trim()
+                .split(/\s+/)
+                .map(name => name.charAt(0))
+                .join("")
+                .substring(0, 2)
+                .toUpperCase();
+
+
+        /*
+         * Names
+         */
+        document
+            .getElementById("sidebarUserName")
+            ?.replaceChildren(
+                document.createTextNode(fullName)
+            );
+
+        document
+            .getElementById("headerUserName")
+            ?.replaceChildren(
+                document.createTextNode(fullName)
+            );
+
+        document
+            .getElementById("profileMenuUserRole")
+            ?.replaceChildren(
+                document.createTextNode(fullName)
+            );
+
+
+        /*
+         * Roles
+         */
+        document
+            .getElementById("sidebarUserRole")
+            ?.replaceChildren(
+                document.createTextNode(role)
+            );
+
+        document
+            .getElementById("headerUserRole")
+            ?.replaceChildren(
+                document.createTextNode(role)
+            );
+
+        document
+            .getElementById("profileMenuUserRole")
+            ?.replaceChildren(
+                document.createTextNode(role)
+            );
+
+
+        /*
+         * Avatars
+         */
+        document
+            .getElementById("sidebarUserAvatar")
+            ?.replaceChildren(
+                document.createTextNode(initials)
+            );
+
+        document
+            .getElementById("headerUserAvatar")
+            ?.replaceChildren(
+                document.createTextNode(initials)
+            );
+
+        document
+            .getElementById("profileMenuUserAvatar")
+            ?.replaceChildren(
+                document.createTextNode(initials)
+            );
+    }
+
+    /* ======================================================
+   PAYROLL VISIBILITY
+====================================================== */
+
+    function initializePayrollVisibility() {
+
+        const userData =
+            JSON.parse(
+                localStorage.getItem("userData") || "{}"
+            );
+
+
+        const payrollMenu =
+            document.querySelector(
+                '[data-menu="payroll"]'
+            );
+
+
+        if (!payrollMenu) {
+            return;
+        }
+
+
+        const role =
+            userData.role || "";
+
+
+        /*
+         * Payroll is available only to
+         * root_manager.
+         */
+        if (role !== "root_manager") {
+
+            payrollMenu.remove();
+
+        }
+
+    }
+
     /* ======================================================
        ESCAPE
     ====================================================== */

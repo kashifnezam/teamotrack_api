@@ -1,12 +1,16 @@
 /* ==========================================================
    TeamoTrack Tasks
+   Hierarchy-aware frontend
 ========================================================== */
+
 (function () {
 
     "use strict";
 
     let tasks = [];
     let executives = [];
+    let managers = [];
+
     let editingId = null;
 
     let currentMonth =
@@ -19,7 +23,7 @@
 
 
     /* ==========================================================
-       Initialize
+       INITIALIZE
     ========================================================== */
 
     window.initializeTasksPage = async function () {
@@ -29,15 +33,12 @@
 
         if (!month) return;
 
-        month.value =
-            currentMonth;
-
+        month.value = currentMonth;
 
         month.addEventListener(
             "change",
             loadTasks
         );
-
 
         document
             .getElementById("searchInput")
@@ -46,14 +47,12 @@
                 renderTasks
             );
 
-
         document
             .getElementById("statusFilter")
             ?.addEventListener(
                 "change",
                 renderTasks
             );
-
 
         document
             .getElementById("isGeofence")
@@ -62,25 +61,25 @@
                 toggleLocation
             );
 
-
         await loadTasks();
-    }
+    };
 
 
     /* ==========================================================
-       Load Month
+       LOAD
     ========================================================== */
 
     async function loadTasks() {
 
-        const month =
+        const value =
             document
                 .getElementById("monthFilter")
-                .value;
+                ?.value;
 
-        const [year, monthNumber] =
-            month.split("-").map(Number);
+        if (!value) return;
 
+        const [year, month] =
+            value.split("-").map(Number);
 
         try {
 
@@ -88,22 +87,30 @@
                 "Loading tasks..."
             );
 
-
+            /*
+             * Backend already applies hierarchy.
+             */
             const data =
                 await Api.get(
-                    `/tasks/data?year=${year}&month=${monthNumber}`
+                    `/tasks/data?year=${year}&month=${month}`
                 );
-
 
             if (!data) return;
 
-
             tasks =
-                data.tasks || [];
+                Array.isArray(data.tasks)
+                    ? data.tasks
+                    : [];
 
             executives =
-                data.executives || [];
+                Array.isArray(data.executives)
+                    ? data.executives
+                    : [];
 
+            managers =
+                Array.isArray(data.managers)
+                    ? data.managers
+                    : [];
 
             populateExecutives();
 
@@ -115,7 +122,10 @@
 
             AppAlert.close();
 
-            console.error(error);
+            console.error(
+                "Task loading failed:",
+                error
+            );
 
             AppAlert.error(
                 error.message ||
@@ -126,7 +136,7 @@
 
 
     /* ==========================================================
-       Executives
+       EXECUTIVES
     ========================================================== */
 
     function populateExecutives() {
@@ -138,32 +148,90 @@
 
         if (!select) return;
 
-
         select.innerHTML =
             `<option value="">Unassigned</option>`;
 
+        executives.forEach(
+            executive => {
 
-        executives.forEach(exec => {
+                const name =
+                    executive.fullName ||
+                    executive.email ||
+                    "Unknown";
 
-            select.insertAdjacentHTML(
-                "beforeend",
-                `
-            <option value="${escapeHtml(exec.id)}">
-                ${escapeHtml(
-                    exec.fullName ||
-                    exec.email ||
-                    "Unknown"
-                )}
-            </option>
-            `
+                select.insertAdjacentHTML(
+                    "beforeend",
+                    `
+                    <option value="${escapeHtml(
+                        executive.id
+                    )}">
+                        ${escapeHtml(name)}
+                    </option>
+                    `
+                );
+            }
+        );
+    }
+
+
+    function getExecutive(id) {
+
+        if (!id) return null;
+
+        return executives.find(
+            executive =>
+                executive.id === id
+        ) || null;
+    }
+
+
+    function getManager(id) {
+
+        if (!id) return null;
+
+        return managers.find(
+            manager =>
+                manager.id === id
+        ) || null;
+    }
+
+
+    function getUserName(id) {
+
+        if (!id) {
+            return "Unknown";
+        }
+
+        const executive =
+            getExecutive(id);
+
+        if (executive) {
+
+            return (
+                executive.fullName ||
+                executive.email ||
+                "Unknown"
             );
+        }
 
-        });
+        const manager =
+            getManager(id);
+
+        if (manager) {
+
+            return (
+                manager.fullName ||
+                manager.email ||
+                "Unknown"
+            );
+        }
+
+        return id;
     }
 
 
     /* ==========================================================
-       Filter + Render
+       FILTER
     ========================================================== */
 
     function renderTasks() {
@@ -175,17 +243,13 @@
                 .trim()
                 .toLowerCase() || "";
 
-
         const filter =
             document
                 .getElementById("statusFilter")
                 ?.value || "";
 
-
         const list =
             tasks.filter(task => {
-
-                /* Assigned */
 
                 if (
                     filter === "assigned_to" &&
@@ -194,9 +258,6 @@
                     return false;
                 }
 
-
-                /* Unassigned */
-
                 if (
                     filter === "unassigned" &&
                     task.assignedTo
@@ -204,50 +265,72 @@
                     return false;
                 }
 
-
-                /* Real status */
-
                 if (
                     filter &&
                     ![
                         "assigned_to",
-                        "unassigned",
+                        "unassigned"
                     ].includes(filter) &&
                     task.status !== filter
                 ) {
                     return false;
                 }
 
-
-                /* Search */
-
                 if (!search) {
                     return true;
                 }
 
+                const executive =
+                    getExecutive(
+                        task.assignedTo
+                    );
+
+                const executiveName =
+                    executive
+                        ? (
+                            executive.fullName ||
+                            executive.email ||
+                            ""
+                        )
+                        : "";
+
+                const createdBy =
+                    getUserName(
+                        task.createdBy
+                    );
 
                 const text =
-                    `${task.title || ""} ${task.description || ""}`
+                    [
+                        task.title,
+                        task.description,
+                        executiveName,
+                        createdBy,
+                        task.priority,
+                        task.status
+                    ]
+                        .filter(Boolean)
+                        .join(" ")
                         .toLowerCase();
 
-
                 return text.includes(search);
-
             });
 
+        const count =
+            document.getElementById(
+                "taskCount"
+            );
 
-        document
-            .getElementById("taskCount")
-            .textContent =
-            list.length;
-
+        if (count) {
+            count.textContent =
+                list.length;
+        }
 
         renderTaskRows(list);
     }
 
 
     /* ==========================================================
-       Rows
+       TABLE
     ========================================================== */
 
     function renderTaskRows(list) {
@@ -259,39 +342,52 @@
 
         if (!tbody) return;
 
-
         if (!list.length) {
 
             tbody.innerHTML = `
-            <tr>
-                <td
-                    colspan="7"
-                    class="empty-state"
-                >
-                    No tasks found
-                </td>
-            </tr>
-        `;
+                <tr>
+                    <td
+                        colspan="8"
+                        class="empty-state"
+                    >
+                        <i class="bi bi-inbox"></i>
+                        <div class="mt-2">
+                            No tasks found
+                        </div>
+                    </td>
+                </tr>
+            `;
 
             return;
         }
 
-
+        console.log(list);
         tbody.innerHTML =
             list.map(task => {
 
                 const executive =
-                    executives.find(
-                        e =>
-                            e.id ===
-                            task.assignedTo
+                    getExecutive(
+                        task.assignedTo
                     );
 
+                const executiveName =
+                    executive
+                        ? (
+                            executive.fullName ||
+                            executive.email ||
+                            "Unknown"
+                        )
+                        : "";
+
+                const createdBy =
+                    task.createdByName ||
+                    getUserName(
+                        task.createdBy
+                    );
 
                 const status =
                     task.status ||
                     "pending";
-
 
                 const priority =
                     String(
@@ -299,200 +395,253 @@
                         "Medium"
                     ).toLowerCase();
 
-
                 const locked =
                     [
                         "completed",
                         "cancelled",
-                        "failed",
+                        "failed"
                     ].includes(status);
 
-
                 return `
-                <tr>
+                    <tr>
 
-                    <td>
+                        <!-- TASK -->
 
-                        <div class="task-name">
-                            ${escapeHtml(
+                        <td>
+
+                            <div class="task-name">
+                                ${escapeHtml(
                     task.title ||
                     "Untitled"
                 )}
-                        </div>
+                            </div>
 
-                        <div class="task-description">
-                            ${escapeHtml(
+                            <div class="task-description">
+                                ${escapeHtml(
                     task.description ||
                     ""
                 )}
-                        </div>
+                            </div>
 
-                    </td>
+                        </td>
 
 
-                    <td>
+                        <!-- EXECUTIVE -->
 
-                        ${executive
+                        <td>
 
-                        ? escapeHtml(
-                            executive.fullName ||
-                            executive.email ||
-                            "Unknown"
-                        )
+                            ${executive
+
+                        ? `
+                                        <div class="task-executive">
+                                            ${escapeHtml(
+                            executiveName
+                        )}
+                                        </div>
+
+                                        ${executive.email
+                            ? `
+                                                    <small>
+                                                        ${escapeHtml(
+                                executive.email
+                            )}
+                                                    </small>
+                                                `
+                            : ""
+                        }
+                                    `
 
                         : `
-                                    <span class="text-muted">
-                                        Unassigned
-                                    </span>
-                                `
+                                        <span class="text-muted">
+                                            Unassigned
+                                        </span>
+                                    `
                     }
 
-                    </td>
+                        </td>
 
 
-                    <td>
+                        <!-- CREATED BY -->
 
-                        <div class="task-time">
-                            ${formatDateTime(
+                        <td>
+
+                            <div class="task-created-by">
+                                ${escapeHtml(
+                        createdBy
+                    )}
+                            </div>
+
+                            ${task.createdBy
+                        ? `
+                                        <small>
+                                            Creator
+                                        </small>
+                                    `
+                        : ""
+                    }
+
+                        </td>
+
+
+                        <!-- SCHEDULE -->
+
+                        <td>
+
+                            <div class="task-time">
+                                ${formatDateTime(
                         task.startDate
                     )}
-                        </div>
+                            </div>
 
-                        <small class="text-muted">
-                            ${formatDateTime(
+                            <small class="text-muted">
+                                ${formatDateTime(
                         task.endDate
                     )}
-                        </small>
+                            </small>
 
-                    </td>
+                        </td>
 
 
-                    <td>
+                        <!-- PRIORITY -->
 
-                        <span
-                            class="
-                                priority-badge
-                                priority-${priority}
-                            "
-                        >
-                            ${escapeHtml(
+                        <td>
+
+                            <span
+                                class="
+                                    priority-badge
+                                    priority-${priority}
+                                "
+                            >
+                                ${escapeHtml(
                         task.priority ||
                         "Medium"
                     )}
-                        </span>
+                            </span>
 
-                    </td>
+                        </td>
 
 
-                    <td>
+                        <!-- LOCATION -->
 
-                        ${task.isGeofence
+                        <td>
+
+                            ${task.isGeofence
 
                         ? `
-                                    <span class="location-badge">
-                                        <i class="bi bi-geo-alt me-1"></i>
-                                        Geofence
-                                    </span>
-                                `
+                                        <span class="location-badge">
+                                            <i class="bi bi-geo-alt me-1"></i>
+                                            Geofence
+                                        </span>
+                                    `
 
                         : `
-                                    <span class="text-muted">
-                                        None
-                                    </span>
-                                `
+                                        <span class="text-muted">
+                                            None
+                                        </span>
+                                    `
                     }
 
-                    </td>
+                        </td>
 
 
-                    <td>
+                        <!-- STATUS -->
 
-                        <span
-                            class="
-                                status-badge
-                                status-${status}
-                            "
-                        >
-                            ${formatStatus(status)}
-                        </span>
+                        <td>
 
-                    </td>
+                            <span
+                                class="
+                                    status-badge
+                                    status-${status}
+                                "
+                            >
+                                ${formatStatus(status)}
+                            </span>
 
-
-                    <td class="text-end">
-
-                        <button
-                            type="button"
-                            class="action-btn"
-                            title="View"
-                            onclick="openTaskDetails('${escapeHtml(task.id)}')"
-                        >
-                            <i class="bi bi-eye"></i>
-                        </button>
+                        </td>
 
 
-                        ${locked
+                        <!-- ACTIONS -->
+
+                        <td class="text-end">
+
+                            <button
+                                type="button"
+                                class="action-btn"
+                                title="View"
+                                onclick="openTaskDetails('${escapeHtml(
+                        task.id
+                    )}')"
+                            >
+                                <i class="bi bi-eye"></i>
+                            </button>
+
+
+                            ${locked
                         ? ""
 
                         : `
-                                    <button
-                                        type="button"
-                                        class="action-btn"
-                                        title="Edit"
-                                        onclick="editTask('${escapeHtml(task.id)}')"
-                                    >
-                                        <i class="bi bi-pencil"></i>
-                                    </button>
-                                `
+                                        <button
+                                            type="button"
+                                            class="action-btn"
+                                            title="Edit"
+                                            onclick="editTask('${escapeHtml(
+                            task.id
+                        )}')"
+                                        >
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                    `
                     }
 
 
-                        <button
-                            type="button"
-                            class="action-btn"
-                            title="Delete"
-                            onclick="deleteTask('${escapeHtml(task.id)}')"
-                        >
-                            <i class="bi bi-trash"></i>
-                        </button>
+                            <button
+                                type="button"
+                                class="action-btn text-danger"
+                                title="Delete"
+                                onclick="deleteTask('${escapeHtml(
+                        task.id
+                    )}')"
+                            >
+                                <i class="bi bi-trash"></i>
+                            </button>
 
-                    </td>
+                        </td>
 
-                </tr>
-            `;
+                    </tr>
+                `;
 
             }).join("");
     }
 
 
     /* ==========================================================
-       Task Details
+       DETAILS
     ========================================================== */
 
     function openTaskDetails(id) {
 
         const task =
             tasks.find(
-                task =>
-                    task.id === id
+                item =>
+                    item.id === id
             );
-
 
         if (!task) return;
 
-
         const executive =
-            executives.find(
-                exec =>
-                    exec.id ===
-                    task.assignedTo
+            getExecutive(
+                task.assignedTo
             );
 
+        const createdBy =
+            task.createdByName ||
+            getUserName(
+                task.createdBy
+            );
 
         const status =
             task.status ||
             "pending";
-
 
         const priority =
             String(
@@ -501,27 +650,42 @@
             ).toLowerCase();
 
 
-        /* Basic */
-
-        document
-            .getElementById("detailTitle")
-            .textContent =
+        setText(
+            "detailTitle",
             task.title ||
-            "Untitled";
+            "Untitled"
+        );
 
 
-        document
-            .getElementById("detailExecutive")
-            .textContent =
-            executive
-                ? (
-                    executive.fullName ||
-                    executive.email
-                )
-                : "Unassigned";
+        const detailExecutive =
+            document.getElementById(
+                "detailExecutive"
+            );
 
+        if (detailExecutive) {
 
-        /* Status */
+            detailExecutive.innerHTML = `
+                <div>
+                    <i class="bi bi-person me-1"></i>
+                    ${escapeHtml(
+                executive
+                    ? (
+                        executive.fullName ||
+                        executive.email ||
+                        "Unknown"
+                    )
+                    : "Unassigned"
+            )}
+                </div>
+
+                <div class="mt-1">
+                    <i class="bi bi-person-badge me-1"></i>
+                    Created by:
+                    ${escapeHtml(createdBy)}
+                </div>
+            `;
+        }
+
 
         const statusEl =
             document.getElementById(
@@ -534,8 +698,6 @@
         statusEl.textContent =
             formatStatus(status);
 
-
-        /* Priority */
 
         const priorityEl =
             document.getElementById(
@@ -550,18 +712,12 @@
             "Medium";
 
 
-        /* Description */
-
-        document
-            .getElementById(
-                "detailDescription"
-            )
-            .textContent =
+        setText(
+            "detailDescription",
             task.description ||
-            "No description";
+            "No description"
+        );
 
-
-        /* Schedule */
 
         setText(
             "detailScheduledStart",
@@ -570,7 +726,6 @@
             )
         );
 
-
         setText(
             "detailScheduledEnd",
             formatDateTime(
@@ -578,16 +733,12 @@
             )
         );
 
-
-        /* Actual execution */
-
         setText(
             "detailStartedAt",
             formatDateTime(
                 task.startedAt
             )
         );
-
 
         setText(
             "detailCompletedAt",
@@ -622,7 +773,6 @@
                 "detailProofLink"
             );
 
-
         if (task.proofUrl) {
 
             proof.src =
@@ -655,7 +805,6 @@
                 "detailLocationSection"
             );
 
-
         if (
             task.startLocation ||
             task.endLocation
@@ -668,14 +817,12 @@
                     : "Start location not available"
             );
 
-
             setText(
                 "detailEndAddress",
                 task.endLocation?.address
                     ? `End: ${task.endLocation.address}`
                     : "End location not available"
             );
-
 
             locationSection
                 .classList
@@ -700,28 +847,29 @@
 
 
     /* ==========================================================
-       Task Modal
+       MODAL
     ========================================================== */
 
     function openTaskModal(id = null) {
 
         editingId = id;
 
-
-        document
-            .getElementById("modalTitle")
-            .textContent =
+        document.getElementById(
+            "modalTitle"
+        ).textContent =
             id
                 ? "Edit Task"
                 : "Add Task";
 
-
-        document
-            .getElementById("saveTaskBtn")
-            .textContent =
+        document.getElementById(
+            "saveTaskBtn"
+        ).textContent =
             id
                 ? "Update Task"
                 : "Save Task";
+
+
+        populateExecutives();
 
 
         if (!id) {
@@ -757,6 +905,8 @@
             document.getElementById(
                 "isGeofence"
             ).checked = false;
+
+            clearLocations();
         }
 
 
@@ -774,17 +924,16 @@
 
 
     /* ==========================================================
-       Edit
+       EDIT
     ========================================================== */
 
     function editTask(id) {
 
         const task =
             tasks.find(
-                task =>
-                    task.id === id
+                item =>
+                    item.id === id
             );
-
 
         if (!task) return;
 
@@ -793,8 +942,10 @@
             [
                 "completed",
                 "cancelled",
-                "failed",
-            ].includes(task.status)
+                "failed"
+            ].includes(
+                task.status
+            )
         ) {
 
             AppAlert.warning(
@@ -805,6 +956,35 @@
         }
 
 
+        /*
+         * Assigned executive must exist
+         * in current hierarchy.
+         */
+        if (
+            task.assignedTo &&
+            !getExecutive(task.assignedTo)
+        ) {
+
+            AppAlert.warning(
+                "This task is assigned outside your current hierarchy."
+            );
+
+            return;
+        }
+
+
+        /*
+         * Open modal first.
+         *
+         * openTaskModal() populates the
+         * executive dropdown.
+         */
+        openTaskModal(id);
+
+
+        /*
+         * Now populate task values.
+         */
         document.getElementById(
             "taskId"
         ).value = id;
@@ -844,16 +1024,34 @@
             );
 
 
-        document.getElementById(
-            "assignedTo"
-        ).value =
-            task.assignedTo || "";
+        /*
+         * IMPORTANT:
+         *
+         * populateExecutives() has already
+         * created the options.
+         *
+         * Now select the existing executive.
+         */
+        const assignedSelect =
+            document.getElementById(
+                "assignedTo"
+            );
+
+        if (assignedSelect) {
+
+            assignedSelect.value =
+                task.assignedTo || "";
+
+        }
 
 
         document.getElementById(
             "isGeofence"
         ).checked =
             task.isGeofence === true;
+
+
+        clearLocations();
 
 
         setLocation(
@@ -868,12 +1066,13 @@
         );
 
 
-        openTaskModal(id);
+        toggleLocation();
+
     }
 
 
     /* ==========================================================
-       Save
+       SAVE
     ========================================================== */
 
     async function saveTask() {
@@ -884,25 +1083,21 @@
                 .value
                 .trim();
 
-
         const description =
             document
                 .getElementById("description")
                 .value
                 .trim();
 
-
         const startDate =
             document
                 .getElementById("startDate")
                 .value;
 
-
         const endDate =
             document
                 .getElementById("endDate")
                 .value;
-
 
         const assignedTo =
             document
@@ -938,6 +1133,24 @@
         }
 
 
+        /*
+         * UX check only.
+         * Backend remains security authority.
+         */
+
+        if (
+            assignedTo &&
+            !getExecutive(assignedTo)
+        ) {
+
+            AppAlert.warning(
+                "Selected executive is outside your management hierarchy"
+            );
+
+            return;
+        }
+
+
         const isGeofence =
             document
                 .getElementById("isGeofence")
@@ -966,7 +1179,8 @@
                 ).toISOString(),
 
             assignedTo:
-                assignedTo || undefined,
+                assignedTo ||
+                undefined,
 
             isGeofence,
 
@@ -978,7 +1192,7 @@
             endLocation:
                 isGeofence
                     ? getLocation("end")
-                    : null,
+                    : null
         };
 
 
@@ -991,7 +1205,6 @@
         try {
 
             button.disabled = true;
-
 
             AppAlert.loading(
                 editingId
@@ -1019,7 +1232,6 @@
 
             AppAlert.close();
 
-
             AppAlert.success(
                 editingId
                     ? "Task updated successfully"
@@ -1042,6 +1254,11 @@
 
             AppAlert.close();
 
+            console.error(
+                "Task save failed:",
+                error
+            );
+
             AppAlert.error(
                 error.message ||
                 "Failed to save task"
@@ -1055,23 +1272,25 @@
 
 
     /* ==========================================================
-       Delete
+       DELETE
     ========================================================== */
 
     async function deleteTask(id) {
 
         const task =
             tasks.find(
-                task =>
-                    task.id === id
+                item =>
+                    item.id === id
             );
-
 
         if (!task) return;
 
 
-        const confirmed = await AppAlert.confirm("Delete Task", "Are you sure you want to delete this task? This action cannot be undone.");
-
+        const confirmed =
+            await AppAlert.confirm(
+                "Delete Task",
+                "Are you sure you want to delete this task? This action cannot be undone."
+            );
 
         if (!confirmed) return;
 
@@ -1090,7 +1309,6 @@
 
             AppAlert.close();
 
-
             AppAlert.success(
                 "Task deleted successfully"
             );
@@ -1102,6 +1320,11 @@
 
             AppAlert.close();
 
+            console.error(
+                "Task deletion failed:",
+                error
+            );
+
             AppAlert.error(
                 error.message ||
                 "Unable to delete task"
@@ -1111,30 +1334,32 @@
 
 
     /* ==========================================================
-       Location
+       LOCATION
     ========================================================== */
 
     function toggleLocation() {
 
-        const enabled =
-            document
-                .getElementById(
-                    "isGeofence"
-                )
-                .checked;
-
+        const checkbox =
+            document.getElementById(
+                "isGeofence"
+            );
 
         const section =
             document.getElementById(
                 "locationSection"
             );
 
+        if (!checkbox || !section) {
+            return;
+        }
+
+        const enabled =
+            checkbox.checked;
 
         section.classList.toggle(
             "d-none",
             !enabled
         );
-
 
         if (enabled) {
 
@@ -1160,12 +1385,11 @@
                         5
                     );
 
-
             L.tileLayer(
                 "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
                 {
                     attribution:
-                        "&copy; OpenStreetMap",
+                        "&copy; OpenStreetMap"
                 }
             ).addTo(startMap);
 
@@ -1194,12 +1418,11 @@
                         5
                     );
 
-
             L.tileLayer(
                 "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
                 {
                     attribution:
-                        "&copy; OpenStreetMap",
+                        "&copy; OpenStreetMap"
                 }
             ).addTo(endMap);
 
@@ -1232,7 +1455,6 @@
                 ? startMap
                 : endMap;
 
-
         const marker =
             type === "start"
                 ? startMarker
@@ -1261,7 +1483,6 @@
         document.getElementById(
             `${type}Lat`
         ).value = lat;
-
 
         document.getElementById(
             `${type}Lng`
@@ -1296,11 +1517,9 @@
             `${type}Lat`
         ).value = lat;
 
-
         document.getElementById(
             `${type}Lng`
         ).value = lng;
-
 
         document.getElementById(
             `${type}Address`
@@ -1308,33 +1527,35 @@
             location.address || "";
 
 
-        setTimeout(() => {
+        setTimeout(
+            () => {
 
-            const map =
-                type === "start"
-                    ? startMap
-                    : endMap;
+                const map =
+                    type === "start"
+                        ? startMap
+                        : endMap;
 
-
-            if (!map) return;
-
-
-            setMarker(
-                type,
-                lat,
-                lng
-            );
+                if (!map) return;
 
 
-            map.setView(
-                [
+                setMarker(
+                    type,
                     lat,
                     lng
-                ],
-                15
-            );
+                );
 
-        }, 150);
+
+                map.setView(
+                    [
+                        lat,
+                        lng
+                    ],
+                    15
+                );
+
+            },
+            150
+        );
     }
 
 
@@ -1366,13 +1587,60 @@
                             `${type}Lng`
                         )
                         .value
-                ),
+                )
         };
     }
 
 
+    function clearLocations() {
+
+        [
+            "startLat",
+            "startLng",
+            "endLat",
+            "endLng",
+            "startAddress",
+            "endAddress"
+        ].forEach(id => {
+
+            const element =
+                document.getElementById(id);
+
+            if (element) {
+                element.value = "";
+            }
+        });
+
+
+        if (
+            startMap &&
+            startMarker
+        ) {
+
+            startMap.removeLayer(
+                startMarker
+            );
+
+            startMarker = null;
+        }
+
+
+        if (
+            endMap &&
+            endMarker
+        ) {
+
+            endMap.removeLayer(
+                endMarker
+            );
+
+            endMarker = null;
+        }
+    }
+
+
     /* ==========================================================
-       Bulk Import
+       BULK IMPORT
     ========================================================== */
 
     function openImportModal() {
@@ -1381,17 +1649,17 @@
             "excelFile"
         ).value = "";
 
-
         document.getElementById(
             "importPreview"
         ).classList.add(
             "d-none"
         );
 
-
         document.getElementById(
             "importTasksBtn"
         ).disabled = true;
+
+        window.importResults = [];
 
 
         bootstrap.Modal
@@ -1415,7 +1683,6 @@
                 return;
             }
 
-
             validateExcel(
                 event.target.files[0]
             );
@@ -1438,15 +1705,13 @@
             const buffer =
                 await file.arrayBuffer();
 
-
             const workbook =
                 XLSX.read(
                     buffer,
                     {
-                        type: "array",
+                        type: "array"
                     }
                 );
-
 
             const sheet =
                 workbook.Sheets["Tasks"];
@@ -1464,7 +1729,7 @@
                 XLSX.utils.sheet_to_json(
                     sheet,
                     {
-                        defval: "",
+                        defval: ""
                     }
                 );
 
@@ -1499,7 +1764,6 @@
                 results
             );
 
-
             AppAlert.close();
 
         } catch (error) {
@@ -1527,18 +1791,15 @@
                 row.Email || ""
             ).trim();
 
-
         const title =
             String(
                 row.Title || ""
             ).trim();
 
-
         const description =
             String(
                 row.Description || ""
             ).trim();
-
 
         const priority =
             String(
@@ -1546,30 +1807,37 @@
             ).trim();
 
 
-        if (!title)
+        if (!title) {
             errors.push(
                 "Title required"
             );
+        }
 
-
-        if (!description)
+        if (!description) {
             errors.push(
                 "Description required"
             );
+        }
 
 
         if (
             ![
                 "Low",
                 "Medium",
-                "High",
+                "High"
             ].includes(priority)
         ) {
+
             errors.push(
                 "Invalid priority"
             );
         }
 
+
+        /*
+         * IMPORTANT:
+         * Only backend-provided executives.
+         */
 
         let executive = null;
 
@@ -1578,8 +1846,8 @@
 
             executive =
                 executives.find(
-                    e =>
-                        e.email?.toLowerCase() ===
+                    item =>
+                        item.email?.toLowerCase() ===
                         email.toLowerCase()
                 );
 
@@ -1587,7 +1855,7 @@
             if (!executive) {
 
                 errors.push(
-                    "Executive not found"
+                    "Executive not found in your hierarchy"
                 );
             }
         }
@@ -1599,7 +1867,6 @@
                 row["Start Time"]
             );
 
-
         const end =
             parseExcelDateTime(
                 row["End Date"],
@@ -1607,16 +1874,17 @@
             );
 
 
-        if (!start)
+        if (!start) {
             errors.push(
                 "Invalid start date/time"
             );
+        }
 
-
-        if (!end)
+        if (!end) {
             errors.push(
                 "Invalid end date/time"
             );
+        }
 
 
         if (
@@ -1624,6 +1892,7 @@
             end &&
             end <= start
         ) {
+
             errors.push(
                 "End must be after start"
             );
@@ -1676,35 +1945,41 @@
             startLocation: {
                 address:
                     row["Start Address"] || "",
+
                 lat:
                     Number(
                         row["Start Latitude"]
                     ),
+
                 lng:
                     Number(
                         row["Start Longitude"]
-                    ),
+                    )
             },
 
             endLocation: {
                 address:
                     row["End Address"] || "",
+
                 lat:
                     Number(
                         row["End Latitude"]
                     ),
+
                 lng:
                     Number(
                         row["End Longitude"]
-                    ),
+                    )
             },
 
-            errors,
+            errors
         };
     }
 
 
-    function renderImportPreview(results) {
+    function renderImportPreview(
+        results
+    ) {
 
         const tbody =
             document.getElementById(
@@ -1722,7 +1997,8 @@
         document.getElementById(
             "importSummary"
         ).textContent =
-            `${valid} valid / ${results.length - valid} invalid`;
+            `${valid} valid / ${results.length - valid
+            } invalid`;
 
 
         tbody.innerHTML =
@@ -1733,83 +2009,93 @@
 
 
                 return `
-                <tr
-                    class="${ok
+                    <tr class="${ok
                         ? "import-row-valid"
                         : "import-row-error"
-                    }"
-                >
+                    }">
 
-                    <td>${row.row}</td>
+                        <td>
+                            ${row.row}
+                        </td>
 
-                    <td>
-                        ${row.email
+                        <td>
+                            ${row.email
                         ? escapeHtml(
                             row.email
                         )
                         : `
-                                    <span class="text-muted">
-                                        Unassigned
-                                    </span>
-                                `
+                                        <span class="text-muted">
+                                            Unassigned
+                                        </span>
+                                    `
                     }
-                    </td>
+                        </td>
 
-                    <td>
-                        ${escapeHtml(row.title)}
-                    </td>
+                        <td>
+                            ${escapeHtml(
+                        row.title
+                    )}
+                        </td>
 
-                    <td>
-                        ${escapeHtml(row.priority)}
-                    </td>
+                        <td>
+                            ${escapeHtml(
+                        row.priority
+                    )}
+                        </td>
 
-                    <td>
-                        ${formatDateTime(row.start)}
-                    </td>
+                        <td>
+                            ${formatDateTime(
+                        row.start
+                    )}
+                        </td>
 
-                    <td>
-                        ${formatDateTime(row.end)}
-                    </td>
+                        <td>
+                            ${formatDateTime(
+                        row.end
+                    )}
+                        </td>
 
-                    <td>
-                        ${row.isGeofence
+                        <td>
+                            ${row.isGeofence
                         ? "Geofence"
                         : "None"
                     }
-                    </td>
+                        </td>
 
-                    <td>
-                        ${ok
+                        <td>
+                            ${ok
                         ? `
-                                    <span class="text-success">
-                                        Valid
-                                    </span>
-                                `
+                                        <span class="text-success">
+                                            Valid
+                                        </span>
+                                    `
                         : `
-                                    <span class="text-danger">
-                                        ${escapeHtml(
+                                        <span class="text-danger">
+                                            ${escapeHtml(
                             row.errors.join(
                                 ", "
                             )
                         )}
-                                    </span>
-                                `
+                                        </span>
+                                    `
                     }
-                    </td>
+                        </td>
 
-                    <td>
+                        <td>
 
-                        <button
-                            class="action-btn"
-                            onclick="editImportedTask(${row.row})"
-                        >
-                            <i class="bi bi-pencil"></i>
-                        </button>
+                            <button
+                                type="button"
+                                class="action-btn"
+                                title="Edit"
+                                onclick="editImportedTask(${row.row})"
+                            >
+                                <i class="bi bi-pencil"></i>
+                            </button>
 
-                    </td>
+                        </td>
 
-                </tr>
-            `;
+                    </tr>
+                `;
 
             }).join("");
 
@@ -1830,706 +2116,8 @@
         document
             .getElementById(
                 "importTasksBtn"
-            )
-            .disabled =
+            ).disabled =
             valid === 0;
-    }
-
-
-    /* ==========================================================
-       Import
-    ========================================================== */
-
-    async function importTasks() {
-
-        const valid =
-            (window.importResults || [])
-                .filter(
-                    row =>
-                        !row.errors.length
-                );
-
-
-        if (!valid.length) {
-
-            AppAlert.warning(
-                "No valid tasks to import"
-            );
-
-            return;
-        }
-
-
-        if (valid.length > 50) {
-
-            AppAlert.warning(
-                "Maximum 50 tasks allowed"
-            );
-
-            return;
-        }
-
-
-        try {
-
-            AppAlert.loading(
-                "Importing tasks..."
-            );
-
-
-            for (const row of valid) {
-
-                await Api.post(
-                    "/tasks",
-                    {
-
-                        title:
-                            row.title,
-
-                        description:
-                            row.description,
-
-                        priority:
-                            row.priority,
-
-                        startDate:
-                            row.start.toISOString(),
-
-                        endDate:
-                            row.end.toISOString(),
-
-                        assignedTo:
-                            row.execId,
-
-                        isGeofence:
-                            row.isGeofence,
-
-                        startLocation:
-                            row.startLocation,
-
-                        endLocation:
-                            row.endLocation,
-                    }
-                );
-            }
-
-
-            AppAlert.close();
-
-
-            AppAlert.success(
-                `${valid.length} tasks imported successfully`
-            );
-
-
-            bootstrap.Modal
-                .getInstance(
-                    document.getElementById(
-                        "importModal"
-                    )
-                )
-                ?.hide();
-
-
-            await loadTasks();
-
-        } catch (error) {
-
-            AppAlert.close();
-
-            AppAlert.error(
-                error.message ||
-                "Task import failed"
-            );
-        }
-    }
-
-
-    /* ==========================================================
-       Template
-    ========================================================== */
-
-     function downloadTemplate(event) {
-
-    event?.preventDefault();
-    event?.stopPropagation();
-
-    if (typeof XLSX === "undefined") {
-
-        AppAlert.error(
-            "Excel library is not loaded"
-        );
-
-        return;
-    }
-
-    try {
-
-        const workbook =
-            XLSX.utils.book_new();
-
-
-        /* ======================================================
-           Common Styles
-        ====================================================== */
-
-        const headerStyle = {
-            font: {
-                bold: true,
-                color: {
-                    rgb: "1F2937"
-                }
-            },
-            fill: {
-                fgColor: {
-                    rgb: "E3F2FD"
-                }
-            },
-            alignment: {
-                horizontal: "center",
-                vertical: "center"
-            }
-        };
-
-        const instructionStyle = {
-            font: {
-                bold: true,
-                color: {
-                    rgb: "92400E"
-                }
-            },
-            fill: {
-                fgColor: {
-                    rgb: "FFF8E1"
-                }
-            }
-        };
-
-
-        /* ======================================================
-           1. INSTRUCTIONS
-        ====================================================== */
-
-        const instructions = [
-
-            ["TeamoTrack Task Import Template"],
-
-            [""],
-
-            ["IMPORTANT"],
-            ["Do not modify the header row in the Tasks sheet."],
-            ["Only valid tasks will be imported."],
-            ["Maximum 50 tasks can be imported at once."],
-
-            [""],
-
-            ["FIELD GUIDELINES"],
-
-            ["Email", "Required. Use an email from the Executives sheet."],
-            ["Title", "Required. Task name/title."],
-            ["Description", "Required. Task description."],
-            ["Priority", "Required. Use Low, Medium or High."],
-            ["Start Date", "Required. Format: dd/MM/yyyy."],
-            ["End Date", "Required. Format: dd/MM/yyyy."],
-            ["Start Time", "Required. 24-hour format, e.g. 09:30."],
-            ["End Time", "Required. 24-hour format, e.g. 18:30."],
-            ["Is Geofence", "Use true or false."],
-            ["Start Latitude", "Required when geofence is true."],
-            ["Start Longitude", "Required when geofence is true."],
-            ["Start Address", "Required when geofence is true."],
-            ["End Latitude", "Required when geofence is true."],
-            ["End Longitude", "Required when geofence is true."],
-            ["End Address", "Required when geofence is true."],
-
-            [""],
-
-            ["IMPORTANT RULES"],
-            ["Cannot create a task for a past start date/time."],
-            ["End date/time must be after start date/time."],
-            ["Completed, cancelled and failed tasks cannot be edited."],
-            ["Unassigned tasks will remain pending."],
-            ["Tasks assigned to an executive will become assigned."],
-
-            [""],
-
-            ["HOW TO IMPORT"],
-            ["1. Fill the Tasks sheet."],
-            ["2. Use the Executives sheet to select a valid executive email."],
-            ["3. Use the Priority_Values sheet for allowed priority values."],
-            ["4. Save the Excel file."],
-            ["5. Upload it using Bulk Upload."],
-            ["6. Review and correct invalid rows before importing."]
-        ];
-
-        const instructionSheet =
-            XLSX.utils.aoa_to_sheet(instructions);
-
-        instructionSheet["!cols"] = [
-            { wch: 32 },
-            { wch: 90 }
-        ];
-
-        /*
-         * Style important rows
-         */
-        [
-            0,
-            2,
-            7,
-            25,
-            32
-        ].forEach(row => {
-
-            const cellA =
-                instructionSheet[
-                    XLSX.utils.encode_cell({
-                        r: row,
-                        c: 0
-                    })
-                ];
-
-            if (cellA) {
-                cellA.s = instructionStyle;
-            }
-
-        });
-
-        XLSX.utils.book_append_sheet(
-            workbook,
-            instructionSheet,
-            "Instructions"
-        );
-
-
-        /* ======================================================
-           2. TASKS
-        ====================================================== */
-
-        const headers = [
-            "Email",
-            "Title",
-            "Description",
-            "Priority",
-            "Start Date",
-            "End Date",
-            "Start Time",
-            "End Time",
-            "Is Geofence",
-            "Start Latitude",
-            "Start Longitude",
-            "Start Address",
-            "End Latitude",
-            "End Longitude",
-            "End Address"
-        ];
-
-        const exampleRow = [
-            "executive@example.com",
-            "Visit Client A",
-            "Discuss contract terms",
-            "High",
-            "25/08/2026",
-            "25/08/2026",
-            "10:00",
-            "18:30",
-            "false",
-            "",
-            "",
-            "",
-            "",
-            "",
-            ""
-        ];
-
-        const taskSheet =
-            XLSX.utils.aoa_to_sheet([
-                headers,
-                exampleRow
-            ]);
-
-        taskSheet["!cols"] = [
-            { wch: 30 },
-            { wch: 30 },
-            { wch: 45 },
-            { wch: 15 },
-            { wch: 18 },
-            { wch: 18 },
-            { wch: 15 },
-            { wch: 15 },
-            { wch: 15 },
-            { wch: 20 },
-            { wch: 20 },
-            { wch: 45 },
-            { wch: 20 },
-            { wch: 20 },
-            { wch: 45 }
-        ];
-
-        /*
-         * Header styling
-         */
-        headers.forEach((_, column) => {
-
-            const cell =
-                taskSheet[
-                    XLSX.utils.encode_cell({
-                        r: 0,
-                        c: column
-                    })
-                ];
-
-            if (cell) {
-                cell.s = headerStyle;
-            }
-
-        });
-
-        XLSX.utils.book_append_sheet(
-            workbook,
-            taskSheet,
-            "Tasks"
-        );
-
-
-        /* ======================================================
-           3. EXECUTIVES
-        ====================================================== */
-
-        const executiveRows = [
-            ["Email"]
-        ];
-
-        executives.forEach(executive => {
-
-            if (executive.email) {
-
-                executiveRows.push([
-                    executive.email
-                ]);
-
-            }
-
-        });
-
-        const executiveSheet =
-            XLSX.utils.aoa_to_sheet(
-                executiveRows
-            );
-
-        executiveSheet["!cols"] = [
-            { wch: 35 }
-        ];
-
-        const executiveHeader =
-            executiveSheet["A1"];
-
-        if (executiveHeader) {
-            executiveHeader.s = headerStyle;
-        }
-
-        XLSX.utils.book_append_sheet(
-            workbook,
-            executiveSheet,
-            "Executives"
-        );
-
-
-        /* ======================================================
-           4. PRIORITY VALUES
-        ====================================================== */
-
-        const prioritySheet =
-            XLSX.utils.aoa_to_sheet([
-                ["Allowed Priority Values"],
-                ["Low"],
-                ["Medium"],
-                ["High"]
-            ]);
-
-        prioritySheet["!cols"] = [
-            { wch: 30 }
-        ];
-
-        const priorityHeader =
-            prioritySheet["A1"];
-
-        if (priorityHeader) {
-            priorityHeader.s = headerStyle;
-        }
-
-        XLSX.utils.book_append_sheet(
-            workbook,
-            prioritySheet,
-            "Priority_Values"
-        );
-
-
-        /* ======================================================
-           5. FREEZE HEADER ROWS
-        ====================================================== */
-
-        taskSheet["!freeze"] = {
-            xSplit: 0,
-            ySplit: 1
-        };
-
-        executiveSheet["!freeze"] = {
-            xSplit: 0,
-            ySplit: 1
-        };
-
-        prioritySheet["!freeze"] = {
-            xSplit: 0,
-            ySplit: 1
-        };
-
-
-        /* ======================================================
-           6. DOWNLOAD
-        ====================================================== */
-
-        XLSX.writeFile(
-            workbook,
-            "TeamoTrack_Task_Template.xlsx"
-        );
-
-        AppAlert.success(
-            "Task template downloaded successfully"
-        );
-
-    } catch (error) {
-
-        console.error(
-            "Template generation failed:",
-            error
-        );
-
-        AppAlert.error(
-            "Unable to create task template"
-        );
-    }
-}
-
-
-    /* ==========================================================
-       Helpers
-    ========================================================== */
-
-    function setText(
-        id,
-        value
-    ) {
-
-        const element =
-            document.getElementById(id);
-
-        if (element) {
-            element.textContent =
-                value || "-";
-        }
-    }
-
-
-    function formatStatus(status) {
-
-        return String(status || "pending")
-            .charAt(0)
-            .toUpperCase() +
-            String(status || "pending")
-                .slice(1);
-    }
-
-
-    function formatDateTime(value) {
-
-        if (!value) return "-";
-
-
-        let date;
-
-
-        if (
-            typeof value === "object" &&
-            value._seconds
-        ) {
-
-            date =
-                new Date(
-                    value._seconds * 1000
-                );
-
-        } else {
-
-            date =
-                new Date(value);
-        }
-
-
-        if (
-            Number.isNaN(
-                date.getTime()
-            )
-        ) {
-            return "-";
-        }
-
-
-        return date.toLocaleString(
-            "en-IN",
-            {
-                day: "2-digit",
-                month: "short",
-                year: "numeric",
-                hour: "2-digit",
-                minute: "2-digit",
-            }
-        );
-    }
-
-    function formatDuration(start, end) {
-
-        if (!start || !end) {
-            return "-";
-        }
-
-        const startTime =
-            new Date(start).getTime();
-
-        const endTime =
-            new Date(end).getTime();
-
-        if (
-            Number.isNaN(startTime) ||
-            Number.isNaN(endTime) ||
-            endTime < startTime
-        ) {
-            return "-";
-        }
-
-        const totalMinutes =
-            Math.floor(
-                (endTime - startTime) / 60000
-            );
-
-        const days =
-            Math.floor(
-                totalMinutes / 1440
-            );
-
-        const hours =
-            Math.floor(
-                (totalMinutes % 1440) / 60
-            );
-
-        const minutes =
-            totalMinutes % 60;
-
-
-        const parts = [];
-
-        if (days) {
-            parts.push(
-                `${days}d`
-            );
-        }
-
-        if (hours) {
-            parts.push(
-                `${hours}h`
-            );
-        }
-
-        if (minutes || !parts.length) {
-            parts.push(
-                `${minutes}m`
-            );
-        }
-
-        return parts.join(" ");
-    }
-
-    function toDateTimeLocal(value) {
-
-        if (!value) return "";
-
-
-        const d =
-            new Date(value);
-
-
-        if (
-            Number.isNaN(
-                d.getTime()
-            )
-        ) {
-            return "";
-        }
-
-
-        const pad =
-            n =>
-                String(n)
-                    .padStart(2, "0");
-
-
-        return (
-            `${d.getFullYear()}-` +
-            `${pad(d.getMonth() + 1)}-` +
-            `${pad(d.getDate())}T` +
-            `${pad(d.getHours())}:` +
-            `${pad(d.getMinutes())}`
-        );
-    }
-
-
-    function parseExcelDateTime(
-        dateValue,
-        timeValue
-    ) {
-
-        if (
-            !dateValue ||
-            !timeValue
-        ) {
-            return null;
-        }
-
-
-        const date =
-            String(dateValue)
-                .trim()
-                .split("/");
-
-
-        const time =
-            String(timeValue)
-                .trim()
-                .split(":");
-
-
-        if (
-            date.length !== 3 ||
-            time.length !== 2
-        ) {
-            return null;
-        }
-
-
-        const result =
-            new Date(
-                Number(date[2]),
-                Number(date[1]) - 1,
-                Number(date[0]),
-                Number(time[0]),
-                Number(time[1])
-            );
-
-
-        return Number.isNaN(
-            result.getTime()
-        )
-            ? null
-            : result;
     }
 
 
@@ -2554,18 +2142,15 @@
         ).value =
             row.title;
 
-
         document.getElementById(
             "description"
         ).value =
             row.description;
 
-
         document.getElementById(
             "priority"
         ).value =
             row.priority;
-
 
         document.getElementById(
             "startDate"
@@ -2573,7 +2158,6 @@
             toDateTimeLocal(
                 row.start
             );
-
 
         document.getElementById(
             "endDate"
@@ -2583,10 +2167,39 @@
             );
 
 
+        populateExecutives();
+
+
         document.getElementById(
             "assignedTo"
         ).value =
             row.execId || "";
+
+
+        document.getElementById(
+            "isGeofence"
+        ).checked =
+            row.isGeofence === true;
+
+
+        clearLocations();
+
+        setLocation(
+            "start",
+            row.startLocation
+        );
+
+        setLocation(
+            "end",
+            row.endLocation
+        );
+
+
+        /*
+         * Imported-row editing is kept separate
+         * from normal task editing.
+         */
+        editingId = null;
 
 
         bootstrap.Modal
@@ -2599,35 +2212,630 @@
     }
 
 
+    async function importTasks() {
+
+        const valid =
+            (window.importResults || [])
+                .filter(
+                    row =>
+                        !row.errors.length
+                );
+
+
+        if (!valid.length) {
+
+            AppAlert.warning(
+                "No valid tasks to import"
+            );
+
+            return;
+        }
+
+
+        try {
+
+            AppAlert.loading(
+                "Importing tasks..."
+            );
+
+
+            for (
+                const row of valid
+            ) {
+
+                /*
+                 * Final frontend hierarchy check.
+                 */
+                if (
+                    row.execId &&
+                    !getExecutive(
+                        row.execId
+                    )
+                ) {
+
+                    throw new Error(
+                        `Executive is outside your hierarchy: ${row.email}`
+                    );
+                }
+
+
+                await Api.post(
+                    "/tasks",
+                    {
+
+                        title:
+                            row.title,
+
+                        description:
+                            row.description,
+
+                        priority:
+                            row.priority,
+
+                        startDate:
+                            row.start.toISOString(),
+
+                        endDate:
+                            row.end.toISOString(),
+
+                        assignedTo:
+                            row.execId ||
+                            undefined,
+
+                        isGeofence:
+                            row.isGeofence,
+
+                        startLocation:
+                            row.isGeofence
+                                ? row.startLocation
+                                : null,
+
+                        endLocation:
+                            row.isGeofence
+                                ? row.endLocation
+                                : null
+                    }
+                );
+            }
+
+
+            AppAlert.close();
+
+            AppAlert.success(
+                `${valid.length} tasks imported successfully`
+            );
+
+
+            bootstrap.Modal
+                .getInstance(
+                    document.getElementById(
+                        "importModal"
+                    )
+                )
+                ?.hide();
+
+
+            await loadTasks();
+
+        } catch (error) {
+
+            AppAlert.close();
+
+            console.error(
+                "Task import failed:",
+                error
+            );
+
+            AppAlert.error(
+                error.message ||
+                "Task import failed"
+            );
+        }
+    }
+
+
+    /* ==========================================================
+       TEMPLATE
+    ========================================================== */
+
+    function downloadTemplate(event) {
+
+        event?.preventDefault();
+        event?.stopPropagation();
+
+
+        if (
+            typeof XLSX ===
+            "undefined"
+        ) {
+
+            AppAlert.error(
+                "Excel library is not loaded"
+            );
+
+            return;
+        }
+
+
+        try {
+
+            const workbook =
+                XLSX.utils.book_new();
+
+
+            const headers = [
+                "Email",
+                "Title",
+                "Description",
+                "Priority",
+                "Start Date",
+                "End Date",
+                "Start Time",
+                "End Time",
+                "Is Geofence",
+                "Start Latitude",
+                "Start Longitude",
+                "Start Address",
+                "End Latitude",
+                "End Longitude",
+                "End Address"
+            ];
+
+
+            const exampleRow = [
+
+                executives[0]?.email ||
+                "executive@example.com",
+
+                "Visit Client A",
+
+                "Discuss contract terms",
+
+                "High",
+
+                "25/08/2026",
+
+                "25/08/2026",
+
+                "10:00",
+
+                "18:30",
+
+                "false",
+
+                "",
+                "",
+                "",
+                "",
+                "",
+                ""
+            ];
+
+
+            const taskSheet =
+                XLSX.utils.aoa_to_sheet([
+                    headers,
+                    exampleRow
+                ]);
+
+
+            taskSheet["!cols"] = [
+                { wch: 30 },
+                { wch: 30 },
+                { wch: 45 },
+                { wch: 15 },
+                { wch: 18 },
+                { wch: 18 },
+                { wch: 15 },
+                { wch: 15 },
+                { wch: 15 },
+                { wch: 20 },
+                { wch: 20 },
+                { wch: 45 },
+                { wch: 20 },
+                { wch: 20 },
+                { wch: 45 }
+            ];
+
+
+            headers.forEach(
+                (_, column) => {
+
+                    const cell =
+                        taskSheet[
+                        XLSX.utils.encode_cell({
+                            r: 0,
+                            c: column
+                        })
+                        ];
+
+                    if (cell) {
+
+                        cell.s = {
+                            font: {
+                                bold: true
+                            }
+                        };
+                    }
+                }
+            );
+
+
+            taskSheet["!freeze"] = {
+                xSplit: 0,
+                ySplit: 1
+            };
+
+
+            XLSX.utils.book_append_sheet(
+                workbook,
+                taskSheet,
+                "Tasks"
+            );
+
+
+            /* Executives */
+
+            const executiveRows = [
+                ["Email"]
+            ];
+
+
+            executives.forEach(
+                executive => {
+
+                    if (
+                        executive.email
+                    ) {
+
+                        executiveRows.push([
+                            executive.email
+                        ]);
+                    }
+                }
+            );
+
+
+            const executiveSheet =
+                XLSX.utils.aoa_to_sheet(
+                    executiveRows
+                );
+
+
+            executiveSheet["!cols"] = [
+                { wch: 35 }
+            ];
+
+
+            executiveSheet["!freeze"] = {
+                xSplit: 0,
+                ySplit: 1
+            };
+
+
+            XLSX.utils.book_append_sheet(
+                workbook,
+                executiveSheet,
+                "Executives"
+            );
+
+
+            /* Priority */
+
+            const prioritySheet =
+                XLSX.utils.aoa_to_sheet([
+                    ["Allowed Priority Values"],
+                    ["Low"],
+                    ["Medium"],
+                    ["High"]
+                ]);
+
+
+            prioritySheet["!cols"] = [
+                { wch: 30 }
+            ];
+
+
+            XLSX.utils.book_append_sheet(
+                workbook,
+                prioritySheet,
+                "Priority_Values"
+            );
+
+
+            XLSX.writeFile(
+                workbook,
+                "TeamoTrack_Task_Template.xlsx"
+            );
+
+
+            AppAlert.success(
+                "Task template downloaded successfully"
+            );
+
+        } catch (error) {
+
+            console.error(
+                "Template generation failed:",
+                error
+            );
+
+            AppAlert.error(
+                "Unable to create task template"
+            );
+        }
+    }
+
+
+    /* ==========================================================
+       HELPERS
+    ========================================================== */
+
+    function setText(id, value) {
+
+        const element =
+            document.getElementById(id);
+
+        if (element) {
+
+            element.textContent =
+                value || "-";
+        }
+    }
+
+
+    function formatStatus(status) {
+
+        const value =
+            String(
+                status ||
+                "pending"
+            );
+
+        return (
+            value.charAt(0).toUpperCase() +
+            value.slice(1)
+        );
+    }
+
+
+    function formatDateTime(value) {
+
+        if (!value) return "-";
+
+
+        let date;
+
+
+        if (
+            typeof value === "object" &&
+            value?._seconds
+        ) {
+
+            date =
+                new Date(
+                    value._seconds * 1000
+                );
+
+        } else {
+
+            date =
+                new Date(value);
+        }
+
+
+        if (
+            Number.isNaN(
+                date.getTime()
+            )
+        ) {
+
+            return "-";
+        }
+
+
+        return date.toLocaleString(
+            "en-IN",
+            {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+                hour: "2-digit",
+                minute: "2-digit"
+            }
+        );
+    }
+
+
+    function formatDuration(
+        start,
+        end
+    ) {
+
+        if (!start || !end) {
+            return "-";
+        }
+
+
+        const startTime =
+            new Date(start).getTime();
+
+        const endTime =
+            new Date(end).getTime();
+
+
+        if (
+            Number.isNaN(startTime) ||
+            Number.isNaN(endTime) ||
+            endTime < startTime
+        ) {
+
+            return "-";
+        }
+
+
+        const totalMinutes =
+            Math.floor(
+                (
+                    endTime -
+                    startTime
+                ) / 60000
+            );
+
+
+        const days =
+            Math.floor(
+                totalMinutes / 1440
+            );
+
+        const hours =
+            Math.floor(
+                (
+                    totalMinutes % 1440
+                ) / 60
+            );
+
+        const minutes =
+            totalMinutes % 60;
+
+
+        const parts = [];
+
+
+        if (days) {
+            parts.push(
+                `${days}d`
+            );
+        }
+
+        if (hours) {
+            parts.push(
+                `${hours}h`
+            );
+        }
+
+        if (
+            minutes ||
+            !parts.length
+        ) {
+
+            parts.push(
+                `${minutes}m`
+            );
+        }
+
+
+        return parts.join(" ");
+    }
+
+
+    function toDateTimeLocal(value) {
+
+        if (!value) return "";
+
+
+        const date =
+            new Date(value);
+
+
+        if (
+            Number.isNaN(
+                date.getTime()
+            )
+        ) {
+
+            return "";
+        }
+
+
+        const pad =
+            value =>
+                String(value)
+                    .padStart(2, "0");
+
+
+        return (
+            `${date.getFullYear()}-` +
+            `${pad(date.getMonth() + 1)}-` +
+            `${pad(date.getDate())}T` +
+            `${pad(date.getHours())}:` +
+            `${pad(date.getMinutes())}`
+        );
+    }
+
+
+    function parseExcelDateTime(
+        dateValue,
+        timeValue
+    ) {
+
+        if (
+            !dateValue ||
+            !timeValue
+        ) {
+
+            return null;
+        }
+
+
+        const date =
+            String(
+                dateValue
+            )
+                .trim()
+                .split("/");
+
+
+        const time =
+            String(
+                timeValue
+            )
+                .trim()
+                .split(":");
+
+
+        if (
+            date.length !== 3 ||
+            time.length !== 2
+        ) {
+
+            return null;
+        }
+
+
+        const result =
+            new Date(
+                Number(date[2]),
+                Number(date[1]) - 1,
+                Number(date[0]),
+                Number(time[0]),
+                Number(time[1])
+            );
+
+
+        return Number.isNaN(
+            result.getTime()
+        )
+            ? null
+            : result;
+    }
+
+
     function escapeHtml(value) {
 
         return String(
             value ?? ""
         )
-            .replaceAll(
-                "&",
-                "&amp;"
-            )
-            .replaceAll(
-                "<",
-                "&lt;"
-            )
-            .replaceAll(
-                ">",
-                "&gt;"
-            )
-            .replaceAll(
-                '"',
-                "&quot;"
-            )
-            .replaceAll(
-                "'",
-                "&#039;"
-            );
-    
-        }
-            /* ==========================================================
-       GLOBAL HTML HANDLERS
+            .replaceAll("&", "&amp;")
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;")
+            .replaceAll('"', "&quot;")
+            .replaceAll("'", "&#039;");
+    }
+
+
+    /* ==========================================================
+       GLOBAL HANDLERS
     ========================================================== */
 
     window.openTaskDetails =

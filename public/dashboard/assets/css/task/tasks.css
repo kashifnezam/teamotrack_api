@@ -4,7 +4,14 @@
 
 .tasks-page {
     padding: 24px 0;
+    min-height: calc(100vh - var(--header-height));
+    background: var(--bg-color);
 }
+
+
+/* ==========================================================
+   Header
+========================================================== */
 
 .page-header {
     display: flex;
@@ -12,6 +19,26 @@
     align-items: center;
     gap: 12px;
 }
+
+.page-header h4 {
+    color: var(--text-primary);
+    font-weight: var(--fw-semibold);
+}
+
+.task-page-subtitle,
+.task-modal-subtitle {
+    color: var(--text-secondary);
+    font-size: 12px;
+}
+
+.task-modal-subtitle {
+    margin-top: 3px;
+}
+
+
+/* ==========================================================
+   Filter
+========================================================== */
 
 .filter-card,
 .task-card {
@@ -26,23 +53,6 @@
     padding: 16px;
 }
 
-.task-card {
-    overflow: hidden;
-}
-
-.task-card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 16px 18px;
-    border-bottom: 1px solid var(--border-color);
-}
-
-.task-actions {
-    display: flex;
-    gap: 8px;
-}
-
 .search-box {
     position: relative;
 }
@@ -53,6 +63,7 @@
     top: 50%;
     transform: translateY(-50%);
     color: var(--text-secondary);
+    z-index: 2;
 }
 
 .search-box input {
@@ -68,9 +79,71 @@
     color: var(--text-primary);
 }
 
-.task-name {
-    font-weight: var(--fw-semibold);
+
+/* ==========================================================
+   Task Card
+========================================================== */
+
+.task-card {
+    overflow: hidden;
+}
+
+.task-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--border-color);
     color: var(--text-primary);
+}
+
+.task-actions {
+    display: flex;
+    gap: 8px;
+}
+
+
+/* ==========================================================
+   Table
+========================================================== */
+
+.task-card .table-responsive {
+    max-height: calc(100vh - 300px);
+}
+
+.table {
+    margin: 0;
+}
+
+.table th {
+    background: var(--surface-soft);
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.table td {
+    color: var(--text-primary);
+    font-size: 14px;
+    vertical-align: middle;
+}
+
+.table td,
+.table th {
+    padding: 13px 15px;
+}
+
+
+/* ==========================================================
+   Task
+========================================================== */
+
+.task-name {
+    color: var(--text-primary);
+    font-weight: var(--fw-semibold);
 }
 
 .task-description {
@@ -82,21 +155,47 @@
     white-space: nowrap;
 }
 
+.task-created-by,
+.task-executive {
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.task-created-by small,
+.task-executive small {
+    display: block;
+    margin-top: 2px;
+    color: var(--text-muted);
+    font-size: 11px;
+}
+
 .task-time {
     white-space: nowrap;
     font-size: 13px;
 }
+
+
+/* ==========================================================
+   Badges
+========================================================== */
 
 .priority-badge,
 .status-badge,
 .location-badge {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     padding: 5px 9px;
     border-radius: 20px;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 600;
+    white-space: nowrap;
 }
+
+
+/* ==========================================================
+   Priority
+========================================================== */
 
 .priority-low {
     background: rgba(34, 197, 94, .1);
@@ -112,6 +211,11 @@
     background: rgba(239, 68, 68, .1);
     color: #dc2626;
 }
+
+
+/* ==========================================================
+   Status
+========================================================== */
 
 .status-pending {
     background: rgba(107, 114, 128, .1);
@@ -138,18 +242,30 @@
     color: #dc2626;
 }
 
+
+/* ==========================================================
+   Location
+========================================================== */
+
 .location-badge {
     background: rgba(37, 99, 235, .08);
     color: var(--primary);
 }
 
+
+/* ==========================================================
+   Actions
+========================================================== */
+
 .action-btn {
     width: 32px;
     height: 32px;
+    padding: 0;
     border: 0;
     background: transparent;
     border-radius: 7px;
     color: var(--text-secondary);
+    transition: var(--transition-fast);
 }
 
 .action-btn:hover {
@@ -157,11 +273,76 @@
     color: var(--primary);
 }
 
+.action-btn.text-danger:hover {
+    background: rgba(239, 68, 68, .08);
+    color: #dc2626 !important;
+}
+
+
+/* ==========================================================
+   Empty
+========================================================== */
+
 .empty-state {
     padding: 45px !important;
     text-align: center;
     color: var(--text-secondary);
 }
+
+.empty-state i {
+    font-size: 26px;
+    opacity: .6;
+}
+
+
+/* ==========================================================
+   Form
+========================================================== */
+
+.modal-body label,
+.modal-body .form-label {
+    display: block;
+    margin-bottom: 6px;
+    color: var(--text-primary);
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.task-form-hint {
+    margin-top: 6px;
+    color: var(--text-muted);
+    font-size: 11px;
+}
+
+.form-check-label {
+    margin-bottom: 0 !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+}
+
+
+/* ==========================================================
+   Modal
+========================================================== */
+
+.modal-content {
+    border: 0;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+}
+
+.modal-header {
+    border-bottom: 1px solid var(--border-color);
+}
+
+.modal-footer {
+    border-top: 1px solid var(--border-color);
+}
+
+
+/* ==========================================================
+   Map
+========================================================== */
 
 .task-map {
     width: 100%;
@@ -170,6 +351,11 @@
     overflow: hidden;
     border: 1px solid var(--border-color);
 }
+
+
+/* ==========================================================
+   Upload
+========================================================== */
 
 .upload-box {
     padding: 35px;
@@ -221,7 +407,10 @@
     white-space: pre-line;
     line-height: 1.6;
     padding: 14px;
-    background: var(--surface-secondary, #f8fafc);
+    background: var(
+        --surface-secondary,
+        #f8fafc
+    );
     border-radius: var(--radius-md);
 }
 
@@ -246,9 +435,10 @@
 }
 
 .detail-section-title {
+    margin-bottom: 10px;
+    color: var(--text-primary);
     font-size: 13px;
     font-weight: 600;
-    margin-bottom: 10px;
 }
 
 .task-proof-section,
@@ -270,6 +460,53 @@
 
 
 /* ==========================================================
+   Hierarchy
+========================================================== */
+
+.hierarchy-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    border-radius: 16px;
+    background: var(--surface-soft);
+    color: var(--text-secondary);
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.hierarchy-badge i {
+    font-size: 11px;
+}
+
+.hierarchy-info {
+    margin-top: 6px;
+    padding: 8px 10px;
+    border-radius: var(--radius-sm);
+    background: var(--surface-soft);
+    color: var(--text-secondary);
+    font-size: 11px;
+}
+
+
+/* ==========================================================
+   Tablet
+========================================================== */
+
+@media (max-width: 992px) {
+
+    .tasks-page {
+        padding: 20px 0;
+    }
+
+    .task-card .table-responsive {
+        max-height: calc(100vh - 320px);
+    }
+
+}
+
+
+/* ==========================================================
    Mobile
 ========================================================== */
 
@@ -284,6 +521,10 @@
         flex-direction: column;
     }
 
+    .task-page-subtitle {
+        margin-top: 3px;
+    }
+
     .task-actions {
         width: 100%;
         flex-wrap: wrap;
@@ -291,6 +532,19 @@
 
     .task-actions .btn {
         flex: 1;
+        min-width: 110px;
+    }
+
+    .filter-card {
+        padding: 12px;
+    }
+
+    .task-card .table-responsive {
+        max-height: none;
+    }
+
+    .table {
+        min-width: 1100px;
     }
 
     .task-card-header {
@@ -310,4 +564,61 @@
     .task-proof {
         max-height: 300px;
     }
+
+}
+
+
+/* ==========================================================
+   Small Mobile
+========================================================== */
+
+@media (max-width: 576px) {
+
+    .tasks-page {
+        padding: 12px 0;
+    }
+
+    .page-header h4 {
+        font-size: 18px;
+    }
+
+    .task-actions {
+        gap: 6px;
+    }
+
+    .task-actions .btn {
+        padding: 8px 10px;
+        font-size: 12px;
+    }
+
+    .filter-card .row > div {
+        width: 100%;
+    }
+
+    .task-count {
+        display: block;
+        padding-top: 4px;
+        text-align: left;
+    }
+
+    .modal-dialog {
+        margin: 10px;
+    }
+
+    .modal-body {
+        padding: 15px;
+    }
+
+    .modal-footer {
+        padding: 12px 15px;
+    }
+
+    .upload-box {
+        padding: 25px 15px;
+    }
+
+    .hierarchy-info {
+        max-width: 100%;
+    }
+
 }

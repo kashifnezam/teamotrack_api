@@ -1,3 +1,7 @@
+<!-- =========================================================
+     TEAMOTRACK TASKS
+========================================================= -->
+
 <section class="tasks-page">
 
     <div class="container-fluid">
@@ -7,29 +11,45 @@
         <div class="page-header mb-3">
 
             <div>
+
                 <h4 class="mb-1">
                     Tasks
                 </h4>
 
-                <div class="task-count">
-                    <strong id="taskCount">0</strong>
-                    tasks
+                <div class="task-page-subtitle">
+                    Manage and assign tasks within your hierarchy.
                 </div>
+
             </div>
+
 
             <div class="task-actions">
 
-                <button type="button" class="btn btn-light" onclick="downloadTemplate(event)">
+                <button
+                    type="button"
+                    class="btn btn-light"
+                    onclick="downloadTemplate(event)"
+                >
                     <i class="bi bi-download me-1"></i>
                     Template
                 </button>
 
-                <button class="btn btn-outline-primary" onclick="openImportModal()">
+
+                <button
+                    type="button"
+                    class="btn btn-light"
+                    onclick="openImportModal()"
+                >
                     <i class="bi bi-upload me-1"></i>
                     Bulk Upload
                 </button>
 
-                <button class="btn btn-primary" onclick="openTaskModal()">
+
+                <button
+                    type="button"
+                    class="btn btn-primary"
+                    onclick="openTaskModal()"
+                >
                     <i class="bi bi-plus-lg me-1"></i>
                     Add Task
                 </button>
@@ -39,11 +59,11 @@
         </div>
 
 
-        <!-- FILTERS -->
+        <!-- FILTER -->
 
         <div class="filter-card">
 
-            <div class="row g-2">
+            <div class="row g-2 align-items-center">
 
                 <div class="col-lg-4 col-md-6">
 
@@ -51,7 +71,13 @@
 
                         <i class="bi bi-search"></i>
 
-                        <input id="searchInput" type="search" class="form-control" placeholder="Search tasks...">
+                        <input
+                            id="searchInput"
+                            type="search"
+                            class="form-control"
+                            placeholder="Search tasks, executive or creator..."
+                            autocomplete="off"
+                        >
 
                     </div>
 
@@ -60,21 +86,28 @@
 
                 <div class="col-lg-2 col-md-3">
 
-                    <input id="monthFilter" type="month" class="form-control">
+                    <input
+                        id="monthFilter"
+                        type="month"
+                        class="form-control"
+                    >
 
                 </div>
 
 
                 <div class="col-lg-3 col-md-3">
 
-                    <select id="statusFilter" class="form-select">
+                    <select
+                        id="statusFilter"
+                        class="form-select"
+                    >
 
                         <option value="">
                             All Tasks
                         </option>
 
                         <option value="assigned_to">
-                            Assigned
+                            Assigned Executive
                         </option>
 
                         <option value="unassigned">
@@ -105,19 +138,43 @@
 
                 </div>
 
+
+                <div class="col-lg-3 text-lg-end">
+
+                    <span class="task-count">
+
+                        <strong id="taskCount">
+                            0
+                        </strong>
+
+                        Tasks
+
+                    </span>
+
+                </div>
+
             </div>
 
         </div>
 
 
-        <!-- TASK TABLE -->
+        <!-- TASK LIST -->
 
         <div class="task-card">
 
             <div class="task-card-header">
 
                 <div>
-                    <strong>Task List</strong>
+
+                    <strong>
+                        Task List
+                    </strong>
+
+                    <div class="hierarchy-info">
+                        <i class="bi bi-diagram-3 me-1"></i>
+                        Tasks and executives are restricted by your management hierarchy.
+                    </div>
+
                 </div>
 
             </div>
@@ -131,12 +188,34 @@
 
                         <tr>
 
-                            <th>Task</th>
-                            <th>Executive</th>
-                            <th>Schedule</th>
-                            <th>Priority</th>
-                            <th>Location</th>
-                            <th>Status</th>
+                            <th>
+                                Task
+                            </th>
+
+                            <th>
+                                Executive
+                            </th>
+
+                            <th>
+                                Created By
+                            </th>
+
+                            <th>
+                                Schedule
+                            </th>
+
+                            <th>
+                                Priority
+                            </th>
+
+                            <th>
+                                Location
+                            </th>
+
+                            <th>
+                                Status
+                            </th>
+
                             <th class="text-end">
                                 Actions
                             </th>
@@ -150,8 +229,13 @@
 
                         <tr>
 
-                            <td colspan="7" class="empty-state">
+                            <td
+                                colspan="8"
+                                class="empty-state"
+                            >
+
                                 Loading tasks...
+
                             </td>
 
                         </tr>
@@ -173,7 +257,11 @@
      TASK MODAL
 ========================================================= -->
 
-<div class="modal fade" id="taskModal" tabindex="-1">
+<div
+    class="modal fade"
+    id="taskModal"
+    tabindex="-1"
+>
 
     <div class="modal-dialog modal-lg modal-dialog-centered">
 
@@ -181,45 +269,90 @@
 
             <div class="modal-header">
 
-                <h5 class="modal-title" id="modalTitle">
-                    Add Task
-                </h5>
+                <div>
 
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <h5
+                        class="modal-title"
+                        id="modalTitle"
+                    >
+                        Add Task
+                    </h5>
+
+                    <div class="task-modal-subtitle">
+
+                        Tasks can only be assigned to
+                        executives within your management hierarchy.
+
+                    </div>
+
+                </div>
+
+
+                <button
+                    type="button"
+                    class="btn-close"
+                    data-bs-dismiss="modal"
+                ></button>
 
             </div>
 
 
             <div class="modal-body">
 
-                <input type="hidden" id="taskId">
+                <input
+                    type="hidden"
+                    id="taskId"
+                >
+
 
                 <div class="row g-3">
 
+                    <!-- TITLE -->
+
                     <div class="col-md-6">
 
-                        <label class="form-label">
+                        <label
+                            class="form-label"
+                            for="taskTitle"
+                        >
                             Title
                         </label>
 
-                        <input id="taskTitle" class="form-control">
+                        <input
+                            id="taskTitle"
+                            type="text"
+                            class="form-control"
+                            placeholder="Enter task title"
+                            autocomplete="off"
+                        >
 
                     </div>
 
 
+                    <!-- PRIORITY -->
+
                     <div class="col-md-6">
 
-                        <label class="form-label">
+                        <label
+                            class="form-label"
+                            for="priority"
+                        >
                             Priority
                         </label>
 
-                        <select id="priority" class="form-select">
+                        <select
+                            id="priority"
+                            class="form-select"
+                        >
 
                             <option value="Low">
                                 Low
                             </option>
 
-                            <option value="Medium" selected>
+                            <option
+                                value="Medium"
+                                selected
+                            >
                                 Medium
                             </option>
 
@@ -232,46 +365,82 @@
                     </div>
 
 
+                    <!-- DESCRIPTION -->
+
                     <div class="col-12">
 
-                        <label class="form-label">
+                        <label
+                            class="form-label"
+                            for="description"
+                        >
                             Description
                         </label>
 
-                        <textarea id="description" class="form-control" rows="3"></textarea>
+                        <textarea
+                            id="description"
+                            class="form-control"
+                            rows="3"
+                            placeholder="Enter task description"
+                        ></textarea>
 
                     </div>
 
 
+                    <!-- START -->
+
                     <div class="col-md-6">
 
-                        <label class="form-label">
+                        <label
+                            class="form-label"
+                            for="startDate"
+                        >
                             Start
                         </label>
 
-                        <input id="startDate" type="datetime-local" class="form-control">
+                        <input
+                            id="startDate"
+                            type="datetime-local"
+                            class="form-control"
+                        >
 
                     </div>
 
+
+                    <!-- END -->
 
                     <div class="col-md-6">
 
-                        <label class="form-label">
+                        <label
+                            class="form-label"
+                            for="endDate"
+                        >
                             End
                         </label>
 
-                        <input id="endDate" type="datetime-local" class="form-control">
+                        <input
+                            id="endDate"
+                            type="datetime-local"
+                            class="form-control"
+                        >
 
                     </div>
 
 
+                    <!-- ASSIGNMENT -->
+
                     <div class="col-12">
 
-                        <label class="form-label">
-                            Executive
+                        <label
+                            class="form-label"
+                            for="assignedTo"
+                        >
+                            Assign Executive
                         </label>
 
-                        <select id="assignedTo" class="form-select">
+                        <select
+                            id="assignedTo"
+                            class="form-select"
+                        >
 
                             <option value="">
                                 Unassigned
@@ -279,16 +448,35 @@
 
                         </select>
 
+
+                        <div class="task-form-hint">
+
+                            <i class="bi bi-diagram-3 me-1"></i>
+
+                            Only executives available in
+                            your hierarchy are shown.
+
+                        </div>
+
                     </div>
 
+
+                    <!-- GEOFENCE -->
 
                     <div class="col-12">
 
                         <div class="form-check form-switch">
 
-                            <input id="isGeofence" class="form-check-input" type="checkbox">
+                            <input
+                                id="isGeofence"
+                                class="form-check-input"
+                                type="checkbox"
+                            >
 
-                            <label class="form-check-label">
+                            <label
+                                class="form-check-label"
+                                for="isGeofence"
+                            >
                                 Enable Geofence
                             </label>
 
@@ -297,32 +485,72 @@
                     </div>
 
 
-                    <div id="locationSection" class="col-12 d-none">
+                    <!-- LOCATION -->
+
+                    <div
+                        id="locationSection"
+                        class="col-12 d-none"
+                    >
+
+                        <!-- START LOCATION -->
 
                         <label class="form-label">
                             Start Location
                         </label>
 
-                        <div id="startMap" class="task-map"></div>
+                        <div
+                            id="startMap"
+                            class="task-map"
+                        ></div>
 
-                        <input type="hidden" id="startLat">
 
-                        <input type="hidden" id="startLng">
+                        <input
+                            type="hidden"
+                            id="startLat"
+                        >
 
-                        <input id="startAddress" class="form-control mt-2" placeholder="Start address">
+                        <input
+                            type="hidden"
+                            id="startLng"
+                        >
 
+
+                        <input
+                            id="startAddress"
+                            class="form-control mt-2"
+                            placeholder="Start address"
+                        >
+
+
+                        <!-- END LOCATION -->
 
                         <label class="form-label mt-3">
                             End Location
                         </label>
 
-                        <div id="endMap" class="task-map"></div>
 
-                        <input type="hidden" id="endLat">
+                        <div
+                            id="endMap"
+                            class="task-map"
+                        ></div>
 
-                        <input type="hidden" id="endLng">
 
-                        <input id="endAddress" class="form-control mt-2" placeholder="End address">
+                        <input
+                            type="hidden"
+                            id="endLat"
+                        >
+
+                        <input
+                            type="hidden"
+                            id="endLng"
+                        >
+
+
+                        <input
+                            id="endAddress"
+                            class="form-control mt-2"
+                            placeholder="End address"
+                        >
 
                     </div>
 
@@ -333,11 +561,21 @@
 
             <div class="modal-footer">
 
-                <button class="btn btn-light" data-bs-dismiss="modal">
+                <button
+                    type="button"
+                    class="btn btn-light"
+                    data-bs-dismiss="modal"
+                >
                     Cancel
                 </button>
 
-                <button class="btn btn-primary" id="saveTaskBtn" onclick="saveTask()">
+
+                <button
+                    type="button"
+                    class="btn btn-primary"
+                    id="saveTaskBtn"
+                    onclick="saveTask()"
+                >
                     Save Task
                 </button>
 
@@ -351,10 +589,14 @@
 
 
 <!-- =========================================================
-     TASK DETAILS MODAL
+     TASK DETAILS
 ========================================================= -->
 
-<div class="modal fade" id="taskDetailsModal" tabindex="-1">
+<div
+    class="modal fade"
+    id="taskDetailsModal"
+    tabindex="-1"
+>
 
     <div class="modal-dialog modal-lg modal-dialog-centered">
 
@@ -364,15 +606,27 @@
 
                 <div>
 
-                    <h5 class="modal-title" id="detailTitle">
+                    <h5
+                        class="modal-title"
+                        id="detailTitle"
+                    >
                         Task Details
                     </h5>
 
-                    <div class="task-detail-subtitle" id="detailExecutive"></div>
+
+                    <div
+                        class="task-detail-subtitle"
+                        id="detailExecutive"
+                    ></div>
 
                 </div>
 
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+
+                <button
+                    type="button"
+                    class="btn-close"
+                    data-bs-dismiss="modal"
+                ></button>
 
             </div>
 
@@ -381,14 +635,23 @@
 
                 <div class="task-detail-top">
 
-                    <span id="detailStatus" class="status-badge"></span>
+                    <span
+                        id="detailStatus"
+                        class="status-badge"
+                    ></span>
 
-                    <span id="detailPriority" class="priority-badge"></span>
+                    <span
+                        id="detailPriority"
+                        class="priority-badge"
+                    ></span>
 
                 </div>
 
 
-                <div class="task-detail-description" id="detailDescription"></div>
+                <div
+                    class="task-detail-description"
+                    id="detailDescription"
+                ></div>
 
 
                 <div class="row g-3 mt-1">
@@ -464,6 +727,7 @@
 
                     </div>
 
+
                     <div class="col-md-6">
 
                         <div class="detail-info">
@@ -484,32 +748,64 @@
                 </div>
 
 
-                <div id="detailProofSection" class="task-proof-section d-none">
+                <!-- PROOF -->
+
+                <div
+                    id="detailProofSection"
+                    class="task-proof-section d-none"
+                >
 
                     <div class="detail-section-title">
+
                         <i class="bi bi-image me-1"></i>
                         Completion Proof
+
                     </div>
 
-                    <a id="detailProofLink" href="#" target="_blank" rel="noopener">
 
-                        <img id="detailProof" class="task-proof" alt="Task completion proof">
+                    <a
+                        id="detailProofLink"
+                        href="#"
+                        target="_blank"
+                        rel="noopener"
+                    >
+
+                        <img
+                            id="detailProof"
+                            class="task-proof"
+                            alt="Task completion proof"
+                        >
 
                     </a>
 
                 </div>
 
 
-                <div id="detailLocationSection" class="task-location-detail d-none">
+                <!-- LOCATION -->
+
+                <div
+                    id="detailLocationSection"
+                    class="task-location-detail d-none"
+                >
 
                     <div class="detail-section-title">
+
                         <i class="bi bi-geo-alt me-1"></i>
                         Task Locations
+
                     </div>
 
-                    <div id="detailStartAddress" class="small text-muted"></div>
 
-                    <div id="detailEndAddress" class="small text-muted mt-1"></div>
+                    <div
+                        id="detailStartAddress"
+                        class="small text-muted"
+                    ></div>
+
+
+                    <div
+                        id="detailEndAddress"
+                        class="small text-muted mt-1"
+                    ></div>
 
                 </div>
 
@@ -518,7 +814,11 @@
 
             <div class="modal-footer">
 
-                <button class="btn btn-light" data-bs-dismiss="modal">
+                <button
+                    type="button"
+                    class="btn btn-light"
+                    data-bs-dismiss="modal"
+                >
                     Close
                 </button>
 
@@ -535,7 +835,11 @@
      IMPORT MODAL
 ========================================================= -->
 
-<div class="modal fade" id="importModal" tabindex="-1">
+<div
+    class="modal fade"
+    id="importModal"
+    tabindex="-1"
+>
 
     <div class="modal-dialog modal-xl modal-dialog-centered">
 
@@ -543,11 +847,27 @@
 
             <div class="modal-header">
 
-                <h5 class="modal-title">
-                    Bulk Task Upload
-                </h5>
+                <div>
 
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <h5 class="modal-title">
+                        Bulk Task Upload
+                    </h5>
+
+                    <div class="task-modal-subtitle">
+
+                        Tasks can only be assigned to
+                        executives available in your hierarchy.
+
+                    </div>
+
+                </div>
+
+
+                <button
+                    type="button"
+                    class="btn-close"
+                    data-bs-dismiss="modal"
+                ></button>
 
             </div>
 
@@ -562,22 +882,37 @@
                         Upload the completed Excel task template.
                     </p>
 
-                    <input id="excelFile" type="file" class="form-control" accept=".xlsx,.xls">
+                    <input
+                        id="excelFile"
+                        type="file"
+                        class="form-control"
+                        accept=".xlsx,.xls"
+                    >
 
                 </div>
 
 
-                <div id="importPreview" class="import-preview d-none">
+                <div
+                    id="importPreview"
+                    class="import-preview d-none"
+                >
 
-                    <div id="importSummary" class="mb-3 fw-semibold"></div>
+                    <div
+                        id="importSummary"
+                        class="mb-3 fw-semibold"
+                    ></div>
+
 
                     <div class="table-responsive">
 
-                        <table class="table table-sm align-middle">
+                        <table
+                            class="table table-sm align-middle"
+                        >
 
                             <thead>
 
                                 <tr>
+
                                     <th>Row</th>
                                     <th>Email</th>
                                     <th>Title</th>
@@ -587,11 +922,15 @@
                                     <th>Location</th>
                                     <th>Validation</th>
                                     <th></th>
+
                                 </tr>
 
                             </thead>
 
-                            <tbody id="importTable"></tbody>
+
+                            <tbody
+                                id="importTable"
+                            ></tbody>
 
                         </table>
 
@@ -604,11 +943,22 @@
 
             <div class="modal-footer">
 
-                <button class="btn btn-light" data-bs-dismiss="modal">
+                <button
+                    type="button"
+                    class="btn btn-light"
+                    data-bs-dismiss="modal"
+                >
                     Cancel
                 </button>
 
-                <button class="btn btn-primary" id="importTasksBtn" onclick="importTasks()" disabled>
+
+                <button
+                    type="button"
+                    class="btn btn-primary"
+                    id="importTasksBtn"
+                    onclick="importTasks()"
+                    disabled
+                >
                     Import Valid Tasks
                 </button>
 

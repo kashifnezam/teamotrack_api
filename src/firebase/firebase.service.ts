@@ -20,16 +20,32 @@ import {
     getFirestore,
 } from 'firebase-admin/firestore';
 
+import {
+    Storage,
+    getStorage,
+} from 'firebase-admin/storage';
+
 
 @Injectable()
 export class FirebaseService {
 
     private readonly logger =
-        new Logger(FirebaseService.name);
+        new Logger(
+            FirebaseService.name,
+        );
 
-    private readonly app: App;
-    private readonly firestoreDb: Firestore;
-    private readonly authDb: Auth;
+
+    private readonly app:
+        App;
+
+    private readonly firestoreDb:
+        Firestore;
+
+    private readonly authDb:
+        Auth;
+
+    private readonly storageDb:
+        Storage;
 
 
     constructor() {
@@ -39,13 +55,32 @@ export class FirebaseService {
             this.app =
                 getApps().length
                     ? getApp()
-                    : initializeApp();
+                    : initializeApp({
+
+                        storageBucket:
+                            process.env
+                                .FIREBASE_STORAGE_BUCKET,
+
+                    });
+
 
             this.firestoreDb =
-                getFirestore(this.app);
+                getFirestore(
+                    this.app,
+                );
+
 
             this.authDb =
-                getAuth(this.app);
+                getAuth(
+                    this.app,
+                );
+
+
+            this.storageDb =
+                getStorage(
+                    this.app,
+                );
+
 
             this.logger.log(
                 'Firebase initialized successfully',
@@ -55,26 +90,51 @@ export class FirebaseService {
 
             this.logger.error(
                 'Firebase initialization failed',
+
                 error instanceof Error
                     ? error.stack
                     : undefined,
             );
 
             throw error;
+
         }
+
     }
 
 
-    get firestore(): Firestore {
+    // ==================================================
+    // FIRESTORE
+    // ==================================================
+
+    get firestore():
+        Firestore {
 
         return this.firestoreDb;
 
     }
 
 
-    get auth(): Auth {
+    // ==================================================
+    // AUTH
+    // ==================================================
+
+    get auth():
+        Auth {
 
         return this.authDb;
+
+    }
+
+
+    // ==================================================
+    // STORAGE
+    // ==================================================
+
+    get storage():
+        Storage {
+
+        return this.storageDb;
 
     }
 

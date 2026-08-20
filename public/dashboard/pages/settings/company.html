@@ -1,72 +1,144 @@
-<section class="settings-page">
+<section class="settings-page p-3">
+
     <div class="container-fluid">
+
+        <!-- PAGE HEADER -->
+
+        <div class="settings-page-header">
+
+            <div>
+
+                <div class="settings-eyebrow">
+                    ORGANIZATION
+                </div>
+
+                <h4>
+                    Organization Profile
+                </h4>
+
+                <p>
+                    Manage your organization's identity and contact information.
+                    These details may appear across TeamoTrack documents and payslips.
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <!-- ORGANIZATION IDENTITY -->
 
         <div class="settings-card">
 
             <div class="settings-card-header">
+
                 <div>
-                    <h5>Company</h5>
-                    <p>Manage your company information.</p>
+
+                    <h5>
+                        Organization Identity
+                    </h5>
+
+                    <p>
+                        Your organization's basic identity and branding.
+                    </p>
+
                 </div>
+
             </div>
+
 
             <div class="settings-card-body">
 
-                <div class="company-logo-wrap">
+                <div class="organization-brand">
 
-                    <div
-                        id="companyLogo"
-                        class="company-logo"
-                    >
-                        <i class="bi bi-building"></i>
+                    <div class="company-logo-wrap">
+
+                        <div
+                            id="companyLogo"
+                            class="company-logo">
+
+                            <i class="bi bi-building"></i>
+
+                        </div>
+
+
+                        <div>
+
+                            <div class="fw-semibold">
+                                Organization Logo
+                            </div>
+
+                            <div class="small text-muted mb-2">
+                                Use a clear PNG, JPG or WebP image.
+                            </div>
+
+                            <button
+                                type="button"
+                                class="btn btn-outline-primary btn-sm"
+                                onclick="changeCompanyLogo()">
+
+                                <i class="bi bi-camera me-1"></i>
+
+                                Change Logo
+
+                            </button>
+
+                            <input
+                                id="logoInput"
+                                type="file"
+                                accept="image/png,image/jpeg,image/webp"
+                                hidden>
+
+                        </div>
+
                     </div>
-
-                    <button
-                        type="button"
-                        class="btn btn-outline-primary btn-sm"
-                        onclick="changeCompanyLogo()"
-                    >
-                        <i class="bi bi-camera me-1"></i>
-                        Change Logo
-                    </button>
-
-                    <input
-                        id="logoInput"
-                        type="file"
-                        accept="image/*"
-                        hidden
-                    >
 
                 </div>
 
-                <div class="row g-3 mt-2">
 
-                    <div class="col-md-8">
+                <div class="row g-3 mt-3">
+
+                    <div class="col-12 col-lg-6">
 
                         <label class="form-label">
-                            Company Name
+
+                            Organization Name
+                            <span class="text-danger">*</span>
+
                         </label>
 
                         <input
                             id="businessName"
                             class="form-control"
                             type="text"
-                            placeholder="Enter company name"
-                        >
+                            maxlength="150"
+                            placeholder="Enter organization name">
+
+                        <div class="form-text">
+                            The name displayed throughout TeamoTrack.
+                        </div>
 
                     </div>
 
-                </div>
 
-                <div class="mt-4">
+                    <div class="col-12 col-lg-6">
 
-                    <button
-                        id="saveCompanyBtn"
-                        class="btn btn-primary"
-                        onclick="saveCompany()"
-                    >
-                        Save Changes
-                    </button>
+                        <label class="form-label">
+                            Legal / Registered Name
+                        </label>
+
+                        <input
+                            id="legalName"
+                            class="form-control"
+                            type="text"
+                            maxlength="200"
+                            placeholder="Enter legal or registered name">
+
+                        <div class="form-text">
+                            Optional. Useful for official documents and payslips.
+                        </div>
+
+                    </div>
 
                 </div>
 
@@ -74,5 +146,228 @@
 
         </div>
 
+
+        <!-- CONTACT -->
+
+        <div class="settings-card mt-3">
+
+            <div class="settings-card-header">
+
+                <div>
+
+                    <h5>
+                        Contact Information
+                    </h5>
+
+                    <p>
+                        Contact details used for organization communication.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div class="settings-card-body">
+
+                <div class="row g-3">
+
+                    <div class="col-12 col-md-6">
+
+                        <label class="form-label">
+                            Organization Email
+                        </label>
+
+                        <input
+                            id="organizationEmail"
+                            class="form-control"
+                            type="email"
+                            maxlength="150"
+                            placeholder="hello@example.com">
+
+                    </div>
+
+
+                    <div class="col-12 col-md-6">
+
+                        <label class="form-label">
+                            Phone Number
+                        </label>
+
+                        <input
+                            id="organizationPhone"
+                            class="form-control"
+                            type="tel"
+                            maxlength="20"
+                            placeholder="+91 XXXXX XXXXX">
+
+                    </div>
+
+
+                    <div class="col-12">
+
+                        <label class="form-label">
+                            Website
+                        </label>
+
+                        <input
+                            id="organizationWebsite"
+                            class="form-control"
+                            type="url"
+                            maxlength="250"
+                            placeholder="https://example.com">
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- ADDRESS -->
+
+        <div class="settings-card mt-3">
+
+            <div class="settings-card-header">
+
+                <div>
+
+                    <h5>
+                        Organization Address
+                    </h5>
+
+                    <p>
+                        Add the address that should appear on official documents.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div class="settings-card-body">
+
+                <div class="row g-3">
+
+                    <div class="col-12">
+
+                        <label class="form-label">
+                            Address
+                        </label>
+
+                        <textarea
+                            id="organizationAddress"
+                            class="form-control"
+                            rows="3"
+                            maxlength="500"
+                            placeholder="Building, street, locality"></textarea>
+
+                    </div>
+
+
+                    <div class="col-12 col-md-6">
+
+                        <label class="form-label">
+                            City
+                        </label>
+
+                        <input
+                            id="organizationCity"
+                            class="form-control"
+                            type="text"
+                            maxlength="100"
+                            placeholder="City">
+
+                    </div>
+
+
+                    <div class="col-12 col-md-6">
+
+                        <label class="form-label">
+                            State
+                        </label>
+
+                        <input
+                            id="organizationState"
+                            class="form-control"
+                            type="text"
+                            maxlength="100"
+                            placeholder="State">
+
+                    </div>
+
+
+                    <div class="col-12 col-md-6">
+
+                        <label class="form-label">
+                            Country
+                        </label>
+
+                        <input
+                            id="organizationCountry"
+                            class="form-control"
+                            type="text"
+                            maxlength="100"
+                            value="India"
+                            placeholder="Country">
+
+                    </div>
+
+
+                    <div class="col-12 col-md-6">
+
+                        <label class="form-label">
+                            Postal Code
+                        </label>
+
+                        <input
+                            id="organizationPostalCode"
+                            class="form-control"
+                            type="text"
+                            maxlength="20"
+                            placeholder="Postal code">
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- SAVE -->
+
+        <div class="settings-save-bar">
+
+            <div>
+
+                <div class="fw-semibold">
+                    Organization information
+                </div>
+
+                <div class="small text-muted">
+                    Changes will be used across TeamoTrack.
+                </div>
+
+            </div>
+
+
+            <button
+                id="saveCompanyBtn"
+                class="btn btn-primary"
+                onclick="saveCompany()">
+
+                <i class="bi bi-check2-circle me-1"></i>
+
+                Save Changes
+
+            </button>
+
+        </div>
+
     </div>
+
 </section>

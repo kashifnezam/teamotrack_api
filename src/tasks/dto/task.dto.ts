@@ -1,7 +1,6 @@
 import {
     IsBoolean,
     IsIn,
-    IsNumber,
     IsOptional,
     IsString,
 } from 'class-validator';
@@ -11,21 +10,31 @@ export class TaskDto {
     @IsString()
     title!: string;
 
+
     @IsString()
     description!: string;
 
-    @IsIn(['Low', 'Medium', 'High'])
+
+    @IsIn([
+        'Low',
+        'Medium',
+        'High',
+    ])
     priority!: string;
+
 
     @IsString()
     startDate!: string;
 
+
     @IsString()
     endDate!: string;
+
 
     @IsBoolean()
     @IsOptional()
     isGeofence?: boolean;
+
 
     @IsOptional()
     startLocation?: {
@@ -34,6 +43,7 @@ export class TaskDto {
         lng?: number;
     };
 
+
     @IsOptional()
     endLocation?: {
         address?: string;
@@ -41,7 +51,9 @@ export class TaskDto {
         lng?: number;
     };
 
+
     @IsOptional()
     @IsString()
     assignedTo?: string;
+
 }

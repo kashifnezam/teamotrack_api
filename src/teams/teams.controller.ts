@@ -24,10 +24,14 @@ export class TeamsController {
         private readonly service: TeamsService,
     ) {}
 
+    // ==================================================
+    // SPA SHELL
+    // ==================================================
 
-    // SPA shell
     @Get()
-    page(@Res() res: Response) {
+    page(
+        @Res() res: Response,
+    ) {
 
         return res.sendFile(
             'shell.html',
@@ -35,10 +39,13 @@ export class TeamsController {
                 root: './public/dashboard',
             },
         );
+
     }
 
+    // ==================================================
+    // GET
+    // ==================================================
 
-    // API
     @Get('data')
     @UseGuards(FirebaseAuthGuard)
     get(
@@ -48,8 +55,12 @@ export class TeamsController {
         return this.service.getAll(
             user.uid,
         );
+
     }
 
+    // ==================================================
+    // CREATE
+    // ==================================================
 
     @Post()
     @UseGuards(FirebaseAuthGuard)
@@ -62,8 +73,12 @@ export class TeamsController {
             user.uid,
             dto,
         );
+
     }
 
+    // ==================================================
+    // UPDATE
+    // ==================================================
 
     @Patch(':id')
     @UseGuards(FirebaseAuthGuard)
@@ -78,8 +93,12 @@ export class TeamsController {
             id,
             dto,
         );
+
     }
 
+    // ==================================================
+    // DELETE
+    // ==================================================
 
     @Delete(':id')
     @UseGuards(FirebaseAuthGuard)
@@ -92,5 +111,7 @@ export class TeamsController {
             user.uid,
             id,
         );
+
     }
+
 }
