@@ -5,9 +5,6 @@
    Centralized SweetAlert2 Application Alerts
    ========================================================== */
 
-console.log("Loading alert.js");
-
-
 const AppAlert = {
 
     /* ======================================================

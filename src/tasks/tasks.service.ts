@@ -616,59 +616,20 @@ export class TasksService {
             await this.db
                 .collection('tasks')
                 .add({
-
-                    title:
-                        dto.title.trim(),
-
-                    description:
-                        dto.description.trim(),
-
-                    /*
-                     * Organization hierarchy.
-                     */
+                    title: dto.title.trim(),
+                    description: dto.description.trim(),
                     rootId,
-
-                    /*
-                     * Task owner / creator.
-                     */
-                    createdBy:
-                        userId,
-
-                    /*
-                     * Optional executive.
-                     */
+                    createdBy: userId,
                     assignedTo,
-
-                    status:
-                        assignedTo
-                            ? 'assigned'
-                            : 'pending',
-
-                    priority:
-                        dto.priority,
-
+                    status: 'pending',
+                    priority: dto.priority,
                     startDate,
-
                     endDate,
-
-                    isGeofence:
-                        dto.isGeofence ===
-                        true,
-
-                    startLocation:
-                        dto.startLocation ||
-                        null,
-
-                    endLocation:
-                        dto.endLocation ||
-                        null,
-
-                    createdAt:
-                        now,
-
-                    updatedAt:
-                        now,
-
+                    isGeofence: dto.isGeofence === true,
+                    startLocation: dto.startLocation || null,
+                    endLocation: dto.endLocation || null,
+                    createdAt: now,
+                    updatedAt: now,
                 });
 
 
@@ -760,9 +721,7 @@ export class TasksService {
         }
 
 
-        const status =
-            task.status ||
-            'pending';
+        const status = task.status || 'pending';
 
 
         if (
@@ -993,32 +952,11 @@ export class TasksService {
             }
 
 
-            data.assignedTo =
-                dto.assignedTo ||
-                null;
+            data.assignedTo = dto.assignedTo || null;
 
 
-            if (
-                status ===
-                'pending' &&
-                dto.assignedTo
-            ) {
-
-                data.status =
-                    'assigned';
-
-            }
-
-
-            if (
-                !dto.assignedTo &&
-                status ===
-                'assigned'
-            ) {
-
-                data.status =
-                    'pending';
-
+            if (status === 'assigned') {
+                data.status ='pending';
             }
 
         }
@@ -1028,24 +966,14 @@ export class TasksService {
         // GEOFENCE
         // --------------------------------------------------
 
-        if (
-            dto.isGeofence !==
-            undefined
-        ) {
-
-            data.isGeofence =
-                dto.isGeofence;
-
+        if (dto.isGeofence !== undefined) {
+            data.isGeofence = dto.isGeofence;
         }
 
 
-        if (
-            dto.startLocation !==
-            undefined
-        ) {
+        if (dto.startLocation !== undefined) {
 
-            data.startLocation =
-                dto.startLocation;
+            data.startLocation = dto.startLocation;
 
         }
 

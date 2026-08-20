@@ -361,7 +361,6 @@
             return;
         }
 
-        console.log(list);
         tbody.innerHTML =
             list.map(task => {
 
@@ -985,44 +984,12 @@
         /*
          * Now populate task values.
          */
-        document.getElementById(
-            "taskId"
-        ).value = id;
-
-
-        document.getElementById(
-            "taskTitle"
-        ).value =
-            task.title || "";
-
-
-        document.getElementById(
-            "description"
-        ).value =
-            task.description || "";
-
-
-        document.getElementById(
-            "priority"
-        ).value =
-            task.priority || "Medium";
-
-
-        document.getElementById(
-            "startDate"
-        ).value =
-            toDateTimeLocal(
-                task.startDate
-            );
-
-
-        document.getElementById(
-            "endDate"
-        ).value =
-            toDateTimeLocal(
-                task.endDate
-            );
-
+        document.getElementById("taskId").value = id;
+        document.getElementById("taskTitle").value = task.title || "";
+        document.getElementById("description").value = task.description || "";
+        document.getElementById("priority").value = task.priority || "Medium";
+        document.getElementById("startDate").value = toDateTimeLocal(task.startDate);
+        document.getElementById("endDate").value =toDateTimeLocal(task.endDate);
 
         /*
          * IMPORTANT:
@@ -1032,40 +999,14 @@
          *
          * Now select the existing executive.
          */
-        const assignedSelect =
-            document.getElementById(
-                "assignedTo"
-            );
-
+        const assignedSelect = document.getElementById("assignedTo");
         if (assignedSelect) {
-
-            assignedSelect.value =
-                task.assignedTo || "";
-
+            assignedSelect.value = task.assignedTo || "";
         }
-
-
-        document.getElementById(
-            "isGeofence"
-        ).checked =
-            task.isGeofence === true;
-
-
+        document.getElementById("isGeofence").checked = task.isGeofence === true;
         clearLocations();
-
-
-        setLocation(
-            "start",
-            task.startLocation
-        );
-
-
-        setLocation(
-            "end",
-            task.endLocation
-        );
-
-
+        setLocation("start",task.startLocation);
+        setLocation("end",task.endLocation);
         toggleLocation();
 
     }
@@ -1178,9 +1119,7 @@
                     endDate
                 ).toISOString(),
 
-            assignedTo:
-                assignedTo ||
-                undefined,
+            assignedTo: assignedTo,
 
             isGeofence,
 
@@ -1196,12 +1135,9 @@
         };
 
 
-        const button =
-            document.getElementById(
-                "saveTaskBtn"
-            );
+        const button = document.getElementById("saveTaskBtn");
 
-
+        console.log(body)
         try {
 
             button.disabled = true;
