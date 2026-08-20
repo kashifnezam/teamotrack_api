@@ -1137,7 +1137,6 @@
 
         const button = document.getElementById("saveTaskBtn");
 
-        console.log(body)
         try {
 
             button.disabled = true;
