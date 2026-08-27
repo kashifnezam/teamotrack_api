@@ -30,4 +30,8 @@ export class StaffDto {
     @IsString()
     @IsOptional()
     parentId?: string;
+
+    @IsOptional()
+    @IsString()
+    shiftId?: string;
 }

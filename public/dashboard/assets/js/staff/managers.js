@@ -3,215 +3,196 @@
 ========================================================== */
 
 (function () {
+  'use strict';
 
-    "use strict";
+  let managers = [];
+  let parentManagers = [];
+  let editingId = null;
+  let permissionId = null;
+  let shifts = [];
+  let shiftsLoaded = false;
+  // Parent API is loaded only once when modal needs it
+  let parentManagersLoaded = false;
 
-    let managers = [];
-    let parentManagers = [];
-    let editingId = null;
-    let permissionId = null;
-
-    // Parent API is loaded only once when modal needs it
-    let parentManagersLoaded = false;
-
-
-    /* ======================================================
+  /* ======================================================
        INIT
     ====================================================== */
 
-    window.initializeManagersPage = async function () {
+  window.initializeManagersPage = async function () {
+    await Promise.all([loadManagers(), loadShifts()]);
 
-        await loadManagers();
+    document.getElementById('staffSearch')?.addEventListener('input', renderManagers);
+  };
 
-        document
-            .getElementById("staffSearch")
-            ?.addEventListener(
-                "input",
-                renderManagers
-            );
-
-    };
-
-
-    /* ======================================================
+  /* ======================================================
        LOAD MANAGERS
     ====================================================== */
 
-    async function loadManagers() {
-
-        try {
-
-            const data =
-                await Api.get("/managers/data");
-
-            if (!data) return;
-
-            managers =
-                data.users || [];
-
-            renderManagers();
-
-        } catch (error) {
-
-            console.error(
-                "Unable to load managers:",
-                error
-            );
-
-            AppAlert.error(
-                error.message ||
-                "Unable to load managers"
-            );
-
-        }
-
+  async function loadShifts() {
+    if (shiftsLoaded) {
+      return;
     }
 
+    try {
+      const data = await Api.get('/shifts/data');
 
-    /* ======================================================
+      if (!data) {
+        return;
+      }
+
+      shifts = data.shifts || data.data || [];
+
+      shiftsLoaded = true;
+    } catch (error) {
+      console.error('Unable to load shifts:', error);
+
+      AppAlert.error(error.message || 'Unable to load shifts');
+    }
+  }
+
+  function renderShiftOptions(selectedId = '') {
+    const select = document.getElementById('staffShiftId');
+
+    if (!select) {
+      return;
+    }
+
+    select.innerHTML = `
+        <option value="">
+            Select shift
+        </option>
+    `;
+
+    shifts.forEach((shift) => {
+      const option = document.createElement('option');
+
+      option.value = shift.id;
+
+      const start = formatShiftTime(shift.startHour, shift.startMinute);
+
+      const end = formatShiftTime(shift.endHour, shift.endMinute);
+
+      option.textContent = `${shift.name || 'Shift'} (${start} - ${end})`;
+
+      option.selected = shift.id === selectedId;
+
+      select.appendChild(option);
+    });
+
+    if (selectedId) {
+      select.value = selectedId;
+    }
+  }
+
+  function formatShiftTime(hour, minute) {
+    if (hour === undefined || hour === null) {
+      return '--';
+    }
+
+    const h = Number(hour);
+
+    const m = Number(minute || 0);
+
+    const suffix = h >= 12 ? 'PM' : 'AM';
+
+    const displayHour = h % 12 || 12;
+
+    return `${displayHour}:${String(m).padStart(2, '0')} ${suffix}`;
+  }
+
+  async function loadManagers() {
+    try {
+      const data = await Api.get('/managers/data');
+
+      if (!data) return;
+
+      managers = data.users || [];
+
+      renderManagers();
+    } catch (error) {
+      console.error('Unable to load managers:', error);
+
+      AppAlert.error(error.message || 'Unable to load managers');
+    }
+  }
+
+  /* ======================================================
        PARENT OPTIONS
        Loaded only when Add Manager is opened
     ====================================================== */
 
-    function renderParentOptions(
-        selectedId = ""
-    ) {
+  function renderParentOptions(selectedId = '') {
+    const select = document.getElementById('staffParentId');
 
-        const select =
-            document.getElementById(
-                "staffParentId"
-            );
+    if (!select) return;
 
-        if (!select) return;
-
-        select.innerHTML = `
+    select.innerHTML = `
             <option value="">
                 Select parent
             </option>
         `;
 
+    parentManagers.forEach((manager) => {
+      const option = document.createElement('option');
 
-        parentManagers.forEach(
-            manager => {
+      option.value = manager.id;
 
-                const option =
-                    document.createElement(
-                        "option"
-                    );
+      option.textContent = `${manager.fullName || 'Unnamed'} (${manager.role || 'Manager'})`;
 
-                option.value =
-                    manager.id;
+      option.selected = manager.id === selectedId;
 
-                option.textContent =
-                    `${manager.fullName || "Unnamed"} (${manager.role || "Manager"})`;
+      select.appendChild(option);
+    });
 
-                option.selected =
-                    manager.id === selectedId;
+    if (selectedId) {
+      select.value = selectedId;
+    }
+  }
 
-                select.appendChild(
-                    option
-                );
-
-            }
-        );
-
-
-        if (selectedId) {
-            select.value =
-                selectedId;
-        }
-
+  async function loadParentManagers() {
+    if (parentManagersLoaded) {
+      return;
     }
 
+    try {
+      const data = await Api.get('/managers/parents');
 
-    async function loadParentManagers() {
+      if (!data) return;
 
-        if (parentManagersLoaded) {
-            return;
-        }
+      parentManagers = data.users || [];
 
+      parentManagersLoaded = true;
+    } catch (error) {
+      console.error('Unable to load parent managers:', error);
 
-        try {
-
-            const data =
-                await Api.get(
-                    "/managers/parents"
-                );
-
-            if (!data) return;
-
-            parentManagers =
-                data.users || [];
-
-            parentManagersLoaded =
-                true;
-
-        } catch (error) {
-
-            console.error(
-                "Unable to load parent managers:",
-                error
-            );
-
-            AppAlert.error(
-                error.message ||
-                "Unable to load parent managers"
-            );
-
-        }
-
+      AppAlert.error(error.message || 'Unable to load parent managers');
     }
+  }
 
-
-    /* ======================================================
+  /* ======================================================
        RENDER
     ====================================================== */
 
-    function renderManagers() {
+  function renderManagers() {
+    const tbody = document.getElementById('staffTable');
 
-        const tbody =
-            document.getElementById(
-                "staffTable"
-            );
+    const search = document.getElementById('staffSearch')?.value.trim().toLowerCase() || '';
 
-        const search =
-            document.getElementById(
-                "staffSearch"
-            )?.value
-                .trim()
-                .toLowerCase() || "";
+    if (!tbody) return;
 
+    const list = managers.filter(
+      (manager) =>
+        !search || manager.fullName?.toLowerCase().includes(search) || manager.email?.toLowerCase().includes(search)
+    );
 
-        if (!tbody) return;
+    const count = document.getElementById('staffCount');
 
+    if (count) {
+      count.textContent = list.length;
+    }
 
-        const list =
-            managers.filter(
-                manager =>
-                    !search ||
-                    manager.fullName
-                        ?.toLowerCase()
-                        .includes(search) ||
-                    manager.email
-                        ?.toLowerCase()
-                        .includes(search)
-            );
-
-
-        const count =
-            document.getElementById(
-                "staffCount"
-            );
-
-        if (count) {
-            count.textContent =
-                list.length;
-        }
-
-
-        if (!list.length) {
-
-            tbody.innerHTML = `
+    if (!list.length) {
+      tbody.innerHTML = `
                 <tr>
                     <td
                         colspan="5"
@@ -222,23 +203,16 @@
                 </tr>
             `;
 
-            return;
-        }
+      return;
+    }
 
+    tbody.innerHTML = list
+      .map((manager) => {
+        const name = manager.fullName || 'Unnamed';
 
-        tbody.innerHTML =
-            list.map(
-                manager => {
+        const initials = getInitials(name);
 
-                    const name =
-                        manager.fullName ||
-                        "Unnamed";
-
-                    const initials =
-                        getInitials(name);
-
-
-                    return `
+        return `
                         <tr>
 
                             <!-- USER -->
@@ -248,24 +222,17 @@
                                 <div class="staff-user">
 
                                     <div class="staff-avatar">
-                                        ${escapeHtml(
-                        initials
-                    )}
+                                        ${escapeHtml(initials)}
                                     </div>
 
                                     <div>
 
                                         <div class="staff-name">
-                                            ${escapeHtml(
-                        name
-                    )}
+                                            ${escapeHtml(name)}
                                         </div>
 
                                         <div class="staff-email">
-                                            ${escapeHtml(
-                        manager.email ||
-                        ""
-                    )}
+                                            ${escapeHtml(manager.email || '')}
                                         </div>
 
                                     </div>
@@ -281,23 +248,30 @@
 
                                 <div class="staff-name">
 
-                                    ${escapeHtml(
-                        manager.parentName ||
-                        "Root"
-                    )}
+                                    ${escapeHtml(manager.parentName || 'Root')}
 
                                 </div>
+                                
 
-                                ${manager.parentRole
-                            ? `
+                                ${
+                                  manager.parentRole
+                                    ? `
                                             <div class="staff-email">
-                                                ${escapeHtml(
-                                manager.parentRole
-                            )}
+                                                ${escapeHtml(manager.parentRole)}
                                             </div>
                                         `
-                            : ""
-                        }
+                                    : ''
+                                }
+
+                            </td>
+
+                            <!-- SHIFT -->
+
+                            <td>
+
+                                <div class="staff-name">
+                                    ${escapeHtml(getShiftName(manager.shiftId))}
+                                </div>
 
                             </td>
 
@@ -305,10 +279,7 @@
                             <!-- MOBILE -->
 
                             <td>
-                                ${escapeHtml(
-                            manager.mobile ||
-                            "--"
-                        )}
+                                ${escapeHtml(manager.mobile || '--')}
                             </td>
 
 
@@ -317,23 +288,14 @@
                             <td>
 
                                 <span
-                                    class="staff-status ${manager.isActive
-                            ? "active"
-                            : "inactive"
-                        }"
+                                    class="staff-status ${manager.isActive ? 'active' : 'inactive'}"
                                 >
 
                                     <i
-                                        class="bi ${manager.isActive
-                            ? "bi-check-circle"
-                            : "bi-pause-circle"
-                        }"
+                                        class="bi ${manager.isActive ? 'bi-check-circle' : 'bi-pause-circle'}"
                                     ></i>
 
-                                    ${manager.isActive
-                            ? "Active"
-                            : "Inactive"
-                        }
+                                    ${manager.isActive ? 'Active' : 'Inactive'}
 
                                 </span>
 
@@ -369,560 +331,281 @@
 
                         </tr>
                     `;
+      })
+      .join('');
+  }
 
-                }
-            ).join("");
-
-    }
-
-
-    /* ======================================================
+  /* ======================================================
        MODAL
     ====================================================== */
 
-    async function openStaffModal(
-        id = null
-    ) {
+  async function openStaffModal(id = null) {
+    editingId = id;
 
-        editingId = id;
+    const manager = managers.find((item) => item.id === id);
+    await loadShifts();
+    const parentSelect = document.getElementById('staffParentId');
 
+    /*
+     * ADD
+     *
+     * Load parent hierarchy only
+     * on first Add click.
+     */
+    if (!id) {
+      await loadParentManagers();
 
-        const manager =
-            managers.find(
-                item =>
-                    item.id === id
-            );
+      renderParentOptions();
 
+      if (parentSelect) {
+        parentSelect.disabled = false;
+      }
+    }
 
-        const parentSelect =
-            document.getElementById(
-                "staffParentId"
-            );
-
-
-        /*
-         * ADD
-         *
-         * Load parent hierarchy only
-         * on first Add click.
-         */
-        if (!id) {
-
-            await loadParentManagers();
-
-            renderParentOptions();
-
-            if (parentSelect) {
-                parentSelect.disabled = false;
-            }
-
-        }
-
-
-        /*
-         * EDIT
-         *
-         * No parent API required.
-         *
-         * Backend already gives us:
-         * parentId
-         * parentName
-         */
-        else {
-
-            if (parentSelect) {
-
-                parentSelect.innerHTML = `
-                    <option value="${escapeHtml(
-                    manager?.parentId || ""
-                )}">
-                        ${escapeHtml(
-                    manager?.parentName ||
-                    "Root"
-                )}
+    /*
+     * EDIT
+     *
+     * No parent API required.
+     *
+     * Backend already gives us:
+     * parentId
+     * parentName
+     */
+    else {
+      if (parentSelect) {
+        parentSelect.innerHTML = `
+                    <option value="${escapeHtml(manager?.parentId || '')}">
+                        ${escapeHtml(manager?.parentName || 'Root')}
                     </option>
                 `;
 
-                parentSelect.value =
-                    manager?.parentId || "";
+        parentSelect.value = manager?.parentId || '';
 
-                parentSelect.disabled = true;
-
-            }
-
-        }
-
-
-        document.getElementById(
-            "staffModalTitle"
-        ).textContent =
-            id
-                ? "Edit Manager"
-                : "Add Manager";
-
-
-        document.getElementById(
-            "saveStaffBtn"
-        ).textContent =
-            id
-                ? "Update Manager"
-                : "Save Manager";
-
-
-        document.getElementById(
-            "staffName"
-        ).value =
-            manager?.fullName || "";
-
-
-        document.getElementById(
-            "staffEmail"
-        ).value =
-            manager?.email || "";
-
-
-        document.getElementById(
-            "staffMobile"
-        ).value =
-            manager?.mobile || "";
-
-
-        document.getElementById(
-            "staffPassword"
-        ).value =
-            "";
-
-
-        document.getElementById(
-            "staffActive"
-        ).checked =
-            manager?.isActive !== false;
-
-
-        document.getElementById(
-            "staffEmail"
-        ).disabled =
-            !!id;
-
-
-        document.getElementById(
-            "passwordHint"
-        ).textContent =
-            id
-                ? "Leave blank to keep current password."
-                : "Required when creating.";
-
-
-        bootstrap.Modal
-            .getOrCreateInstance(
-                document.getElementById(
-                    "staffModal"
-                )
-            )
-            .show();
-
+        parentSelect.disabled = true;
+      }
     }
+    renderShiftOptions(manager?.shiftId || '');
 
+    document.getElementById('staffModalTitle').textContent = id ? 'Edit Manager' : 'Add Manager';
 
-    /* ======================================================
+    document.getElementById('saveStaffBtn').textContent = id ? 'Update Manager' : 'Save Manager';
+
+    document.getElementById('staffName').value = manager?.fullName || '';
+
+    document.getElementById('staffEmail').value = manager?.email || '';
+
+    document.getElementById('staffMobile').value = manager?.mobile || '';
+
+    document.getElementById('staffPassword').value = '';
+
+    document.getElementById('staffActive').checked = manager?.isActive !== false;
+
+    document.getElementById('staffEmail').disabled = !!id;
+
+    document.getElementById('passwordHint').textContent = id
+      ? 'Leave blank to keep current password.'
+      : 'Required when creating.';
+
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('staffModal')).show();
+  }
+
+  /* ======================================================
        EDIT
     ====================================================== */
 
-    function editStaff(id) {
-
-        if (
-            !managers.some(
-                manager =>
-                    manager.id === id
-            )
-        ) {
-            return;
-        }
-
-        openStaffModal(id);
-
+  function editStaff(id) {
+    if (!managers.some((manager) => manager.id === id)) {
+      return;
     }
 
+    openStaffModal(id);
+  }
 
-    /* ======================================================
+  /* ======================================================
        SAVE
     ====================================================== */
 
-    async function saveStaff() {
+  async function saveStaff() {
+    const name = document.getElementById('staffName').value.trim();
 
-        const name =
-            document.getElementById(
-                "staffName"
-            ).value.trim();
+    const parentSelect = document.getElementById('staffParentId');
 
+    const parentId = parentSelect?.value?.trim() || '';
 
-        const parentSelect =
-            document.getElementById(
-                "staffParentId"
-            );
+    if (!editingId && !parentId) {
+      AppAlert.warning('Please select a parent manager');
 
-
-        const parentId =
-            parentSelect?.value?.trim() || "";
-
-
-        if (
-            !editingId &&
-            !parentId
-        ) {
-
-            AppAlert.warning(
-                "Please select a parent manager"
-            );
-
-            return;
-        }
-
-
-        const email =
-            document.getElementById(
-                "staffEmail"
-            ).value.trim();
-
-
-        const mobile =
-            document.getElementById(
-                "staffMobile"
-            ).value.trim();
-
-
-        const password =
-            document.getElementById(
-                "staffPassword"
-            ).value;
-
-
-        const isActive =
-            document.getElementById(
-                "staffActive"
-            ).checked;
-
-
-        const button =
-            document.getElementById(
-                "saveStaffBtn"
-            );
-
-
-        if (!name) {
-
-            AppAlert.warning(
-                "Full name is required"
-            );
-
-            return;
-        }
-
-
-        if (!email) {
-
-            AppAlert.warning(
-                "Email is required"
-            );
-
-            return;
-        }
-
-
-        if (
-            !editingId &&
-            !password
-        ) {
-
-            AppAlert.warning(
-                "Password is required"
-            );
-
-            return;
-        }
-
-
-        try {
-
-            button.disabled =
-                true;
-
-
-            AppAlert.loading(
-                editingId
-                    ? "Updating manager..."
-                    : "Creating manager..."
-            );
-
-
-            const body = {
-
-                fullName:
-                    name,
-
-                email,
-
-                mobile,
-
-                isActive,
-
-                parentId,
-
-            };
-
-
-            if (password) {
-
-                body.password =
-                    password;
-
-            }
-
-
-            const data =
-                editingId
-
-                    ? await Api.patch(
-                        `/managers/${editingId}`,
-                        body
-                    )
-
-                    : await Api.post(
-                        "/managers",
-                        body
-                    );
-
-
-            if (!data) {
-                return;
-            }
-
-
-            AppAlert.close();
-
-
-            AppAlert.success(
-                editingId
-                    ? "Manager updated successfully"
-                    : "Manager created successfully"
-            );
-
-
-            bootstrap.Modal
-                .getInstance(
-                    document.getElementById(
-                        "staffModal"
-                    )
-                )
-                ?.hide();
-
-
-            await loadManagers();
-
-
-        } catch (error) {
-
-            console.error(
-                "Unable to save manager:",
-                error
-            );
-
-
-            AppAlert.close();
-
-
-            AppAlert.error(
-                error.message ||
-                "Unable to save manager"
-            );
-
-
-        } finally {
-
-            button.disabled =
-                false;
-
-        }
-
+      return;
     }
 
+    const shiftId = document.getElementById('staffShiftId')?.value?.trim() || '';
 
-    /* ======================================================
+    if (!shiftId) {
+      AppAlert.warning('Please select a shift');
+
+      return;
+    }
+
+    const email = document.getElementById('staffEmail').value.trim();
+
+    const mobile = document.getElementById('staffMobile').value.trim();
+
+    const password = document.getElementById('staffPassword').value;
+
+    const isActive = document.getElementById('staffActive').checked;
+
+    const button = document.getElementById('saveStaffBtn');
+
+    if (!name) {
+      AppAlert.warning('Full name is required');
+
+      return;
+    }
+
+    if (!email) {
+      AppAlert.warning('Email is required');
+
+      return;
+    }
+
+    if (!editingId && !password) {
+      AppAlert.warning('Password is required');
+
+      return;
+    }
+
+    try {
+      button.disabled = true;
+
+      AppAlert.loading(editingId ? 'Updating manager...' : 'Creating manager...');
+
+      const body = {
+        fullName: name,
+
+        email,
+
+        mobile,
+
+        isActive,
+
+        parentId,
+
+        shiftId,
+      };
+
+      if (password) {
+        body.password = password;
+      }
+
+      const data = editingId ? await Api.patch(`/managers/${editingId}`, body) : await Api.post('/managers', body);
+
+      if (!data) {
+        return;
+      }
+
+      AppAlert.close();
+
+      AppAlert.success(editingId ? 'Manager updated successfully' : 'Manager created successfully');
+
+      bootstrap.Modal.getInstance(document.getElementById('staffModal'))?.hide();
+
+      await loadManagers();
+    } catch (error) {
+      console.error('Unable to save manager:', error);
+
+      AppAlert.close();
+
+      AppAlert.error(error.message || 'Unable to save manager');
+    } finally {
+      button.disabled = false;
+    }
+  }
+
+  /* ======================================================
        DELETE
     ====================================================== */
 
-    async function deleteStaff(id) {
+  async function deleteStaff(id) {
+    const manager = managers.find((item) => item.id === id);
 
-        const manager =
-            managers.find(
-                item =>
-                    item.id === id
-            );
+    if (!manager) return;
 
+    const confirmed = await AppAlert.confirm(`Delete "${manager.fullName}"?`);
 
-        if (!manager) return;
-
-
-        const confirmed =
-            await AppAlert.confirm(
-                `Delete "${manager.fullName}"?`
-            );
-
-
-        if (
-            !confirmed.isConfirmed
-        ) {
-            return;
-        }
-
-
-        try {
-
-            AppAlert.loading(
-                "Deleting manager..."
-            );
-
-
-            const data =
-                await Api.delete(
-                    `/managers/${id}`
-                );
-
-
-            if (!data) return;
-
-
-            AppAlert.close();
-
-
-            AppAlert.success(
-                "Manager deleted successfully"
-            );
-
-
-            await loadManagers();
-
-
-        } catch (error) {
-
-            AppAlert.close();
-
-
-            AppAlert.error(
-                error.message ||
-                "Unable to delete manager"
-            );
-
-        }
-
+    if (!confirmed.isConfirmed) {
+      return;
     }
 
+    try {
+      AppAlert.loading('Deleting manager...');
 
-    /* ======================================================
+      const data = await Api.delete(`/managers/${id}`);
+
+      if (!data) return;
+
+      AppAlert.close();
+
+      AppAlert.success('Manager deleted successfully');
+
+      await loadManagers();
+    } catch (error) {
+      AppAlert.close();
+
+      AppAlert.error(error.message || 'Unable to delete manager');
+    }
+  }
+
+  /* ======================================================
        PERMISSIONS
     ====================================================== */
 
-    async function openPermissions(id) {
+  async function openPermissions(id) {
+    permissionId = id;
 
-        permissionId =
-            id;
+    try {
+      AppAlert.loading('Loading permissions...');
 
+      const data = await Api.get(`/managers/${id}/permissions`);
 
-        try {
+      if (!data) return;
 
-            AppAlert.loading(
-                "Loading permissions..."
-            );
+      AppAlert.close();
 
+      renderPermissions(data.permissions || {});
 
-            const data =
-                await Api.get(
-                    `/managers/${id}/permissions`
-                );
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('permissionModal')).show();
+    } catch (error) {
+      AppAlert.close();
 
+      AppAlert.error(error.message || 'Unable to load permissions');
+    }
+  }
 
-            if (!data) return;
+  function renderPermissions(permissions) {
+    const container = document.getElementById('permissionList');
 
+    if (!container) return;
 
-            AppAlert.close();
+    const groups = {
+      manager: 'Managers',
+      hr: 'HR',
+      field_executive: 'Executives',
+      team: 'Teams',
+      leave: 'Leave Approval',
+      attendance: 'Attendance',
+      task: 'Tasks',
+      tracking: 'Live Tracking',
+    };
 
+    container.innerHTML = Object.entries(groups)
+      .map(([group, title]) => {
+        const keys = Object.keys(permissions).filter((key) => key.startsWith(`${group}.`));
 
-            renderPermissions(
-                data.permissions || {}
-            );
-
-
-            bootstrap.Modal
-                .getOrCreateInstance(
-                    document.getElementById(
-                        "permissionModal"
-                    )
-                )
-                .show();
-
-
-        } catch (error) {
-
-            AppAlert.close();
-
-
-            AppAlert.error(
-                error.message ||
-                "Unable to load permissions"
-            );
-
+        if (!keys.length) {
+          return '';
         }
 
-    }
-
-
-    function renderPermissions(
-        permissions
-    ) {
-
-        const container =
-            document.getElementById(
-                "permissionList"
-            );
-
-
-        if (!container) return;
-
-
-        const groups = {
-            manager: "Managers",
-            hr: "HR",
-            field_executive: "Executives",
-            team: "Teams",
-            leave: "Leave Approval",
-            attendance: "Attendance",
-            task: "Tasks",
-            tracking: "Live Tracking",
-        };
-
-
-        container.innerHTML =
-            Object.entries(groups)
-                .map(
-                    ([group, title]) => {
-
-                        const keys =
-                            Object.keys(
-                                permissions
-                            ).filter(
-                                key =>
-                                    key.startsWith(
-                                        `${group}.`
-                                    )
-                            );
-
-
-                        if (!keys.length) {
-                            return "";
-                        }
-
-
-                        return `
+        return `
                             <div class="permission-group">
 
                                 <div class="permission-group-title">
@@ -930,22 +613,14 @@
                                 </div>
 
                                 ${keys
-                                .map(key => {
-
-                                    const action =
-                                        key
-                                            .split(".")
-                                            .slice(1)
-                                            .join(" ");
-
+                                  .map((key) => {
+                                    const action = key.split('.').slice(1).join(' ');
 
                                     return `
                                             <div class="permission-item">
 
                                                 <span class="permission-label">
-                                                    ${formatPermission(
-                                        action
-                                    )}
+                                                    ${formatPermission(action)}
                                                 </span>
 
                                                 <div class="form-check form-switch">
@@ -953,207 +628,111 @@
                                                     <input
                                                         class="form-check-input permission-toggle"
                                                         type="checkbox"
-                                                        data-key="${escapeHtml(
-                                        key
-                                    )}"
-                                                        ${permissions[key]
-                                            ? "checked"
-                                            : ""
-                                        }
+                                                        data-key="${escapeHtml(key)}"
+                                                        ${permissions[key] ? 'checked' : ''}
                                                     >
 
                                                 </div>
 
                                             </div>
                                         `;
-
-                                })
-                                .join("")}
+                                  })
+                                  .join('')}
 
                             </div>
                         `;
+      })
+      .join('');
+  }
 
-                    }
-                )
-                .join("");
+  async function savePermissions() {
+    if (!permissionId) return;
 
+    const permissions = {};
+
+    document.querySelectorAll('.permission-toggle').forEach((input) => {
+      permissions[input.dataset.key] = input.checked;
+    });
+
+    const button = document.getElementById('savePermissionBtn');
+
+    try {
+      button.disabled = true;
+
+      AppAlert.loading('Saving permissions...');
+
+      const data = await Api.patch(`/managers/${permissionId}/permissions`, permissions);
+
+      if (!data) return;
+
+      AppAlert.close();
+
+      AppAlert.success('Permissions updated');
+
+      bootstrap.Modal.getInstance(document.getElementById('permissionModal'))?.hide();
+    } catch (error) {
+      AppAlert.close();
+
+      AppAlert.error(error.message || 'Unable to save permissions');
+    } finally {
+      button.disabled = false;
     }
+  }
 
-
-    async function savePermissions() {
-
-        if (!permissionId) return;
-
-
-        const permissions = {};
-
-
-        document
-            .querySelectorAll(
-                ".permission-toggle"
-            )
-            .forEach(
-                input => {
-
-                    permissions[
-                        input.dataset.key
-                    ] =
-                        input.checked;
-
-                }
-            );
-
-
-        const button =
-            document.getElementById(
-                "savePermissionBtn"
-            );
-
-
-        try {
-
-            button.disabled =
-                true;
-
-
-            AppAlert.loading(
-                "Saving permissions..."
-            );
-
-
-            const data =
-                await Api.patch(
-                    `/managers/${permissionId}/permissions`,
-                    permissions
-                );
-
-
-            if (!data) return;
-
-
-            AppAlert.close();
-
-
-            AppAlert.success(
-                "Permissions updated"
-            );
-
-
-            bootstrap.Modal
-                .getInstance(
-                    document.getElementById(
-                        "permissionModal"
-                    )
-                )
-                ?.hide();
-
-
-        } catch (error) {
-
-            AppAlert.close();
-
-
-            AppAlert.error(
-                error.message ||
-                "Unable to save permissions"
-            );
-
-
-        } finally {
-
-            button.disabled =
-                false;
-
-        }
-
-    }
-
-
-    /* ======================================================
+  /* ======================================================
        HELPERS
     ====================================================== */
 
-    function getInitials(name) {
+  function getInitials(name) {
+    return name
+      .split(' ')
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((word) => word.charAt(0))
+      .join('')
+      .toUpperCase();
+  }
 
-        return name
-            .split(" ")
-            .filter(Boolean)
-            .slice(0, 2)
-            .map(
-                word =>
-                    word.charAt(0)
-            )
-            .join("")
-            .toUpperCase();
+  function formatPermission(value) {
+    return value.replaceAll('_', ' ').replace(/\b\w/g, (char) => char.toUpperCase());
+  }
 
+  function getShiftName(shiftId) {
+    if (!shiftId) {
+      return '--';
     }
 
+    const shift = shifts.find((item) => item.id === shiftId);
 
-    function formatPermission(value) {
-
-        return value
-            .replaceAll(
-                "_",
-                " "
-            )
-            .replace(
-                /\b\w/g,
-                char =>
-                    char.toUpperCase()
-            );
-
+    if (!shift) {
+      return 'Unknown shift';
     }
 
+    return shift.name || 'Unnamed shift';
+  }
 
-    function escapeHtml(value) {
+  function escapeHtml(value) {
+    return String(value ?? '')
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#039;');
+  }
 
-        return String(
-            value ?? ""
-        )
-            .replaceAll(
-                "&",
-                "&amp;"
-            )
-            .replaceAll(
-                "<",
-                "&lt;"
-            )
-            .replaceAll(
-                ">",
-                "&gt;"
-            )
-            .replaceAll(
-                '"',
-                "&quot;"
-            )
-            .replaceAll(
-                "'",
-                "&#039;"
-            );
-
-    }
-
-
-    /* ======================================================
+  /* ======================================================
        GLOBAL
     ====================================================== */
 
-    window.openStaffModal =
-        openStaffModal;
+  window.openStaffModal = openStaffModal;
 
-    window.editStaff =
-        editStaff;
+  window.editStaff = editStaff;
 
-    window.saveStaff =
-        saveStaff;
+  window.saveStaff = saveStaff;
 
-    window.deleteStaff =
-        deleteStaff;
+  window.deleteStaff = deleteStaff;
 
-    window.openPermissions =
-        openPermissions;
+  window.openPermissions = openPermissions;
 
-    window.savePermissions =
-        savePermissions;
-
+  window.savePermissions = savePermissions;
 })();

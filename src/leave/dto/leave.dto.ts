@@ -23,11 +23,6 @@ export class LeaveDto {
     endDate!: string;
 
 
-    @IsNumber()
-    @Min(0.5)
-    days!: number;
-
-
     @IsOptional()
     @IsIn([
         'day',

@@ -25,6 +25,7 @@ import { PayrollPeriodModule } from './payroll-period/payroll-period.module';
 import { PayrollCalculationModule } from './payroll-calculation/payroll-calculation.module';
 import { PaymentModule } from './payment/payment.module';
 import { PayslipModule } from './payslip/payslip.module';
+import {ScheduleModule} from '@nestjs/schedule';
 
 @Module({
 
@@ -76,6 +77,8 @@ import { PayslipModule } from './payslip/payslip.module';
 
         TasksModule,
 
+        ScheduleModule.forRoot(),
+
         AttendanceModule,
 
         LiveTrackingModule,
@@ -107,4 +110,4 @@ import { PayslipModule } from './payslip/payslip.module';
     ],
 
 })
-export class AppModule {}
+export class AppModule { }

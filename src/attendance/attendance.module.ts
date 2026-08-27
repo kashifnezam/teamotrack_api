@@ -7,6 +7,7 @@ import { AttendanceService } from './attendance.service';
 import { LiveTrackingService } from '../live-tracking/live-tracking.service';
 
 import { FirebaseModule } from '../firebase/firebase.module';
+import { AttendanceScheduler } from './attendance.scheduler';
 
 @Module({
     imports: [
@@ -21,6 +22,7 @@ import { FirebaseModule } from '../firebase/firebase.module';
     providers: [
         AttendanceService,
         LiveTrackingService,
+        AttendanceScheduler,
     ],
 })
-export class AttendanceModule {}
+export class AttendanceModule { }

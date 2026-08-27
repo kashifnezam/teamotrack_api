@@ -323,10 +323,6 @@ export class LeaveService {
     }
 
 
-    // ==================================================
-    // CREATE
-    // ==================================================
-
     async create(
         userId: string,
         dto: LeaveDto,
@@ -349,8 +345,30 @@ export class LeaveService {
             );
 
 
+        /*
+         * Backend is authoritative
+         * for leave duration.
+         */
+        const days =
+            this.calculateLeaveDays(
+                dto.startDate,
+                dto.endDate,
+                dto.durationUnit ?? 'day',
+            );
+
+
         if (
-            dto.days >
+            days <= 0
+        ) {
+
+            throw new BadRequestException(
+                'Invalid leave duration',
+            );
+        }
+
+
+        if (
+            days >
             (
                 type.maxDaysPerRequest ??
                 Infinity
@@ -364,18 +382,34 @@ export class LeaveService {
 
 
         /*
-         * Check balance.
+         * Half-day is allowed only when
+         * the leave type explicitly permits it.
+         */
+        if (
+            dto.durationUnit === 'half_day' &&
+            type.allowHalfDay !== true
+        ) {
+
+            throw new BadRequestException(
+                'Half-day leave is not allowed for this leave type',
+            );
+        }
+
+
+        /*
+         * Check balance using the
+         * backend-calculated duration.
          */
         await this.checkBalance(
             userId,
             dto.leaveTypeId,
-            dto.days,
+            days,
         );
 
 
         /*
-         * Build approval chain
-         * once and store it.
+         * Build approval chain once
+         * and store it.
          */
         const approval =
             type.requiresApproval
@@ -407,28 +441,61 @@ export class LeaveService {
                 .add({
 
                     userId,
-                    userName: user.fullName || user.email || userId,
+
+                    userName:
+                        user.fullName ||
+                        user.email ||
+                        userId,
+
                     rootId,
-                    role: user.role,
-                    leaveTypeId: dto.leaveTypeId,
-                    startDate: dto.startDate,
-                    endDate: dto.endDate,
-                    days: dto.days,
-                    durationUnit: dto.durationUnit ?? 'day',
-                    reason: dto.reason ?? '',
+
+                    role:
+                        user.role,
+
+                    leaveTypeId:
+                        dto.leaveTypeId,
+
+                    startDate:
+                        dto.startDate,
+
+                    endDate:
+                        dto.endDate,
+
+                    /*
+                     * Calculated exclusively
+                     * by the backend.
+                     */
+                    days,
+
+                    durationUnit:
+                        dto.durationUnit ??
+                        'day',
+
+                    reason:
+                        dto.reason ??
+                        '',
+
                     status,
+
                     approval,
-                    currentLevel: autoApproved ? null : 0,
-                    createdAt: now,
-                    updatedAt: now,
+
+                    currentLevel:
+                        autoApproved
+                            ? null
+                            : 0,
+
+                    createdAt:
+                        now,
+
+                    updatedAt:
+                        now,
 
                 });
 
 
         /*
-         * Auto-approved leave
-         * immediately creates
-         * ledger/payroll records.
+         * Auto-approved leave immediately
+         * creates ledger/payroll records.
          */
         if (
             autoApproved
@@ -437,21 +504,35 @@ export class LeaveService {
             await this.finalizeApprovedLeave(
                 ref.id,
                 user,
-                dto,
+                {
+                    ...dto,
+                    days,
+                },
                 type,
             );
         }
 
 
         this.logger.log(
-            `Leave created | id=${ref.id} | user=${userId}`,
+            `Leave created | id=${ref.id} | user=${userId} | days=${days}`,
         );
 
 
         return {
-            success: true,
-            id: ref.id,
+
+            success:
+                true,
+
+            id:
+                ref.id,
+
             status,
+
+            /*
+             * Useful for Flutter confirmation.
+             */
+            days,
+
         };
     }
 
@@ -1130,34 +1211,34 @@ export class LeaveService {
                 .toUpperCase();
 
 
-        /*
-         * Name uniqueness.
-         */
-        const nameSnap =
-            await this.db
-                .collection('leaveTypes')
-                .where(
-                    'rootId',
-                    '==',
-                    rootId,
-                )
-                .where(
-                    'name',
-                    '==',
-                    name,
-                )
-                .limit(1)
-                .get();
+        // /*
+        //  * Name uniqueness.
+        //  */
+        // const nameSnap =
+        //     await this.db
+        //         .collection('leaveTypes')
+        //         .where(
+        //             'rootId',
+        //             '==',
+        //             rootId,
+        //         )
+        //         .where(
+        //             'name',
+        //             '==',
+        //             name,
+        //         )
+        //         .limit(1)
+        //         .get();
 
 
-        if (
-            !nameSnap.empty
-        ) {
+        // if (
+        //     !nameSnap.empty
+        // ) {
 
-            throw new BadRequestException(
-                'Leave type name already exists',
-            );
-        }
+        //     throw new BadRequestException(
+        //         'Leave type name already exists',
+        //     );
+        // }
 
 
         /*
@@ -2434,6 +2515,126 @@ export class LeaveService {
         return user.rootId;
     }
 
+    private calculateLeaveDays(
+        startDate: string,
+        endDate: string,
+        durationUnit: string,
+    ): number {
+
+        const start =
+            new Date(startDate);
+
+        const end =
+            new Date(endDate);
+
+
+        if (
+            isNaN(start.getTime()) ||
+            isNaN(end.getTime())
+        ) {
+
+            throw new BadRequestException(
+                'Invalid leave date',
+            );
+        }
+
+
+        /*
+         * Calendar dates are normalized
+         * so timezone/time components do
+         * not affect the calculation.
+         */
+        const startDay =
+            Date.UTC(
+                start.getUTCFullYear(),
+                start.getUTCMonth(),
+                start.getUTCDate(),
+            );
+
+
+        const endDay =
+            Date.UTC(
+                end.getUTCFullYear(),
+                end.getUTCMonth(),
+                end.getUTCDate(),
+            );
+
+
+        const calendarDays =
+            Math.floor(
+                (
+                    endDay -
+                    startDay
+                ) /
+                (
+                    1000 *
+                    60 *
+                    60 *
+                    24
+                ),
+            ) + 1;
+
+
+        if (
+            calendarDays <= 0
+        ) {
+
+            throw new BadRequestException(
+                'End date cannot be before start date',
+            );
+        }
+
+
+        switch (
+        durationUnit
+        ) {
+
+            case 'day':
+
+                return calendarDays;
+
+
+            case 'half_day':
+
+                /*
+                 * Half-day currently represents
+                 * one half-day leave request.
+                 */
+                if (
+                    calendarDays !== 1
+                ) {
+
+                    throw new BadRequestException(
+                        'Half-day leave must be for one day',
+                    );
+                }
+
+                return 0.5;
+
+
+            case 'hour':
+
+                /*
+                 * Hourly leave requires an
+                 * explicit hour quantity.
+                 *
+                 * Since LeaveDto currently has
+                 * no hours field, do not allow
+                 * this unit yet.
+                 */
+                throw new BadRequestException(
+                    'Hourly leave requires an hour duration',
+                );
+
+
+            default:
+
+                throw new BadRequestException(
+                    'Invalid leave duration unit',
+                );
+        }
+    }
+
 
     // ==================================================
     // VALIDATE
@@ -2457,6 +2658,7 @@ export class LeaveService {
             new Date(
                 dto.startDate,
             );
+
 
         const end =
             new Date(
@@ -2485,12 +2687,23 @@ export class LeaveService {
         }
 
 
+        const durationUnit =
+            dto.durationUnit ??
+            'day';
+
+
         if (
-            dto.days <= 0
+            ![
+                'day',
+                'half_day',
+                'hour',
+            ].includes(
+                durationUnit,
+            )
         ) {
 
             throw new BadRequestException(
-                'Invalid leave duration',
+                'Invalid leave duration unit',
             );
         }
     }

@@ -3,7 +3,7 @@ import { IsInt, IsString, Max, Min } from 'class-validator';
 export class AttendanceDto {
 
     @IsString()
-    executiveId!: string;
+    staffId!: string;
 
     @IsInt()
     @Min(1)

@@ -95,16 +95,16 @@ export class FirebaseAuthGuard
       /*
        * Dashboard authorization.
        */
-      if (userData?.role === 'field_executive') {
+      // if (userData?.role === 'field_executive') {
 
-        this.logger.warn(
-          `Authentication failed | unauthorized role | uid=${decoded.uid} role=${userData?.role}`,
-        );
+      //   this.logger.warn(
+      //     `Authentication failed | unauthorized role | uid=${decoded.uid} role=${userData?.role}`,
+      //   );
 
-        throw new UnauthorizedException(
-          'You are not authorized to access this resource',
-        );
-      }
+      //   throw new UnauthorizedException(
+      //     'You are not authorized to access this resource',
+      //   );
+      // }
 
       /*
        * Attach authenticated user
