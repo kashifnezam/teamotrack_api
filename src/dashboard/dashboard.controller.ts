@@ -1,44 +1,50 @@
 import {
-    Controller,
-    Get,
-    Res,
-    UseGuards,
+  Controller,
+  Get,
+  Query,
+  Res,
+  UseGuards,
 } from '@nestjs/common';
 
 import type { Response } from 'express';
 
 import { DashboardService } from './dashboard.service';
+
 import { FirebaseAuthGuard } from '../auth/firebase-auth.guard';
+
 import { CurrentUser } from '../auth/current-user.decorator';
 
 @Controller('dashboard')
 export class DashboardController {
+  constructor(
+    private readonly dashboardService: DashboardService,
+  ) {}
 
-    constructor(
-        private readonly dashboardService: DashboardService,
-    ) {}
+  // ==========================================================
+  // DASHBOARD SPA
+  // ==========================================================
 
-    // Dashboard SPA shell
-    @Get()
-    page(@Res() res: Response) {
+  @Get()
+  page(@Res() res: Response) {
+    return res.sendFile('shell.html', {
+      root: './public/dashboard',
+    });
+  }
 
-        return res.sendFile(
-            'shell.html',
-            {
-                root: './public/dashboard',
-            },
-        );
-    }
+  // ==========================================================
+  // DASHBOARD DATA
+  // ==========================================================
 
-    // Dashboard API
-    @Get('me')
-    @UseGuards(FirebaseAuthGuard)
-    me(
-        @CurrentUser() user: any,
-    ) {
+  @Get('me')
+  @UseGuards(FirebaseAuthGuard)
+  async me(
+    @CurrentUser() user: any,
 
-        return this.dashboardService.getDashboardData(
-            user,
-        );
-    }
+    @Query('date') date?: string,
+  ) {
+    return this.dashboardService.getDashboardData(
+      user,
+      date,
+    );
+  }
 }

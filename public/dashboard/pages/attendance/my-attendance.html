@@ -1,0 +1,290 @@
+<!-- ==========================================================
+     TeamoTrack • My Attendance
+========================================================== -->
+
+<section class="my-attendance-page p-3">
+  <div class="container-fluid">
+    <!-- ======================================================
+         PAGE HEADER
+    ======================================================= -->
+
+    <div class="attendance-page-header">
+      <div>
+        <div class="attendance-eyebrow">TEAMOTRACK • ATTENDANCE</div>
+
+        <h2 class="attendance-page-title">My Attendance</h2>
+
+        <p class="attendance-page-subtitle">Track your daily attendance, working hours and monthly record.</p>
+      </div>
+
+      <div class="attendance-header-actions">
+        <button type="button" class="attendance-refresh-btn" id="myAttendanceRefreshBtn" title="Refresh attendance">
+          <i class="bi bi-arrow-clockwise"></i>
+          <span>Refresh</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ======================================================
+         TODAY HERO
+    ======================================================= -->
+
+    <div class="attendance-today-card">
+      <div class="attendance-today-main">
+        <div class="attendance-today-top">
+          <div>
+            <div class="attendance-section-label">TODAY</div>
+
+            <h3 id="attendanceTodayDate">--</h3>
+
+            <div class="attendance-shift-info">
+              <i class="bi bi-clock"></i>
+
+              <span> Shift </span>
+
+              <strong id="attendanceShiftTime"> -- </strong>
+            </div>
+          </div>
+
+          <div class="attendance-status-pill status-not-marked" id="myAttendanceStatus">
+            <span class="status-dot"></span>
+            <span id="myAttendanceStatusText"> NOT MARKED </span>
+          </div>
+        </div>
+
+        <!-- ==================================================
+             TODAY METRICS
+        =================================================== -->
+
+        <div class="attendance-today-metrics">
+          <div class="today-metric">
+            <div class="today-metric-icon">
+              <i class="bi bi-box-arrow-in-right"></i>
+            </div>
+
+            <div>
+              <span>Check In</span>
+
+              <strong id="myCheckIn"> -- </strong>
+            </div>
+          </div>
+
+          <div class="today-metric">
+            <div class="today-metric-icon">
+              <i class="bi bi-box-arrow-right"></i>
+            </div>
+
+            <div>
+              <span>Check Out</span>
+
+              <strong id="myCheckOut"> -- </strong>
+            </div>
+          </div>
+
+          <div class="today-metric">
+            <div class="today-metric-icon">
+              <i class="bi bi-hourglass-split"></i>
+            </div>
+
+            <div>
+              <span>Working</span>
+
+              <strong id="myWorkingTime"> -- </strong>
+            </div>
+          </div>
+
+          <div class="today-metric">
+            <div class="today-metric-icon">
+              <i class="bi bi-activity"></i>
+            </div>
+
+            <div>
+              <span>Punctuality</span>
+
+              <strong id="myPunctuality"> -- </strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==================================================
+             ACTION AREA
+        =================================================== -->
+
+        <div class="attendance-action-area">
+          <div class="attendance-action-message">
+            <i class="bi bi-info-circle" id="attendanceActionIcon"></i>
+
+            <span id="attendanceActionMessage"> Your attendance for today has not been marked. </span>
+          </div>
+
+          <div class="attendance-action-buttons">
+            <button type="button" class="attendance-action-btn check-in" id="attendanceCheckInBtn">
+              <i class="bi bi-box-arrow-in-right"></i>
+
+              <span>Check In</span>
+            </button>
+
+            <button type="button" class="attendance-action-btn check-out" id="attendanceCheckOutBtn" disabled>
+              <i class="bi bi-box-arrow-right"></i>
+
+              <span>Check Out</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================================================
+         MONTH FILTER
+    ======================================================= -->
+
+    <div class="attendance-filter-card">
+      <div>
+        <div class="attendance-filter-title">Attendance History</div>
+
+        <div class="attendance-filter-subtitle">View your attendance records for any month.</div>
+      </div>
+
+      <div class="attendance-month-control">
+        <label for="myAttendanceMonth"> Month </label>
+
+        <div class="attendance-month-input">
+          <i class="bi bi-calendar3"></i>
+
+          <input type="month" id="myAttendanceMonth" class="form-control" />
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================================================
+         MONTHLY SUMMARY
+    ======================================================= -->
+
+    <div class="row g-3 mb-4">
+      <div class="col-xl-2 col-lg-4 col-md-4 col-6">
+        <div class="attendance-summary-card">
+          <div class="summary-card-icon present">
+            <i class="bi bi-check-circle-fill"></i>
+          </div>
+
+          <div>
+            <span>Present</span>
+
+            <strong id="myPresentCount"> 0 </strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-2 col-lg-4 col-md-4 col-6">
+        <div class="attendance-summary-card">
+          <div class="summary-card-icon late">
+            <i class="bi bi-clock-fill"></i>
+          </div>
+
+          <div>
+            <span>Late</span>
+
+            <strong id="myLateCount"> 0 </strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-2 col-lg-4 col-md-4 col-6">
+        <div class="attendance-summary-card">
+          <div class="summary-card-icon half-day">
+            <i class="bi bi-circle-half"></i>
+          </div>
+
+          <div>
+            <span>Half Day</span>
+
+            <strong id="myHalfDayCount"> 0 </strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-2 col-lg-4 col-md-4 col-6">
+        <div class="attendance-summary-card">
+          <div class="summary-card-icon leave">
+            <i class="bi bi-calendar-x-fill"></i>
+          </div>
+
+          <div>
+            <span>Leave</span>
+
+            <strong id="myLeaveCount"> 0 </strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-2 col-lg-4 col-md-4 col-6">
+        <div class="attendance-summary-card">
+          <div class="summary-card-icon absent">
+            <i class="bi bi-x-circle-fill"></i>
+          </div>
+
+          <div>
+            <span>Absent</span>
+
+            <strong id="myAbsentCount"> 0 </strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-2 col-lg-4 col-md-4 col-6">
+        <div class="attendance-summary-card">
+          <div class="summary-card-icon working">
+            <i class="bi bi-hourglass-split"></i>
+          </div>
+
+          <div>
+            <span>Working</span>
+
+            <strong id="myTotalWorking"> 0h 0m </strong>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================================================
+         ATTENDANCE TABLE
+    ======================================================= -->
+
+    <div class="attendance-history-card">
+      <div class="attendance-history-header">
+        <div>
+          <h5>Attendance Records</h5>
+
+          <p>Daily attendance history for the selected month.</p>
+        </div>
+
+        <div class="attendance-record-count" id="myAttendanceRecordCount">0 Records</div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table align-middle attendance-history-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Check In</th>
+              <th>Check Out</th>
+              <th>Working</th>
+              <th>Attendance</th>
+              <th>Punctuality</th>
+            </tr>
+          </thead>
+
+          <tbody id="myAttendanceTable">
+            <tr>
+              <td colspan="6" class="attendance-empty-state">
+                <i class="bi bi-calendar2-week"></i>
+
+                <span> Loading attendance... </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>

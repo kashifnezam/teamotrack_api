@@ -1,164 +1,704 @@
 /* ==========================================================
    TeamoTrack Responsive
+   Global Dashboard Layout
+========================================================== */
+
+/* ==========================================================
+   LAYOUT VARIABLES
+========================================================== */
+
+:root {
+  /*
+     * Keep this equal to the actual desktop
+     * sidebar width used in sidebar.css.
+     */
+  --tt-sidebar-width: 260px;
+}
+
+/* ==========================================================
+   DESKTOP
+   Sidebar stays fixed.
+   Main content starts AFTER sidebar.
+========================================================== */
+
+@media (min-width: 993px) {
+  .dashboard-main {
+    margin-left: var(--tt-sidebar-width);
+
+    width: calc(100% - var(--tt-sidebar-width));
+
+    min-width: 0;
+  }
+
+  .dashboard-content {
+    width: 100%;
+
+    min-width: 0;
+  }
+
+  .dashboard-page {
+    width: 100%;
+
+    min-width: 0;
+  }
+}
+
+/* ==========================================================
+   LARGE DESKTOP
 ========================================================== */
 
 @media (min-width: 1400px) {
+  .dashboard-content {
+    padding: 36px;
+  }
 
-    .dashboard-content {
-        padding: 36px;
-    }
+  .dashboard-page {
+    padding: 0;
+  }
 
-    .header-search input {
-        width: 360px;
-    }
+  .header-search input {
+    width: 360px;
+  }
 }
-
-
-@media (max-width: 1200px) {
-
-    .header-search input {
-        width: 220px;
-    }
-
-    .dashboard-content {
-        padding: 24px;
-    }
-}
-
-
-@media (max-width: 992px) {
-
-    .sidebar {
-        transform: translateX(-100%);
-        transition: transform .35s ease;
-        box-shadow: var(--shadow-lg);
-    }
-
-    .dashboard-main {
-        margin-left: 0;
-    }
-
-    body.sidebar-open .sidebar {
-        transform: translateX(0);
-    }
-
-    body.sidebar-collapsed .dashboard-main {
-        margin-left: 0;
-    }
-
-    .header-search {
-        display: none;
-    }
-
-    .page-title p {
-        display: none;
-    }
-
-    .dashboard-content {
-        padding: 22px;
-    }
-}
-
-
-@media (max-width: 768px) {
-
-    .dashboard-header {
-        padding: 0 16px;
-    }
-
-    .dashboard-content {
-        padding: 18px;
-    }
-
-    .profile-info {
-        display: none;
-    }
-
-    .header-divider {
-        display: none;
-    }
-
-    .header-right {
-        gap: 10px;
-    }
-
-    .header-btn,
-    .sidebar-toggle {
-        width: 42px;
-        height: 42px;
-    }
-
-    /* Tasks */
-
-    .tasks-page .table-responsive {
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-    }
-
-    .tasks-page table {
-        min-width: 850px;
-    }
-
-    .tasks-page .filter-card {
-        padding: 12px;
-    }
-
-    .tasks-page .task-actions {
-        width: 100%;
-    }
-}
-
-
-@media (max-width: 576px) {
-
-    .dashboard-header {
-        height: 64px;
-    }
-
-    .page-title h3 {
-        font-size: 18px;
-    }
-
-    .dashboard-content {
-        padding: 15px;
-    }
-
-    .sidebar {
-        width: 280px;
-    }
-
-    .tasks-page .task-actions {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-    }
-
-    .tasks-page .task-actions .btn:last-child {
-        grid-column: 1 / -1;
-    }
-
-    .tasks-page .page-header h4 {
-        font-size: 18px;
-    }
-}
-
 
 /* ==========================================================
-   Sidebar Overlay
+   DESKTOP / LAPTOP
+========================================================== */
+
+@media (max-width: 1399.98px) and (min-width: 993px) {
+  .dashboard-content {
+    padding: 28px;
+  }
+
+  .header-search input {
+    width: 300px;
+  }
+}
+
+/* ==========================================================
+   TABLET
+   Sidebar becomes an off-canvas drawer.
+========================================================== */
+
+@media (max-width: 992px) {
+  /* ------------------------------------------------------
+       SIDEBAR
+    ------------------------------------------------------ */
+
+  .sidebar {
+    transform: translateX(-100%);
+
+    transition: transform 0.35s ease;
+
+    box-shadow: var(--shadow-lg);
+
+    z-index: var(--z-sidebar);
+  }
+
+  body.sidebar-open .sidebar {
+    transform: translateX(0);
+  }
+
+  /* ------------------------------------------------------
+       MAIN
+    ------------------------------------------------------ */
+
+  .dashboard-main {
+    margin-left: 0;
+
+    width: 100%;
+
+    min-width: 0;
+  }
+
+  body.sidebar-collapsed .dashboard-main {
+    margin-left: 0;
+  }
+
+  /* ------------------------------------------------------
+       HEADER
+    ------------------------------------------------------ */
+
+  .header-search {
+    display: none;
+  }
+
+  .page-title p {
+    display: none;
+  }
+
+  .dashboard-header {
+    padding-left: 18px;
+
+    padding-right: 18px;
+  }
+
+  /* ------------------------------------------------------
+       CONTENT
+    ------------------------------------------------------ */
+
+  .dashboard-content {
+    padding: 22px;
+
+    width: 100%;
+
+    min-width: 0;
+  }
+
+  .dashboard-page {
+    padding: 0;
+  }
+
+  /* ------------------------------------------------------
+       WELCOME
+    ------------------------------------------------------ */
+
+  .welcome-content {
+    gap: 15px;
+  }
+
+  .welcome-title {
+    font-size: 22px;
+  }
+
+  /* ------------------------------------------------------
+       KPI
+    ------------------------------------------------------ */
+
+  .dashboard-kpi-card {
+    min-height: 105px;
+  }
+
+  /* ------------------------------------------------------
+       MAP
+    ------------------------------------------------------ */
+
+  .employee-map {
+    height: 360px;
+  }
+}
+
+/* ==========================================================
+   SIDEBAR OVERLAY
 ========================================================== */
 
 .sidebar-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(15, 23, 42, .45);
-    backdrop-filter: blur(3px);
-    -webkit-backdrop-filter: blur(3px);
-    opacity: 0;
-    visibility: hidden;
-    transition: .3s ease;
-    z-index: calc(var(--z-sidebar) - 1);
+  position: fixed;
+
+  inset: 0;
+
+  background: rgba(15, 23, 42, 0.45);
+
+  backdrop-filter: blur(3px);
+
+  -webkit-backdrop-filter: blur(3px);
+
+  opacity: 0;
+
+  visibility: hidden;
+
+  pointer-events: none;
+
+  transition:
+    opacity 0.3s ease,
+    visibility 0.3s ease;
+
+  z-index: calc(var(--z-sidebar) - 1);
 }
 
 body.sidebar-open .sidebar-overlay {
-    opacity: 1;
-    visibility: visible;
+  opacity: 1;
+
+  visibility: visible;
+
+  pointer-events: auto;
+}
+
+/* ==========================================================
+   TABLET
+========================================================== */
+
+@media (max-width: 768px) {
+  /* ------------------------------------------------------
+       HEADER
+    ------------------------------------------------------ */
+
+  .dashboard-header {
+    padding: 0 16px;
+  }
+
+  .profile-info {
+    display: none;
+  }
+
+  .header-divider {
+    display: none;
+  }
+
+  .header-right {
+    gap: 10px;
+  }
+
+  .header-btn,
+  .sidebar-toggle {
+    width: 42px;
+
+    height: 42px;
+  }
+
+  /* ------------------------------------------------------
+       CONTENT
+    ------------------------------------------------------ */
+
+  .dashboard-content {
+    padding: 18px;
+  }
+
+  .dashboard-page {
+    padding: 0;
+  }
+
+  /* ------------------------------------------------------
+       WELCOME
+    ------------------------------------------------------ */
+
+  .welcome-content {
+    align-items: flex-start;
+
+    flex-direction: column;
+  }
+
+  .attendance-summary {
+    width: 100%;
+  }
+
+  .welcome-title {
+    font-size: 20px;
+  }
+
+  .welcome-subtitle {
+    font-size: 10px;
+  }
+
+  /* ------------------------------------------------------
+       KPI
+    ------------------------------------------------------ */
+
+  .dashboard-kpi-card {
+    min-height: 100px;
+
+    padding: 16px;
+  }
+
+  .kpi-value {
+    font-size: 24px;
+  }
+
+  /* ------------------------------------------------------
+       ATTENDANCE
+    ------------------------------------------------------ */
+
+  .attendance-circle {
+    width: 135px;
+
+    height: 135px;
+  }
+
+  /* ------------------------------------------------------
+       MAP
+    ------------------------------------------------------ */
+
+  .map-card {
+    min-height: 400px;
+  }
+
+  .employee-map {
+    height: 335px;
+  }
+
+  /* ------------------------------------------------------
+       STAFF TABLE
+    ------------------------------------------------------ */
+
+  .staff-dashboard-card {
+    overflow: hidden;
+  }
+
+  .staff-dashboard-card .table-responsive {
+    overflow-x: auto;
+
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .dashboard-staff-table {
+    min-width: 720px;
+  }
+}
+
+/* ==========================================================
+   MOBILE
+========================================================== */
+
+@media (max-width: 576px) {
+  /* ------------------------------------------------------
+       HEADER
+    ------------------------------------------------------ */
+
+  .dashboard-header {
+    height: 64px;
+  }
+
+  .page-title h3 {
+    font-size: 18px;
+  }
+
+  /* ------------------------------------------------------
+       SIDEBAR
+    ------------------------------------------------------ */
+
+  .sidebar {
+    width: 280px;
+
+    max-width: 85vw;
+  }
+
+  /* ------------------------------------------------------
+       CONTENT
+    ------------------------------------------------------ */
+
+  .dashboard-content {
+    padding: 15px;
+  }
+
+  .dashboard-page {
+    padding: 0;
+  }
+
+  /* ------------------------------------------------------
+       WELCOME
+    ------------------------------------------------------ */
+
+  .welcome-card {
+    padding: 17px;
+
+    margin-bottom: 16px !important;
+
+    border-radius: 12px;
+  }
+
+  .dashboard-eyebrow {
+    font-size: 8px;
+  }
+
+  .welcome-title {
+    font-size: 18px;
+
+    line-height: 1.3;
+  }
+
+  .welcome-subtitle {
+    font-size: 9px;
+
+    line-height: 1.5;
+  }
+
+  .attendance-summary {
+    min-width: 0;
+
+    padding: 11px;
+  }
+
+  .attendance-summary-value {
+    font-size: 22px;
+  }
+
+  /* ------------------------------------------------------
+       KPI
+    ------------------------------------------------------ */
+
+  .dashboard-kpi-card {
+    min-height: 92px;
+
+    padding: 14px;
+
+    border-radius: 10px;
+  }
+
+  .kpi-label {
+    font-size: 9px;
+  }
+
+  .kpi-value {
+    margin-top: 6px;
+
+    font-size: 22px;
+  }
+
+  .kpi-icon {
+    width: 39px;
+
+    height: 39px;
+
+    flex-basis: 39px;
+
+    border-radius: 10px;
+
+    font-size: 16px;
+  }
+
+  /* ------------------------------------------------------
+       GENERIC CARD
+    ------------------------------------------------------ */
+
+  .dashboard-card {
+    border-radius: 11px;
+  }
+
+  .dashboard-card-header {
+    padding: 12px 14px;
+  }
+
+  .dashboard-card-title {
+    font-size: 13px;
+  }
+
+  .dashboard-card-subtitle {
+    font-size: 9px;
+  }
+
+  /* ------------------------------------------------------
+       ATTENDANCE
+    ------------------------------------------------------ */
+
+  .attendance-circle-wrapper {
+    padding: 20px 0 15px;
+  }
+
+  .attendance-circle {
+    width: 125px;
+
+    height: 125px;
+
+    border-width: 8px;
+  }
+
+  .attendance-circle-value {
+    font-size: 27px;
+  }
+
+  .attendance-breakdown {
+    padding: 0 14px;
+  }
+
+  .attendance-row {
+    min-height: 34px;
+
+    font-size: 10px;
+  }
+
+  /* ------------------------------------------------------
+       MAP
+    ------------------------------------------------------ */
+
+  .map-card {
+    min-height: 350px;
+  }
+
+  .employee-map {
+    height: 285px;
+  }
+
+  .online-badge {
+    padding: 4px 7px;
+
+    font-size: 8px;
+  }
+
+  .map-empty-state {
+    top: 58%;
+  }
+
+  .map-empty-state i {
+    font-size: 25px;
+  }
+
+  .map-empty-state div {
+    font-size: 11px;
+  }
+
+  .map-empty-state small {
+    font-size: 8px;
+  }
+
+  /* ------------------------------------------------------
+       STAFF TABLE
+    ------------------------------------------------------ */
+
+  .dashboard-staff-table {
+    min-width: 720px;
+  }
+
+  .dashboard-staff-table th {
+    padding: 10px 12px;
+
+    font-size: 8px;
+  }
+
+  .dashboard-staff-table td {
+    padding: 10px 12px;
+
+    font-size: 10px;
+  }
+
+  .dashboard-staff-avatar {
+    width: 31px;
+
+    height: 31px;
+
+    flex-basis: 31px;
+
+    font-size: 8px;
+  }
+
+  .dashboard-staff-name {
+    font-size: 10px;
+  }
+
+  .dashboard-staff-id {
+    font-size: 7px;
+  }
+
+  .staff-role-badge {
+    font-size: 8px;
+  }
+
+  .dashboard-status {
+    font-size: 8px;
+  }
+}
+
+/* ==========================================================
+   VERY SMALL MOBILE
+========================================================== */
+
+@media (max-width: 380px) {
+  .dashboard-content {
+    padding: 10px;
+  }
+
+  .dashboard-page {
+    padding: 0;
+  }
+
+  .sidebar {
+    width: 270px;
+  }
+
+  /* ------------------------------------------------------
+       WELCOME
+    ------------------------------------------------------ */
+
+  .welcome-card {
+    padding: 14px;
+  }
+
+  .welcome-title {
+    font-size: 17px;
+  }
+
+  /* ------------------------------------------------------
+       KPI
+    ------------------------------------------------------ */
+
+  .dashboard-kpi-card {
+    padding: 12px;
+  }
+
+  .kpi-value {
+    font-size: 20px;
+  }
+
+  .kpi-icon {
+    width: 36px;
+
+    height: 36px;
+
+    flex-basis: 36px;
+
+    font-size: 14px;
+  }
+
+  /* ------------------------------------------------------
+       ATTENDANCE
+    ------------------------------------------------------ */
+
+  .attendance-circle {
+    width: 115px;
+
+    height: 115px;
+  }
+
+  .attendance-circle-value {
+    font-size: 24px;
+  }
+
+  /* ------------------------------------------------------
+       MAP
+    ------------------------------------------------------ */
+
+  .map-card {
+    min-height: 325px;
+  }
+
+  .employee-map {
+    height: 260px;
+  }
+}
+
+/* ==========================================================
+   LANDSCAPE MOBILE
+========================================================== */
+
+@media (max-width: 768px) and (orientation: landscape) {
+  .sidebar {
+    max-height: 100vh;
+
+    overflow-y: auto;
+  }
+
+  .employee-map {
+    height: 300px;
+  }
+}
+
+/* ==========================================================
+   TOUCH DEVICES
+========================================================== */
+
+@media (hover: none) {
+  .dashboard-kpi-card:hover {
+    transform: none;
+  }
+
+  .staff-dashboard-table tr:hover {
+    background: inherit;
+  }
+}
+
+/* ==========================================================
+   REDUCE MOTION
+========================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar {
+    transition: none !important;
+  }
+
+  .sidebar-overlay {
+    transition: none !important;
+  }
+
+  .dashboard-kpi-card {
+    transition: none !important;
+  }
 }

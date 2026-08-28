@@ -19,7 +19,7 @@
     ====================================================== */
 
   window.initializeManagersPage = async function () {
-    await Promise.all([loadManagers(), loadShifts()]);
+    await Promise.all([ loadShifts(), loadManagers()]);
 
     document.getElementById('staffSearch')?.addEventListener('input', renderManagers);
   };

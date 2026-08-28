@@ -1,183 +1,384 @@
-<!-- Content -->
-<section class="dashboard-content">
+<!-- ==========================================================
+     TeamoTrack Dashboard
+========================================================== -->
 
-    <div class="container-fluid">
+<section class="dashboard-page p-3">
+  <div class="container-fluid">
+    <!-- ==================================================
+             WELCOME
+        ================================================== -->
 
-        <!-- Welcome -->
-        <div class="welcome-card mb-4">
-            <div class="d-flex justify-content-between align-items-center flex-wrap">
-                <div>
-                    <h2>
-                        Welcome Back,
-                        <span id="userName"></span> 👋
-                    </h2>
-                    <p class="mb-0">Friday, 8 August 2026 • Monitor your workforce in real time.</p>
-                </div>
+    <div class="dashboard-welcome-card">
+      <div class="dashboard-welcome-main">
+        <div>
+          <div class="dashboard-eyebrow">TEAMOTRACK • DASHBOARD</div>
 
-                <div class="text-end mt-3 mt-lg-0">
-                    <h3 class="mb-0">0%</h3>
-                    <small>Today's Attendance</small>
-                </div>
-            </div>
+          <h2 class="dashboard-welcome-title">
+            Welcome back,
+            <span id="userName"> User </span>
+
+            <span class="welcome-wave"> 👋 </span>
+          </h2>
+
+          <p class="dashboard-welcome-subtitle" id="dashboardSubtitle">Loading your workforce...</p>
         </div>
 
-        <!-- KPI -->
-        <div class="row g-3 mb-4">
+        <div class="dashboard-date-box">
+          <i class="bi bi-calendar3"></i>
 
-            <div class="col-lg-3 col-md-6">
-                <div class="card-ui p-3">
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            <small class="text-muted">Executives</small>
-                            <h3 class="mt-2 mb-0" id="totalExecutives">0</h3>
-                        </div>
-                        <i class="bi bi-people-fill fs-2 text-primary"></i>
-                    </div>
-                </div>
-            </div>
+          <div>
+            <div class="dashboard-date-label">Dashboard date</div>
 
-            <div class="col-lg-3 col-md-6">
-                <div class="card-ui p-3">
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            <small class="text-muted">Present</small>
-                            <h3 class="mt-2 mb-0 text-success" id="presentCount">0</h3>
-                        </div>
-                        <i class="bi bi-check-circle-fill fs-2 text-success"></i>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-lg-3 col-md-6">
-                <div class="card-ui p-3">
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            <small class="text-muted">Leave</small>
-                            <h3 class="mt-2 mb-0 text-warning" id="leaveCount">0</h3>
-                        </div>
-                        <i class="bi bi-calendar-x-fill fs-2 text-warning"></i>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-lg-3 col-md-6">
-                <div class="card-ui p-3">
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            <small class="text-muted">Late</small>
-                            <h3 class="mt-2 mb-0 text-danger" id="lateCount">0</h3>
-                        </div>
-                        <i class="bi bi-clock-fill fs-2 text-danger"></i>
-                    </div>
-                </div>
-            </div>
-
+            <div class="dashboard-date" id="dashboardDate">--</div>
+          </div>
         </div>
-
-        <!-- Main -->
-        <div class="row g-3">
-
-            <!-- Attendance -->
-            <div class="col-lg-4">
-
-                <div class="card-ui p-4 h-100">
-
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h5 class="mb-0">Attendance</h5>
-                        <span class="badge bg-success" id="attendancePercent">0%</span>
-                    </div>
-
-                    <div class="text-center mb-4">
-
-                        <div class="rounded-circle border border-4 border-primary d-inline-flex align-items-center justify-content-center"
-                            style="width:120px;height:120px;">
-
-                            <div>
-                                <h2 class="mb-0" id="attendanceCircle">0</h2>
-                                <small>%</small>
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                    <div class="d-flex justify-content-between mb-2">
-                        <span>Present</span>
-                        <strong id="attendancePresent">0</strong>
-                    </div>
-
-                    <div class="d-flex justify-content-between mb-2">
-                        <span>Absent</span>
-                        <strong id="attendanceAbsent">0</strong>
-                    </div>
-
-                    <div class="d-flex justify-content-between">
-                        <span>Leave</span>
-                        <strong id="attendanceLeave">0</strong>
-                    </div>
-
-                </div>
-
-            </div>
-
-            <!-- Live Map -->
-            <div class="col-lg-5">
-
-                <div class="card-ui p-3 h-100">
-
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-
-                        <h5 class="mb-0">
-                            Live executive Tracking
-                        </h5>
-
-                        <span class="badge bg-primary" id="onlineCount">0 Online</span>
-
-                    </div>
-
-                    <div id="employeeMap"></div>
-
-
-                </div>
-
-            </div>
-
-
-            <!-- Requests -->
-            <div class="col-lg-3">
-
-                <div class="card-ui p-3 h-100">
-
-                    <h5 class="mb-3">
-                        Pending Requests
-                    </h5>
-
-                    <div class="d-flex justify-content-between py-2 border-bottom">
-                        <span><i class="bi bi-calendar-event text-warning"></i> Leave</span>
-                        <strong>5</strong>
-                    </div>
-
-                    <div class="d-flex justify-content-between py-2 border-bottom">
-                        <span><i class="bi bi-fingerprint text-primary"></i> Attendance</span>
-                        <strong>2</strong>
-                    </div>
-
-                    <div class="d-flex justify-content-between py-2 border-bottom">
-                        <span><i class="bi bi-cash-stack text-success"></i> Expense</span>
-                        <strong>1</strong>
-                    </div>
-
-                    <div class="d-flex justify-content-between py-2">
-                        <span><i class="bi bi-person-plus text-danger"></i> Recruitment</span>
-                        <strong>3</strong>
-                    </div>
-
-                </div>
-
-            </div>
-
-        </div>
-
+      </div>
     </div>
 
+    <!-- ==========================================================
+     FILTER BAR
+    ========================================================== -->
+
+    <div class="dashboard-filter-card">
+      <div class="dashboard-filter-header">
+        <div>
+          <div class="dashboard-filter-title">Workforce Overview</div>
+
+          <div class="dashboard-filter-subtitle" id="scopeLabel">Loading visibility...</div>
+        </div>
+
+        <button type="button" class="dashboard-refresh-btn" id="dashboardRefreshBtn" title="Refresh dashboard">
+          <i class="bi bi-arrow-clockwise"></i>
+          <span>Refresh</span>
+        </button>
+      </div>
+
+      <div class="row g-2">
+        <!-- ==================================================
+         DATE
+        ================================================== -->
+
+        <div class="col-xl-3 col-lg-4 col-md-6">
+          <label for="dashboardDateFilter" class="dashboard-filter-label"> Date </label>
+
+          <div class="dashboard-input-wrap">
+            <i class="bi bi-calendar3"></i>
+
+            <input id="dashboardDateFilter" type="date" class="form-control" />
+          </div>
+        </div>
+
+        <!-- ==================================================
+         SEARCH
+        ================================================== -->
+
+        <div class="col-xl-3 col-lg-4 col-md-6">
+          <label for="dashboardSearch" class="dashboard-filter-label"> Search </label>
+
+          <div class="dashboard-input-wrap">
+            <i class="bi bi-search"></i>
+
+            <input
+              id="dashboardSearch"
+              type="search"
+              class="form-control"
+              placeholder="Search staff..."
+              autocomplete="off"
+            />
+          </div>
+        </div>
+
+        <!-- ==================================================
+         TEAM
+         ================================================== -->
+
+        <div class="col-xl-2 col-lg-4 col-md-6" id="teamFilterWrapper">
+          <label for="dashboardTeamFilter" class="dashboard-filter-label"> Team </label>
+
+          <select id="dashboardTeamFilter" class="form-select">
+            <option value="">All Teams</option>
+          </select>
+        </div>
+
+        <!-- ==================================================
+         MANAGER
+        ================================================== -->
+
+        <div class="col-xl-2 col-lg-4 col-md-6" id="managerFilterWrapper">
+          <label for="dashboardManagerFilter" class="dashboard-filter-label"> Manager </label>
+
+          <select id="dashboardManagerFilter" class="form-select">
+            <option value="">All Managers</option>
+          </select>
+        </div>
+
+        <!-- ==================================================
+         RESET
+        ================================================== -->
+
+        <div class="col-xl-2 col-lg-4 col-md-6 dashboard-reset-wrapper">
+          <label class="dashboard-filter-label"> &nbsp; </label>
+
+          <button type="button" id="dashboardResetBtn" class="dashboard-reset-btn">
+            <i class="bi bi-x-circle"></i>
+            Clear Filters
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================================================
+             KPI
+        ================================================== -->
+
+    <div class="row g-3 mb-4">
+      <!-- TOTAL -->
+
+      <div class="col-xl-3 col-md-6">
+        <div class="dashboard-kpi-card">
+          <div class="dashboard-kpi-content">
+            <div class="dashboard-kpi-label">Total Staff</div>
+
+            <div class="dashboard-kpi-value" id="totalStaff">0</div>
+
+            <div class="dashboard-kpi-meta" id="totalStaffMeta">Visible to you</div>
+          </div>
+
+          <div class="dashboard-kpi-icon primary">
+            <i class="bi bi-people-fill"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- PRESENT -->
+
+      <div class="col-xl-3 col-md-6">
+        <div class="dashboard-kpi-card">
+          <div class="dashboard-kpi-content">
+            <div class="dashboard-kpi-label">Present</div>
+
+            <div class="dashboard-kpi-value success" id="presentCount">0</div>
+
+            <div class="dashboard-kpi-meta" id="presentMeta">Today's attendance</div>
+          </div>
+
+          <div class="dashboard-kpi-icon success">
+            <i class="bi bi-check-circle-fill"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- LEAVE -->
+
+      <div class="col-xl-3 col-md-6">
+        <div class="dashboard-kpi-card">
+          <div class="dashboard-kpi-content">
+            <div class="dashboard-kpi-label">On Leave</div>
+
+            <div class="dashboard-kpi-value warning" id="leaveCount">0</div>
+
+            <div class="dashboard-kpi-meta" id="leaveMeta">Approved leave</div>
+          </div>
+
+          <div class="dashboard-kpi-icon warning">
+            <i class="bi bi-calendar-x-fill"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- LATE -->
+
+      <div class="col-xl-3 col-md-6">
+        <div class="dashboard-kpi-card">
+          <div class="dashboard-kpi-content">
+            <div class="dashboard-kpi-label">Late</div>
+
+            <div class="dashboard-kpi-value danger" id="lateCount">0</div>
+
+            <div class="dashboard-kpi-meta" id="lateMeta">Late arrivals</div>
+          </div>
+
+          <div class="dashboard-kpi-icon danger">
+            <i class="bi bi-clock-fill"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================================================
+             MAIN
+        ================================================== -->
+
+    <div class="row g-3 mb-4">
+      <!-- ==================================================
+                 ATTENDANCE
+            ================================================== -->
+
+      <div class="col-xl-4 col-lg-5">
+        <div class="dashboard-card attendance-card">
+          <div class="dashboard-card-header">
+            <div>
+              <h5 class="dashboard-card-title">Attendance</h5>
+
+              <div class="dashboard-card-subtitle" id="attendanceSubtitle">Today's workforce status</div>
+            </div>
+
+            <span class="attendance-badge" id="attendancePercent"> 0% </span>
+          </div>
+
+          <!-- CIRCLE -->
+
+          <div class="attendance-circle-wrapper">
+            <div class="attendance-circle" id="attendanceCircleRing">
+              <div>
+                <div class="attendance-circle-value" id="attendanceCircle">0</div>
+
+                <div class="attendance-circle-label">%</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- BREAKDOWN -->
+
+          <div class="attendance-breakdown">
+            <div class="attendance-row">
+              <div class="attendance-row-label">
+                <span class="attendance-dot present"></span>
+
+                Present
+              </div>
+
+              <strong id="attendancePresent"> 0 </strong>
+            </div>
+
+            <div class="attendance-row">
+              <div class="attendance-row-label">
+                <span class="attendance-dot working"></span>
+
+                Working
+              </div>
+
+              <strong id="attendanceWorking"> 0 </strong>
+            </div>
+
+            <div class="attendance-row">
+              <div class="attendance-row-label">
+                <span class="attendance-dot late"></span>
+
+                Late
+              </div>
+
+              <strong id="attendanceLate"> 0 </strong>
+            </div>
+
+            <div class="attendance-row">
+              <div class="attendance-row-label">
+                <span class="attendance-dot leave"></span>
+
+                Leave
+              </div>
+
+              <strong id="attendanceLeave"> 0 </strong>
+            </div>
+
+            <div class="attendance-row">
+              <div class="attendance-row-label">
+                <span class="attendance-dot absent"></span>
+
+                Absent
+              </div>
+
+              <strong id="attendanceAbsent"> 0 </strong>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================================================
+                 LIVE MAP
+            ================================================== -->
+
+      <div class="col-xl-8 col-lg-7">
+        <div class="dashboard-card map-card">
+          <div class="dashboard-card-header">
+            <div>
+              <h5 class="dashboard-card-title">Live Staff Tracking</h5>
+
+              <div class="dashboard-card-subtitle" id="mapSubtitle">Staff visible to you</div>
+            </div>
+
+            <span class="online-badge" id="onlineCount"> 0 Online </span>
+          </div>
+
+          <div id="employeeMap" class="employee-map"></div>
+
+          <div id="mapEmptyState" class="map-empty-state">
+            <i class="bi bi-geo-alt"></i>
+
+            <div>No staff location available</div>
+
+            <small> Location will appear when staff share their current position. </small>
+          </div>
+
+          <div class="map-footer">
+            <span>
+              <i class="bi bi-circle-fill online-dot"></i>
+
+              <span id="onlineStaffLabel"> 0 online </span>
+            </span>
+
+            <span>
+              <i class="bi bi-circle-fill offline-dot"></i>
+
+              <span id="offlineStaffLabel"> 0 offline </span>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================================================
+             STAFF LIST
+        ================================================== -->
+
+    <div class="dashboard-card staff-dashboard-card">
+      <div class="dashboard-card-header">
+        <div>
+          <h5 class="dashboard-card-title">Staff</h5>
+
+          <div class="dashboard-card-subtitle" id="staffListSubtitle">Staff within your visibility</div>
+        </div>
+
+        <span class="staff-total-badge" id="staffListCount"> 0 </span>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table dashboard-staff-table">
+          <thead>
+            <tr>
+              <th>Staff</th>
+
+              <th>Role</th>
+
+              <th>Team</th>
+
+              <th>Status</th>
+
+              <th>Check In</th>
+
+              <th>Check Out</th>
+
+              <th>Working</th>
+            </tr>
+          </thead>
+
+          <tbody id="dashboardStaffTable">
+            <tr>
+              <td colspan="7" class="dashboard-empty-state">Loading staff...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
 </section>

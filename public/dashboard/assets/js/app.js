@@ -4,378 +4,220 @@
 ========================================================== */
 
 if (window.TeamoTrackApp) {
-
-    console.warn(
-        "TeamoTrack app.js already loaded."
-    );
-
+  console.warn('TeamoTrack app.js already loaded.');
 } else {
+  window.TeamoTrackApp = true;
 
-    window.TeamoTrackApp = true;
+  const App = {
+    currentPath: null,
 
-    const App = {
+    loadedScripts: window.__TT_LOADED_SCRIPTS || new Set(),
 
-        currentPath: null,
+    loadedCss: window.__TT_LOADED_CSS || new Set(),
 
-        loadedScripts:
-            window.__TT_LOADED_SCRIPTS ||
-            new Set(),
-
-        loadedCss:
-            window.__TT_LOADED_CSS ||
-            new Set(),
-
-
-        /* ==================================================
+    /* ==================================================
            INIT
         ================================================== */
 
-        async init() {
+    async init() {
+      if (this.initialized) {
+        return;
+      }
 
-            if (this.initialized) {
-                return;
-            }
+      this.initialized = true;
 
-            this.initialized = true;
+      console.log('Initializing TeamoTrack...');
 
-            console.log(
-                "Initializing TeamoTrack..."
-            );
+      try {
+        await this.loadShell();
 
-            try {
+        this.bindNavigation();
 
-                await this.loadShell();
+        await this.navigate(window.location.pathname, false);
 
-                this.bindNavigation();
+        console.log('TeamoTrack initialized');
+      } catch (error) {
+        console.error('Application initialization failed:', error);
+      }
+    },
 
-                await this.navigate(
-                    window.location.pathname,
-                    false
-                );
-
-                console.log(
-                    "TeamoTrack initialized"
-                );
-
-            } catch (error) {
-
-                console.error(
-                    "Application initialization failed:",
-                    error
-                );
-
-            }
-
-        },
-
-
-        /* ==================================================
+    /* ==================================================
            STATIC SHELL
         ================================================== */
 
-        async loadShell() {
+    async loadShell() {
+      await Promise.all([
+        loadComponent('sidebar-container', '/dashboard/components/sidebar.html'),
 
-            await Promise.all([
+        loadComponent('header-container', '/dashboard/components/header.html'),
+      ]);
 
-                loadComponent(
-                    "sidebar-container",
-                    "/dashboard/components/sidebar.html"
-                ),
+      initializeUserProfile();
 
-                loadComponent(
-                    "header-container",
-                    "/dashboard/components/header.html"
-                )
+      initializeHeaderProfile();
 
-            ]);
+      initializePayrollVisibility();
 
-            initializeUserProfile();
+      initializeSidebar();
 
-            initializeHeaderProfile();
+      initializeTheme();
 
-            initializePayrollVisibility();
+      initializeRipple();
 
-            initializeSidebar();
+      document.body.classList.remove('app-loading');
 
-            initializeTheme();
+      document.body.classList.add('app-ready');
+    },
 
-            initializeRipple();
-
-
-
-            document.body.classList.remove(
-                "app-loading"
-            );
-
-
-            document.body.classList.add(
-                "app-ready"
-            );
-
-        },
-
-
-
-
-        /* ==================================================
+    /* ==================================================
            NAVIGATION
         ================================================== */
 
-        bindNavigation() {
+    bindNavigation() {
+      if (this.navigationBound) {
+        return;
+      }
 
-            if (this.navigationBound) {
-                return;
-            }
+      this.navigationBound = true;
 
-            this.navigationBound = true;
+      document.addEventListener('click', (event) => {
+        const link = event.target.closest('a[href]');
 
+        if (!link) return;
 
-            document.addEventListener(
-                "click",
-                event => {
+        /*
+         * Only handle real SPA navigation links.
+         */
+        if (link.target === '_blank' || link.hasAttribute('download')) {
+          return;
+        }
 
-                    const link =
-                        event.target.closest("a[href]");
+        const href = link.getAttribute('href');
 
-                    if (!link) return;
+        if (
+          !href ||
+          href === '#' ||
+          href.startsWith('#') ||
+          href.startsWith('http://') ||
+          href.startsWith('https://') ||
+          href.startsWith('mailto:') ||
+          href.startsWith('tel:')
+        ) {
+          return;
+        }
 
-                    /*
-                     * Only handle real SPA navigation links.
-                     */
-                    if (
-                        link.target === "_blank" ||
-                        link.hasAttribute("download")
-                    ) {
-                        return;
-                    }
+        const url = new URL(href, window.location.origin);
 
-                    const href =
-                        link.getAttribute("href");
+        if (url.origin !== window.location.origin) {
+          return;
+        }
 
-                    if (
-                        !href ||
-                        href === "#" ||
-                        href.startsWith("#") ||
-                        href.startsWith("http://") ||
-                        href.startsWith("https://") ||
-                        href.startsWith("mailto:") ||
-                        href.startsWith("tel:")
-                    ) {
-                        return;
-                    }
+        event.preventDefault();
 
-                    const url =
-                        new URL(
-                            href,
-                            window.location.origin
-                        );
+        if (window.innerWidth <= 992) {
+          document.body.classList.remove('sidebar-open');
+        }
 
-                    if (
-                        url.origin !==
-                        window.location.origin
-                    ) {
-                        return;
-                    }
+        this.navigate(url.pathname);
+      });
 
-                    event.preventDefault();
+      window.addEventListener('popstate', () => {
+        this.navigate(window.location.pathname, false);
+      });
+    },
 
-                    if (window.innerWidth <= 992) {
-
-                        document.body.classList.remove(
-                            "sidebar-open"
-                        );
-
-                    }
-
-                    this.navigate(
-                        url.pathname
-                    );
-
-                }
-            );
-
-
-            window.addEventListener(
-                "popstate",
-                () => {
-
-                    this.navigate(
-                        window.location.pathname,
-                        false
-                    );
-
-                }
-            );
-
-        },
-
-
-        /* ==================================================
+    /* ==================================================
            NAVIGATE
         ================================================== */
 
-        async navigate(
-            path,
-            push = true
-        ) {
+    async navigate(path, push = true) {
+      path = path.replace(/\/$/, '') || '/dashboard';
 
-            path =
-                path.replace(
-                    /\/$/,
-                    ""
-                ) || "/dashboard";
+      if (this.currentPath === path) {
+        return;
+      }
 
+      const page = this.getPage(path);
 
-            if (
-                this.currentPath === path
-            ) {
-                return;
-            }
+      if (!page) {
+        load404();
 
+        return;
+      }
 
-            const page =
-                this.getPage(path);
+      if (push) {
+        history.pushState({}, '', path);
+      }
 
+      this.currentPath = path;
 
-            if (!page) {
-
-                load404();
-
-                return;
-
-            }
-
-
-            if (push) {
-
-                history.pushState(
-                    {},
-                    "",
-                    path
-                );
-
-            }
-
-
-            this.currentPath =
-                path;
-
-
-            /* ==================================================
+      /* ==================================================
                HEADER
             ================================================== */
 
-            updatePageHeader(
-                page.title,
-                page.description
-            );
+      updatePageHeader(page.title, page.description);
 
-
-            /* ==================================================
+      /* ==================================================
                SIDEBAR
                Update immediately
             ================================================== */
 
-            setActiveMenu(path);
+      setActiveMenu(path);
 
+      const content = document.getElementById('page-content');
 
-            const content =
-                document.getElementById(
-                    "page-content"
-                );
+      if (!content) {
+        return;
+      }
 
+      content.innerHTML = `<div class="page-loader"></div>`;
 
-            if (!content) {
-                return;
-            }
-
-
-            content.innerHTML =
-                `<div class="page-loader"></div>`;
-
-
-            try {
-
-                /* ==============================================
+      try {
+        /* ==============================================
                    HTML
                 ============================================== */
 
-                const response =
-                    await fetch(
-                        page.html
-                    );
+        const response = await fetch(page.html);
 
+        if (!response.ok) {
+          throw new Error(`Unable to load ${page.html}`);
+        }
 
-                if (!response.ok) {
+        content.innerHTML = await response.text();
 
-                    throw new Error(
-                        `Unable to load ${page.html}`
-                    );
-
-                }
-
-
-                content.innerHTML =
-                    await response.text();
-
-
-                /* ==============================================
+        /* ==============================================
                    CSS
                 ============================================== */
 
-                await this.loadPageCss(
-                    page.css
-                );
+        await this.loadPageCss(page.css);
 
-
-                /* ==============================================
+        /* ==============================================
                    JS
                 ============================================== */
 
-                await this.loadPageScript(
-                    page.js
-                );
+        await this.loadPageScript(page.js);
 
-
-                /* ==============================================
+        /* ==============================================
                    INITIALIZE PAGE
                 ============================================== */
 
-                const initializer =
-                    window[page.init];
+        const initializer = window[page.init];
 
+        if (typeof initializer !== 'function') {
+          throw new Error(`Initializer not found: ${page.init}`);
+        }
 
-                if (
-                    typeof initializer !==
-                    "function"
-                ) {
+        await initializer();
 
-                    throw new Error(
-                        `Initializer not found: ${page.init}`
-                    );
-
-                }
-
-
-                await initializer();
-
-
-                /* ==============================================
+        /* ==============================================
                    RIPPLE
                 ============================================== */
 
-                initializeRipple();
+        initializeRipple();
+      } catch (error) {
+        console.error('Page loading failed:', error);
 
-
-            } catch (error) {
-
-                console.error(
-                    "Page loading failed:",
-                    error
-                );
-
-
-                content.innerHTML = `
+        content.innerHTML = `
 
             <div class="empty-state">
 
@@ -384,795 +226,469 @@ if (window.TeamoTrackApp) {
                 </h5>
 
                 <p>
-                    ${escapeHtml(
-                    error.message
-                )}
+                    ${escapeHtml(error.message)}
                 </p>
 
             </div>
 
         `;
+      }
+    },
 
-            }
-
-        },
-
-        /* ==================================================
+    /* ==================================================
            PAGE SCRIPT
         ================================================== */
 
-        loadPageScript(script) {
+    loadPageScript(script) {
+      if (!script) {
+        return Promise.resolve();
+      }
 
-            if (!script) {
-                return Promise.resolve();
-            }
+      return new Promise((resolve, reject) => {
+        const element = document.createElement('script');
 
-            return new Promise(
-                (resolve, reject) => {
+        element.src = `${script}?t=${Date.now()}`;
 
-                    const element =
-                        document.createElement(
-                            "script"
-                        );
+        element.onload = resolve;
 
-                    element.src =
-                        `${script}?t=${Date.now()}`;
+        element.onerror = () => reject(new Error(`Unable to load ${script}`));
 
-                    element.onload =
-                        resolve;
+        document.body.appendChild(element);
+      });
+    },
 
-                    element.onerror =
-                        () => reject(
-                            new Error(
-                                `Unable to load ${script}`
-                            )
-                        );
-
-                    document.body.appendChild(
-                        element
-                    );
-
-                }
-            );
-
-        },
-
-
-        /* ==================================================
+    /* ==================================================
            PAGE CSS
         ================================================== */
 
-        loadPageCss(css) {
+    loadPageCss(css) {
+      if (!css) {
+        return Promise.resolve();
+      }
 
-            if (!css) {
-                return Promise.resolve();
-            }
+      if (this.loadedCss.has(css)) {
+        return Promise.resolve();
+      }
 
+      const existing = document.querySelector(`link[data-page-css="${css}"]`);
 
-            if (
-                this.loadedCss.has(css)
-            ) {
+      if (existing) {
+        this.loadedCss.add(css);
 
-                return Promise.resolve();
+        return Promise.resolve();
+      }
 
-            }
+      return new Promise((resolve, reject) => {
+        const link = document.createElement('link');
 
+        link.rel = 'stylesheet';
 
-            const existing =
-                document.querySelector(
-                    `link[data-page-css="${css}"]`
-                );
+        link.href = css;
 
+        link.dataset.pageCss = css;
 
-            if (existing) {
+        link.onload = () => {
+          this.loadedCss.add(css);
 
-                this.loadedCss.add(
-                    css
-                );
+          resolve();
+        };
 
-                return Promise.resolve();
+        link.onerror = () => {
+          reject(new Error(`Unable to load ${css}`));
+        };
 
-            }
+        document.head.appendChild(link);
+      });
+    },
 
-
-            return new Promise(
-                (resolve, reject) => {
-
-                    const link =
-                        document.createElement(
-                            "link"
-                        );
-
-
-                    link.rel =
-                        "stylesheet";
-
-
-                    link.href =
-                        css;
-
-
-                    link.dataset.pageCss =
-                        css;
-
-
-                    link.onload =
-                        () => {
-
-                            this.loadedCss.add(
-                                css
-                            );
-
-                            resolve();
-
-                        };
-
-
-                    link.onerror =
-                        () => {
-
-                            reject(
-                                new Error(
-                                    `Unable to load ${css}`
-                                )
-                            );
-
-                        };
-
-
-                    document.head.appendChild(
-                        link
-                    );
-
-                }
-            );
-
-        },
-
-
-        /* ==================================================
+    /* ==================================================
            PAGES
         ================================================== */
 
-        getPage(path) {
+    getPage(path) {
+      const pages = {
+        '/dashboard': {
+          html: '/dashboard/pages/dashboard.html',
 
-            const pages = {
+          js: '/dashboard/assets/js/dashboard.js',
 
-                "/dashboard": {
+          css: null,
 
-                    html:
-                        "/dashboard/pages/dashboard.html",
+          init: 'initializeDashboard',
 
-                    js:
-                        "/dashboard/assets/js/dashboard.js",
+          title: 'Dashboard',
 
-                    css:
-                        null,
+          description: "Welcome back! Here's what's happening today.",
+        },
 
-                    init:
-                        "initializeDashboard",
+        '/tasks': {
+          html: '/dashboard/pages/task/tasks.html',
 
-                    title:
-                        "Dashboard",
+          js: '/dashboard/assets/js/task/tasks.js',
 
-                    description:
-                        "Welcome back! Here's what's happening today."
+          css: '/dashboard/assets/css/task/tasks.css',
 
-                },
+          init: 'initializeTasksPage',
 
+          title: 'Tasks',
 
-                "/tasks": {
+          description: "Manage and track your team's tasks.",
+        },
 
-                    html:
-                        "/dashboard/pages/task/tasks.html",
+        '/executives': {
+          html: '/dashboard/pages/team/executives.html',
 
-                    js:
-                        "/dashboard/assets/js/task/tasks.js",
+          js: '/dashboard/assets/js/team/executives.js',
 
-                    css:
-                        "/dashboard/assets/css/task/tasks.css",
+          css: '/dashboard/assets/css/team/executives.css',
 
-                    init:
-                        "initializeTasksPage",
+          init: 'initializeExecutivesPage',
 
-                    title:
-                        "Tasks",
+          title: 'Executives',
 
-                    description:
-                        "Manage and track your team's tasks."
+          description: 'Manage your field executives.',
+        },
 
-                },
+        '/teams': {
+          html: '/dashboard/pages/team/teams.html',
 
+          js: '/dashboard/assets/js/team/teams.js',
 
-                "/executives": {
+          css: '/dashboard/assets/css/team/teams.css',
 
-                    html:
-                        "/dashboard/pages/team/executives.html",
+          init: 'initializeTeamsPage',
 
-                    js:
-                        "/dashboard/assets/js/team/executives.js",
+          title: 'Teams',
 
-                    css:
-                        "/dashboard/assets/css/team/executives.css",
+          description: 'Manage your teams and members.',
+        },
 
-                    init:
-                        "initializeExecutivesPage",
+        '/shifts': {
+          html: '/dashboard/pages/team/shifts.html',
 
-                    title:
-                        "Executives",
+          js: '/dashboard/assets/js/team/shifts.js',
 
-                    description:
-                        "Manage your field executives."
+          css: '/dashboard/assets/css/team/shifts.css',
 
-                },
+          init: 'initializeShiftsPage',
 
+          title: 'Shifts',
 
-                "/teams": {
+          description: 'Manage executive shifts and schedules.',
+        },
 
-                    html:
-                        "/dashboard/pages/team/teams.html",
+        '/attendance/my': {
+          html: '/dashboard/pages/attendance/my-attendance.html',
 
-                    js:
-                        "/dashboard/assets/js/team/teams.js",
+          js: '/dashboard/assets/js/attendance/my-attendance.js',
 
-                    css:
-                        "/dashboard/assets/css/team/teams.css",
+          css: '/dashboard/assets/css/attendance/my-attendance.css',
 
-                    init:
-                        "initializeTeamsPage",
+          init: 'initializeMyAttendancePage',
 
-                    title:
-                        "Teams",
+          title: 'My Attendance',
 
-                    description:
-                        "Manage your teams and members."
+          description: 'View your attendance and manage today’s check-in and check-out.',
+        },
 
-                },
+        '/attendance': {
+          html: '/dashboard/pages/attendance/attendance.html',
 
+          js: '/dashboard/assets/js/attendance/attendance.js',
 
-                "/shifts": {
+          css: '/dashboard/assets/css/attendance/attendance.css',
 
-                    html:
-                        "/dashboard/pages/team/shifts.html",
+          init: 'initializeAttendancePage',
 
-                    js:
-                        "/dashboard/assets/js/team/shifts.js",
+          title: 'Attendance',
 
-                    css:
-                        "/dashboard/assets/css/team/shifts.css",
+          description: "View and manage your team's attendance.",
+        },
 
-                    init:
-                        "initializeShiftsPage",
+        '/attendance/live': {
+          html: '/dashboard/pages/attendance/live.html',
 
-                    title:
-                        "Shifts",
+          js: '/dashboard/assets/js/attendance/live.js',
 
-                    description:
-                        "Manage executive shifts and schedules."
+          css: '/dashboard/assets/css/attendance/live.css',
 
-                },
+          init: 'initializeLiveTrackingPage',
 
-                "/attendance": {
+          title: 'Live Tracking',
 
-                    html:
-                        "/dashboard/pages/attendance/attendance.html",
+          description: 'Track field executives and review their routes.',
+        },
 
-                    js:
-                        "/dashboard/assets/js/attendance/attendance.js",
-
-                    css:
-                        "/dashboard/assets/css/attendance/attendance.css",
-
-                    init:
-                        "initializeAttendancePage",
-
-                    title:
-                        "Attendance",
-
-                    description:
-                        "View and manage your team's attendance."
-
-                },
-
-
-                "/attendance/live": {
-
-                    html:
-                        "/dashboard/pages/attendance/live.html",
-
-                    js:
-                        "/dashboard/assets/js/attendance/live.js",
-
-                    css:
-                        "/dashboard/assets/css/attendance/live.css",
-
-                    init:
-                        "initializeLiveTrackingPage",
-
-                    title:
-                        "Live Tracking",
-
-                    description:
-                        "Track field executives and review their routes."
-
-                },
-
-                /* ==================================================
+        /* ==================================================
                 LEAVE
                 ================================================== */
 
-                "/leave": {
+        '/leave': {
+          html: '/dashboard/pages/leave/leave.html',
 
-                    html:
-                        "/dashboard/pages/leave/leave.html",
+          js: '/dashboard/assets/js/leave/leave.js',
 
-                    js:
-                        "/dashboard/assets/js/leave/leave.js",
+          css: '/dashboard/assets/css/leave/leave.css',
 
-                    css:
-                        "/dashboard/assets/css/leave/leave.css",
+          init: 'initializeLeavePage',
 
-                    init:
-                        "initializeLeavePage",
+          title: 'Leave',
 
-                    title:
-                        "Leave",
-
-                    description:
-                        "Manage leave requests, approvals and leave policies."
-
-                },
-
-                '/holidays': {
-                    html: '/dashboard/pages/holidays/holiday.html',
-                    js: '/dashboard/assets/js/holidays/holiday.js',
-                    css: '/dashboard/assets/css/holidays/holiday.css',
-                    init: 'initializeHolidaysPage',
-                    title: 'Company Holidays',
-                    description: 'Manage company holidays',
-                },
-
-                '/salary-structures': {
-                    html: '/dashboard/pages/salary-structures/salary-structure.html',
-                    js: '/dashboard/assets/js/salary-structures/salary-structure.js',
-                    css: '/dashboard/assets/css/salary-structures/salary-structure.css',
-                    init: 'initializeSalaryStructuresPage',
-                    title: 'Salary Structures',
-                    description: 'Manage salary structures',
-                },
-
-                '/salary-assignments': {
-                    html: '/dashboard/pages/salary-assignments/salary-assignment.html',
-                    js: '/dashboard/assets/js/salary-assignments/salary-assignment.js',
-                    css: '/dashboard/assets/css/salary-assignments/salary-assignment.css',
-                    init: 'initializeSalaryAssignmentsPage',
-                    title: 'Salary Assignments',
-                    description: 'Manage employee salary assignments',
-                },
-
-                '/payroll-periods': {
-                    html: '/dashboard/pages/payroll-periods/payroll-period.html',
-                    js: '/dashboard/assets/js/payroll-periods/payroll-period.js',
-                    css: '/dashboard/assets/css/payroll-periods/payroll-period.css',
-                    init: 'initializePayrollPeriodsPage',
-                    title: 'Payroll Periods',
-                    description: 'Manage payroll periods',
-                },
-
-                '/payroll-calculations': {
-                    html: '/dashboard/pages/payroll-calculations/payroll-calculation.html',
-                    js: '/dashboard/assets/js/payroll-calculations/payroll-calculation.js',
-                    css: '/dashboard/assets/css/payroll-calculations/payroll-calculation.css',
-                    init: 'initializePayrollCalculationsPage',
-                    title: 'Payroll Calculation',
-                    description: 'Calculate and review payroll',
-                },
-
-                '/payments': {
-                    html: '/dashboard/pages/payments/payment.html',
-                    js: '/dashboard/assets/js/payments/payment.js',
-                    css: '/dashboard/assets/css/payments/payment.css',
-                    init: 'initializePaymentsPage',
-                    title: 'Payments',
-                    description: 'Manage employee salary payments',
-                },
-
-                '/payslips': {
-                    html: '/dashboard/pages/payslips/payslip.html',
-                    js: '/dashboard/assets/js/payslips/payslip.js',
-                    css: '/dashboard/assets/css/payslips/payslip.css',
-                    init: 'initializePayslipsPage',
-                    title: 'Payslips',
-                    description: 'View employee salary payslips',
-                },
-
-                "/profile": {
-
-                    html:
-                        "/dashboard/pages/settings/profile.html",
-
-                    js:
-                        "/dashboard/assets/js/settings/settings.js",
-
-                    css:
-                        "/dashboard/assets/css/settings/settings.css",
-
-                    init:
-                        "initializeProfilePage",
-
-                    title:
-                        "My Profile",
-
-                    description:
-                        "Manage your personal information."
-
-                },
-
-
-                "/settings/company": {
-
-                    html:
-                        "/dashboard/pages/settings/company.html",
-
-                    js:
-                        "/dashboard/assets/js/settings/settings.js",
-
-                    css:
-                        "/dashboard/assets/css/settings/settings.css",
-
-                    init:
-                        "initializeCompanyPage",
-
-                    title:
-                        "Company",
-
-                    description:
-                        "Manage your company information."
-
-                },
-
-
-                "/settings/roles": {
-
-                    html:
-                        "/dashboard/pages/settings/roles.html",
-
-                    js:
-                        "/dashboard/assets/js/settings/settings.js",
-
-                    css:
-                        "/dashboard/assets/css/settings/settings.css",
-
-                    init:
-                        "initializeRolesPage",
-
-                    title:
-                        "Roles & Permissions",
-
-                    description:
-                        "Control what your team can do."
-
-                },
-
-                "/managers": {
-
-                    html:
-                        "/dashboard/pages/staff/managers.html",
-
-                    js:
-                        "/dashboard/assets/js/staff/managers.js",
-
-                    css:
-                        "/dashboard/assets/css/staff/managers.css",
-
-                    init:
-                        "initializeManagersPage",
-
-                    title:
-                        "Managers",
-
-                    description:
-                        "Manage managers and your management hierarchy."
-
-                },
-
-
-                "/hr": {
-
-                    html:
-                        "/dashboard/pages/staff/hr.html",
-
-                    js:
-                        "/dashboard/assets/js/staff/hr.js",
-
-                    css:
-                        "/dashboard/assets/css/staff/hr.css",
-
-                    init:
-                        "initializeHrPage",
-
-                    title:
-                        "HR",
-
-                    description:
-                        "Manage your HR hierarchy."
-                },
-            };
-
-
-            return pages[path] || null;
-
+          description: 'Manage leave requests, approvals and leave policies.',
         },
 
-    };
+        '/holidays': {
+          html: '/dashboard/pages/holidays/holiday.html',
+          js: '/dashboard/assets/js/holidays/holiday.js',
+          css: '/dashboard/assets/css/holidays/holiday.css',
+          init: 'initializeHolidaysPage',
+          title: 'Company Holidays',
+          description: 'Manage company holidays',
+        },
 
+        '/salary-structures': {
+          html: '/dashboard/pages/salary-structures/salary-structure.html',
+          js: '/dashboard/assets/js/salary-structures/salary-structure.js',
+          css: '/dashboard/assets/css/salary-structures/salary-structure.css',
+          init: 'initializeSalaryStructuresPage',
+          title: 'Salary Structures',
+          description: 'Manage salary structures',
+        },
 
-    window.App = App;
+        '/salary-assignments': {
+          html: '/dashboard/pages/salary-assignments/salary-assignment.html',
+          js: '/dashboard/assets/js/salary-assignments/salary-assignment.js',
+          css: '/dashboard/assets/css/salary-assignments/salary-assignment.css',
+          init: 'initializeSalaryAssignmentsPage',
+          title: 'Salary Assignments',
+          description: 'Manage employee salary assignments',
+        },
 
+        '/payroll-periods': {
+          html: '/dashboard/pages/payroll-periods/payroll-period.html',
+          js: '/dashboard/assets/js/payroll-periods/payroll-period.js',
+          css: '/dashboard/assets/css/payroll-periods/payroll-period.css',
+          init: 'initializePayrollPeriodsPage',
+          title: 'Payroll Periods',
+          description: 'Manage payroll periods',
+        },
 
-    /* ======================================================
+        '/payroll-calculations': {
+          html: '/dashboard/pages/payroll-calculations/payroll-calculation.html',
+          js: '/dashboard/assets/js/payroll-calculations/payroll-calculation.js',
+          css: '/dashboard/assets/css/payroll-calculations/payroll-calculation.css',
+          init: 'initializePayrollCalculationsPage',
+          title: 'Payroll Calculation',
+          description: 'Calculate and review payroll',
+        },
+
+        '/payments': {
+          html: '/dashboard/pages/payments/payment.html',
+          js: '/dashboard/assets/js/payments/payment.js',
+          css: '/dashboard/assets/css/payments/payment.css',
+          init: 'initializePaymentsPage',
+          title: 'Payments',
+          description: 'Manage employee salary payments',
+        },
+
+        '/payslips': {
+          html: '/dashboard/pages/payslips/payslip.html',
+          js: '/dashboard/assets/js/payslips/payslip.js',
+          css: '/dashboard/assets/css/payslips/payslip.css',
+          init: 'initializePayslipsPage',
+          title: 'Payslips',
+          description: 'View employee salary payslips',
+        },
+
+        '/profile': {
+          html: '/dashboard/pages/settings/profile.html',
+
+          js: '/dashboard/assets/js/settings/settings.js',
+
+          css: '/dashboard/assets/css/settings/settings.css',
+
+          init: 'initializeProfilePage',
+
+          title: 'My Profile',
+
+          description: 'Manage your personal information.',
+        },
+
+        '/settings/company': {
+          html: '/dashboard/pages/settings/company.html',
+
+          js: '/dashboard/assets/js/settings/settings.js',
+
+          css: '/dashboard/assets/css/settings/settings.css',
+
+          init: 'initializeCompanyPage',
+
+          title: 'Company',
+
+          description: 'Manage your company information.',
+        },
+
+        '/settings/roles': {
+          html: '/dashboard/pages/settings/roles.html',
+
+          js: '/dashboard/assets/js/settings/settings.js',
+
+          css: '/dashboard/assets/css/settings/settings.css',
+
+          init: 'initializeRolesPage',
+
+          title: 'Roles & Permissions',
+
+          description: 'Control what your team can do.',
+        },
+
+        '/managers': {
+          html: '/dashboard/pages/staff/managers.html',
+
+          js: '/dashboard/assets/js/staff/managers.js',
+
+          css: '/dashboard/assets/css/staff/managers.css',
+
+          init: 'initializeManagersPage',
+
+          title: 'Managers',
+
+          description: 'Manage managers and your management hierarchy.',
+        },
+
+        '/hr': {
+          html: '/dashboard/pages/staff/hr.html',
+
+          js: '/dashboard/assets/js/staff/hr.js',
+
+          css: '/dashboard/assets/css/staff/hr.css',
+
+          init: 'initializeHrPage',
+
+          title: 'HR',
+
+          description: 'Manage your HR hierarchy.',
+        },
+      };
+
+      return pages[path] || null;
+    },
+  };
+
+  window.App = App;
+
+  /* ======================================================
        COMPONENT
     ====================================================== */
 
-    async function loadComponent(
-        elementId,
-        file
-    ) {
+  async function loadComponent(elementId, file) {
+    const element = document.getElementById(elementId);
 
-        const element =
-            document.getElementById(
-                elementId
-            );
-
-
-        if (!element) {
-
-            throw new Error(
-                `#${elementId} not found`
-            );
-
-        }
-
-
-        const response =
-            await fetch(file);
-
-
-        if (!response.ok) {
-
-            throw new Error(
-                `Unable to load ${file}`
-            );
-
-        }
-
-
-        element.innerHTML =
-            await response.text();
-
+    if (!element) {
+      throw new Error(`#${elementId} not found`);
     }
 
+    const response = await fetch(file);
 
-    /* ======================================================
+    if (!response.ok) {
+      throw new Error(`Unable to load ${file}`);
+    }
+
+    element.innerHTML = await response.text();
+  }
+
+  /* ======================================================
        HEADER
     ====================================================== */
 
-    function updatePageHeader(
-        title,
-        description
-    ) {
+  function updatePageHeader(title, description) {
+    const titleElement = document.getElementById('pageTitle');
 
-        const titleElement =
-            document.getElementById(
-                "pageTitle"
-            );
+    const descriptionElement = document.getElementById('pageDescription');
 
-
-        const descriptionElement =
-            document.getElementById(
-                "pageDescription"
-            );
-
-
-        if (titleElement) {
-
-            titleElement.textContent =
-                title;
-
-        }
-
-
-        if (descriptionElement) {
-
-            descriptionElement.textContent =
-                description;
-
-        }
-
+    if (titleElement) {
+      titleElement.textContent = title;
     }
 
+    if (descriptionElement) {
+      descriptionElement.textContent = description;
+    }
+  }
 
-    /* ======================================================
+  /* ======================================================
        ACTIVE MENU
     ====================================================== */
 
-    function setActiveMenu(path = window.location.pathname
-    ) {
+  function setActiveMenu(path = window.location.pathname) {
+    const currentPath = window.location.pathname.replace(/\/$/, '') || '/dashboard';
 
-        const currentPath =
-            window.location.pathname
-                .replace(/\/$/, "") ||
-            "/dashboard";
+    document.querySelectorAll('.menu-item').forEach((item) => {
+      item.classList.remove('active', 'open');
+    });
 
+    document.querySelectorAll('.submenu a').forEach((link) => {
+      link.classList.remove('active');
+    });
 
-        document
-            .querySelectorAll(
-                ".menu-item"
-            )
-            .forEach(item => {
+    document.querySelectorAll('.menu-link[href]').forEach((link) => {
+      if (link.getAttribute('href') === currentPath) {
+        link.closest('.menu-item')?.classList.add('active');
+      }
+    });
 
-                item.classList.remove(
-                    "active",
-                    "open"
-                );
+    document.querySelectorAll('.submenu a').forEach((link) => {
+      if (link.getAttribute('href') !== currentPath) {
+        return;
+      }
 
-            });
+      link.classList.add('active');
 
+      link.closest('.has-submenu')?.classList.add('active', 'open');
+    });
+  }
 
-        document
-            .querySelectorAll(
-                ".submenu a"
-            )
-            .forEach(link => {
-
-                link.classList.remove(
-                    "active"
-                );
-
-            });
-
-
-        document
-            .querySelectorAll(
-                ".menu-link[href]"
-            )
-            .forEach(link => {
-
-                if (
-                    link.getAttribute("href") ===
-                    currentPath
-                ) {
-
-                    link
-                        .closest(".menu-item")
-                        ?.classList.add(
-                            "active"
-                        );
-
-                }
-
-            });
-
-
-        document
-            .querySelectorAll(
-                ".submenu a"
-            )
-            .forEach(link => {
-
-                if (
-                    link.getAttribute("href") !==
-                    currentPath
-                ) {
-                    return;
-                }
-
-
-                link.classList.add(
-                    "active"
-                );
-
-
-                link
-                    .closest(".has-submenu")
-                    ?.classList.add(
-                        "active",
-                        "open"
-                    );
-
-            });
-
-    }
-
-
-    /* ======================================================
+  /* ======================================================
        RIPPLE
     ====================================================== */
 
-    function initializeRipple() {
+  function initializeRipple() {
+    document.querySelectorAll('.ripple').forEach((button) => {
+      button.onclick = function (event) {
+        const circle = document.createElement('span');
 
-        document
-            .querySelectorAll(
-                ".ripple"
-            )
-            .forEach(button => {
+        const diameter = Math.max(this.clientWidth, this.clientHeight);
 
-                button.onclick =
-                    function (event) {
+        circle.style.width = `${diameter}px`;
 
-                        const circle =
-                            document.createElement(
-                                "span"
-                            );
+        circle.style.height = `${diameter}px`;
 
+        circle.style.left = `${event.offsetX - diameter / 2}px`;
 
-                        const diameter =
-                            Math.max(
-                                this.clientWidth,
-                                this.clientHeight
-                            );
+        circle.style.top = `${event.offsetY - diameter / 2}px`;
 
+        circle.className = 'ripple-circle';
 
-                        circle.style.width =
-                            `${diameter}px`;
+        this.appendChild(circle);
 
-                        circle.style.height =
-                            `${diameter}px`;
+        setTimeout(() => circle.remove(), 500);
+      };
+    });
+  }
 
-
-                        circle.style.left =
-                            `${event.offsetX - diameter / 2}px`;
-
-                        circle.style.top =
-                            `${event.offsetY - diameter / 2}px`;
-
-
-                        circle.className =
-                            "ripple-circle";
-
-
-                        this.appendChild(
-                            circle
-                        );
-
-
-                        setTimeout(
-                            () =>
-                                circle.remove(),
-                            500
-                        );
-
-                    };
-
-            });
-
-    }
-
-
-    /* ======================================================
+  /* ======================================================
        404
     ====================================================== */
 
-    function load404() {
+  function load404() {
+    updatePageHeader('Page Not Found', 'The requested page does not exist.');
 
-        updatePageHeader(
-            "Page Not Found",
-            "The requested page does not exist."
-        );
+    const content = document.getElementById('page-content');
 
+    if (!content) {
+      return;
+    }
 
-        const content =
-            document.getElementById(
-                "page-content"
-            );
-
-
-        if (!content) {
-            return;
-        }
-
-
-        content.innerHTML = `
+    content.innerHTML = `
 
         <div class="empty-state">
 
@@ -1194,293 +710,142 @@ if (window.TeamoTrackApp) {
         </div>
 
     `;
+  }
 
-    }
-
-    /* ==========================================================
+  /* ==========================================================
        HEADER PROFILE
     ========================================================== */
 
-    function initializeHeaderProfile() {
+  function initializeHeaderProfile() {
+    const wrapper = document.getElementById('headerProfileWrapper');
 
-        const wrapper =
-            document.getElementById(
-                "headerProfileWrapper"
-            );
+    const profile = document.getElementById('headerProfile');
 
-        const profile =
-            document.getElementById(
-                "headerProfile"
-            );
+    const logout = document.getElementById('logoutButton');
 
-        const logout =
-            document.getElementById(
-                "logoutButton"
-            );
-
-
-        if (!wrapper || !profile) {
-            return;
-        }
-
-
-        profile.onclick = event => {
-
-            event.stopPropagation();
-
-            const isOpen =
-                wrapper.classList.toggle(
-                    "open"
-                );
-
-            profile.setAttribute(
-                "aria-expanded",
-                String(isOpen)
-            );
-
-        };
-
-
-        document.addEventListener(
-            "click",
-            event => {
-
-                if (
-                    !wrapper.contains(
-                        event.target
-                    )
-                ) {
-
-                    wrapper.classList.remove(
-                        "open"
-                    );
-
-                    profile.setAttribute(
-                        "aria-expanded",
-                        "false"
-                    );
-
-                }
-
-            }
-        );
-
-
-        logout?.addEventListener(
-            "click",
-            async () => {
-
-                const result =
-                    await AppAlert.confirm(
-                        "Are you sure you want to logout?"
-                    );
-
-
-                if (
-                    !result.isConfirmed
-                ) {
-                    return;
-                }
-
-
-                window.location.href =
-                    "/login";
-
-            }
-        );
-
+    if (!wrapper || !profile) {
+      return;
     }
 
-    function initializeUserProfile() {
+    profile.onclick = (event) => {
+      event.stopPropagation();
 
-        const userData =
-            JSON.parse(
-                localStorage.getItem("userData") || "{}"
-            );
+      const isOpen = wrapper.classList.toggle('open');
 
-        const fullName =
-            userData.fullName ||
-            userData.name ||
-            "User";
+      profile.setAttribute('aria-expanded', String(isOpen));
+    };
 
-        const role =
-            userData.roleName ||
-            userData.role ||
-            "Administrator";
+    document.addEventListener('click', (event) => {
+      if (!wrapper.contains(event.target)) {
+        wrapper.classList.remove('open');
 
+        profile.setAttribute('aria-expanded', 'false');
+      }
+    });
 
-        /*
-         * Generate initials
-         */
-        const initials =
-            fullName
-                .trim()
-                .split(/\s+/)
-                .map(name => name.charAt(0))
-                .join("")
-                .substring(0, 2)
-                .toUpperCase();
+    logout?.addEventListener('click', async () => {
+      const result = await AppAlert.confirm('Are you sure you want to logout?');
 
+      if (!result.isConfirmed) {
+        return;
+      }
 
-        /*
-         * Names
-         */
-        document
-            .getElementById("sidebarUserName")
-            ?.replaceChildren(
-                document.createTextNode(fullName)
-            );
+      window.location.href = '/login';
+    });
+  }
 
-        document
-            .getElementById("headerUserName")
-            ?.replaceChildren(
-                document.createTextNode(fullName)
-            );
+  function initializeUserProfile() {
+    const userData = JSON.parse(localStorage.getItem('userData') || '{}');
 
-        document
-            .getElementById("profileMenuUserRole")
-            ?.replaceChildren(
-                document.createTextNode(fullName)
-            );
+    const fullName = userData.fullName || userData.name || 'User';
 
+    const role = userData.roleName || userData.role || 'Administrator';
 
-        /*
-         * Roles
-         */
-        document
-            .getElementById("sidebarUserRole")
-            ?.replaceChildren(
-                document.createTextNode(role)
-            );
+    /*
+     * Generate initials
+     */
+    const initials = fullName
+      .trim()
+      .split(/\s+/)
+      .map((name) => name.charAt(0))
+      .join('')
+      .substring(0, 2)
+      .toUpperCase();
 
-        document
-            .getElementById("headerUserRole")
-            ?.replaceChildren(
-                document.createTextNode(role)
-            );
+    /*
+     * Names
+     */
+    document.getElementById('sidebarUserName')?.replaceChildren(document.createTextNode(fullName));
 
-        document
-            .getElementById("profileMenuUserRole")
-            ?.replaceChildren(
-                document.createTextNode(role)
-            );
+    document.getElementById('headerUserName')?.replaceChildren(document.createTextNode(fullName));
 
+    document.getElementById('profileMenuUserRole')?.replaceChildren(document.createTextNode(fullName));
 
-        /*
-         * Avatars
-         */
-        document
-            .getElementById("sidebarUserAvatar")
-            ?.replaceChildren(
-                document.createTextNode(initials)
-            );
+    /*
+     * Roles
+     */
+    document.getElementById('sidebarUserRole')?.replaceChildren(document.createTextNode(role));
 
-        document
-            .getElementById("headerUserAvatar")
-            ?.replaceChildren(
-                document.createTextNode(initials)
-            );
+    document.getElementById('headerUserRole')?.replaceChildren(document.createTextNode(role));
 
-        document
-            .getElementById("profileMenuUserAvatar")
-            ?.replaceChildren(
-                document.createTextNode(initials)
-            );
-    }
+    document.getElementById('profileMenuUserRole')?.replaceChildren(document.createTextNode(role));
 
-    /* ======================================================
+    /*
+     * Avatars
+     */
+    document.getElementById('sidebarUserAvatar')?.replaceChildren(document.createTextNode(initials));
+
+    document.getElementById('headerUserAvatar')?.replaceChildren(document.createTextNode(initials));
+
+    document.getElementById('profileMenuUserAvatar')?.replaceChildren(document.createTextNode(initials));
+  }
+
+  /* ======================================================
    PAYROLL VISIBILITY
 ====================================================== */
 
-    function initializePayrollVisibility() {
+  function initializePayrollVisibility() {
+    const userData = JSON.parse(localStorage.getItem('userData') || '{}');
 
-        const userData =
-            JSON.parse(
-                localStorage.getItem("userData") || "{}"
-            );
+    const payrollMenu = document.querySelector('[data-menu="payroll"]');
 
-
-        const payrollMenu =
-            document.querySelector(
-                '[data-menu="payroll"]'
-            );
-
-
-        if (!payrollMenu) {
-            return;
-        }
-
-
-        const role =
-            userData.role || "";
-
-
-        /*
-         * Payroll is available only to
-         * root_manager.
-         */
-        if (role !== "root_manager") {
-
-            payrollMenu.remove();
-
-        }
-
+    if (!payrollMenu) {
+      return;
     }
 
-    /* ======================================================
+    const role = userData.role || '';
+
+    /*
+     * Payroll is available only to
+     * root_manager.
+     */
+    if (role !== 'root_manager') {
+      payrollMenu.remove();
+    }
+  }
+
+  /* ======================================================
        ESCAPE
     ====================================================== */
 
-    function escapeHtml(value) {
+  function escapeHtml(value) {
+    return String(value ?? '')
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#039;');
+  }
 
-        return String(
-            value ?? ""
-        )
-            .replaceAll(
-                "&",
-                "&amp;"
-            )
-            .replaceAll(
-                "<",
-                "&lt;"
-            )
-            .replaceAll(
-                ">",
-                "&gt;"
-            )
-            .replaceAll(
-                '"',
-                "&quot;"
-            )
-            .replaceAll(
-                "'",
-                "&#039;"
-            );
-
-    }
-
-
-    /* ======================================================
+  /* ======================================================
        START
     ====================================================== */
 
-    if (
-        document.readyState ===
-        "loading"
-    ) {
-
-        document.addEventListener(
-            "DOMContentLoaded",
-            () => App.init(),
-            {
-                once: true
-            }
-        );
-
-    } else {
-
-        App.init();
-
-    }
-
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => App.init(), {
+      once: true,
+    });
+  } else {
+    App.init();
+  }
 }
