@@ -1,185 +1,230 @@
-<section class="live-tracking-page">
+<section class="live-tracking-page p-3">
+  <div class="container-fluid">
+    <!-- ==================================================
+             PAGE TOOLBAR
+             ================================================== -->
 
-    <div class="container-fluid">
+    <div class="tracking-toolbar">
+      <div class="tracking-toolbar-main">
+        <!-- TITLE -->
+        <div class="tracking-toolbar-title">
+          <div class="tracking-toolbar-icon">
+            <i class="bi bi-geo-alt-fill"></i>
+          </div>
 
-        <!-- FILTER -->
-        <div class="filter-card">
-
-            <div class="row g-3 align-items-end">
-
-                <div class="col-lg-5 col-md-6">
-
-                    <label class="form-label">
-                        Executive
-                    </label>
-
-                    <select
-                        id="liveExecutive"
-                        class="form-select"
-                    >
-                        <option value="">
-                            Select Executive
-                        </option>
-                    </select>
-
-                </div>
-
-
-                <div class="col-lg-3 col-md-3">
-
-                    <label class="form-label">
-                        Date
-                    </label>
-
-                    <input
-                        id="liveDate"
-                        type="date"
-                        class="form-control"
-                    >
-
-                </div>
-
-
-                <div class="col-lg-2 col-md-3">
-
-                    <button
-                        id="loadTrackingBtn"
-                        class="btn btn-primary w-100"
-                    >
-                        <i class="bi bi-map me-1"></i>
-                        Track
-                    </button>
-
-                </div>
-
-            </div>
-
+          <div>
+            <h5>Live Tracking</h5>
+            <p>View executive movement and route history</p>
+          </div>
         </div>
 
+        <!-- FILTERS -->
+        <div class="tracking-filters">
+          <!-- TEAM -->
+          <div class="tracking-field team-field">
+            <label for="liveTeam"> Team </label>
 
-        <!-- STATS -->
-        <div class="row g-3 mb-3">
+            <div class="tracking-input-wrap">
+              <i class="bi bi-people"></i>
 
-            <div class="col-lg-3 col-md-6">
+              <select id="liveTeam" class="form-select">
+                <option value="">All Teams</option>
+              </select>
+            </div>
+          </div>
 
-                <div class="tracking-stat">
+          <!-- EXECUTIVE -->
+          <div class="tracking-field executive-field">
+            <label> Executive </label>
 
-                    <small>Start</small>
+            <div class="tracking-select" id="liveExecutiveDropdown">
+              <!-- SELECT TRIGGER -->
+              <button type="button" class="tracking-select-trigger" id="liveExecutiveTrigger" aria-expanded="false">
+                <span id="liveExecutiveText"> Select Executive </span>
 
-                    <strong id="trackingStart">
-                        --
-                    </strong>
+                <i class="bi bi-chevron-down"></i>
+              </button>
 
+              <!-- DROPDOWN -->
+              <div class="tracking-select-menu hidden" id="liveExecutiveMenu">
+                <!-- SEARCH -->
+                <div class="tracking-select-search">
+                  <i class="bi bi-search"></i>
+
+                  <input type="search" id="liveExecutiveSearch" placeholder="Search executive..." autocomplete="off" />
                 </div>
 
+                <!-- OPTIONS -->
+                <div class="tracking-select-options" id="liveExecutiveOptions"></div>
+              </div>
+
+              <!-- SELECTED EXECUTIVE -->
+              <input type="hidden" id="liveExecutive" value="" />
             </div>
+          </div>
 
+          <!-- DATE -->
+          <div class="tracking-field date-field">
+            <label for="liveDate"> Date </label>
 
-            <div class="col-lg-3 col-md-6">
+            <div class="tracking-input-wrap">
+              <i class="bi bi-calendar3"></i>
 
-                <div class="tracking-stat">
-
-                    <small>End</small>
-
-                    <strong id="trackingEnd">
-                        --
-                    </strong>
-
-                </div>
-
+              <input id="liveDate" type="date" class="form-control" />
             </div>
+          </div>
 
+          <!-- TRACK BUTTON -->
+          <button type="button" id="loadTrackingBtn" class="tracking-action">
+            <i class="bi bi-crosshair"></i>
 
-            <div class="col-lg-3 col-md-6">
-
-                <div class="tracking-stat">
-
-                    <small>Distance</small>
-
-                    <strong id="trackingDistance">
-                        0 m
-                    </strong>
-
-                </div>
-
-            </div>
-
-
-            <div class="col-lg-3 col-md-6">
-
-                <div class="tracking-stat">
-
-                    <small>Stops</small>
-
-                    <strong id="trackingStops">
-                        0
-                    </strong>
-
-                </div>
-
-            </div>
-
+            <span> Track Route </span>
+          </button>
         </div>
-
-
-        <!-- MAP -->
-        <div class="tracking-card">
-
-            <div class="tracking-card-header">
-
-                <h6 class="mb-0">
-                    Live Tracking
-                </h6>
-
-                <span id="trackingStatus">
-                    Select executive
-                </span>
-
-            </div>
-
-
-            <div
-                id="trackingMap"
-                class="tracking-map"
-            ></div>
-
-
-            <!-- PLAYBACK -->
-            <div class="playback-bar">
-
-                <button
-                    id="playBtn"
-                    class="btn btn-primary btn-sm"
-                >
-                    <i class="bi bi-play-fill"></i>
-                </button>
-
-                <button
-                    id="stopBtn"
-                    class="btn btn-light btn-sm"
-                >
-                    <i class="bi bi-stop-fill"></i>
-                </button>
-
-
-                <input
-                    id="playbackSlider"
-                    type="range"
-                    min="0"
-                    max="0"
-                    value="0"
-                    class="form-range"
-                >
-
-
-                <span id="playbackTime">
-                    --
-                </span>
-
-            </div>
-
-        </div>
-
+      </div>
     </div>
 
+    <!-- ==================================================
+             SUMMARY
+             ================================================== -->
+
+    <div class="tracking-summary">
+      <!-- START -->
+      <div class="tracking-metric">
+        <div class="tracking-metric-icon">
+          <i class="bi bi-play-circle"></i>
+        </div>
+
+        <div class="tracking-metric-content">
+          <span> Started </span>
+
+          <strong id="trackingStart"> -- </strong>
+        </div>
+      </div>
+
+      <!-- END -->
+      <div class="tracking-metric">
+        <div class="tracking-metric-icon">
+          <i class="bi bi-stop-circle"></i>
+        </div>
+
+        <div class="tracking-metric-content">
+          <span> Last Location </span>
+
+          <strong id="trackingEnd"> -- </strong>
+        </div>
+      </div>
+
+      <!-- DISTANCE -->
+      <div class="tracking-metric">
+        <div class="tracking-metric-icon">
+          <i class="bi bi-signpost-2"></i>
+        </div>
+
+        <div class="tracking-metric-content">
+          <span> Total Distance </span>
+
+          <strong id="trackingDistance"> 0 m </strong>
+        </div>
+      </div>
+
+      <!-- STOPS -->
+      <!-- <div class="tracking-metric">
+        <div class="tracking-metric-icon">
+          <i class="bi bi-pin-map"></i>
+        </div>
+
+        <div class="tracking-metric-content">
+          <span> Stops </span>
+
+          <strong id="trackingStops"> 0 </strong>
+        </div>
+      </div> -->
+    </div>
+
+    <!-- ==================================================
+             MAP CARD
+             ================================================== -->
+
+    <div class="tracking-map-card">
+      <!-- MAP HEADER -->
+      <div class="tracking-map-header">
+        <div class="tracking-map-heading">
+          <div class="tracking-map-title">
+            <div class="tracking-map-title-icon">
+              <i class="bi bi-map"></i>
+            </div>
+
+            <div>
+              <h6>Route Map</h6>
+
+              <span> Executive movement for selected date </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- STATUS -->
+        <div class="tracking-status" id="trackingStatus">
+          <span class="tracking-status-dot"></span>
+
+          <span id="trackingStatusText"> Select executive </span>
+        </div>
+      </div>
+
+      <!-- MAP -->
+      <div class="tracking-map-container">
+        <div id="trackingMap" class="tracking-map"></div>
+
+        <!-- EMPTY STATE -->
+        <!-- <div class="tracking-map-empty" id="trackingMapEmpty">
+          <div class="tracking-map-empty-icon">
+            <i class="bi bi-map"></i>
+          </div>
+
+          <strong> Ready to track </strong>
+
+          <span> Select an executive and date to view their route. </span>
+        </div> -->
+
+        <!-- EXPAND / SHRINK -->
+        <button type="button" id="mapExpandBtn" class="map-expand-btn" title="Expand map" aria-label="Expand map">
+          <i class="bi bi-arrows-fullscreen"></i>
+        </button>
+      </div>
+
+      <!-- ==================================================
+                 PLAYBACK
+                 ================================================== -->
+
+      <div class="tracking-playback">
+        <!-- CONTROLS -->
+        <div class="playback-controls">
+          <button
+            type="button"
+            id="playBtn"
+            class="playback-btn playback-play"
+            aria-label="Play route"
+            title="Play route"
+          >
+            <i class="bi bi-play-fill"></i>
+          </button>
+
+          <button type="button" id="stopBtn" class="playback-btn" aria-label="Stop playback" title="Stop playback">
+            <i class="bi bi-stop-fill"></i>
+          </button>
+        </div>
+
+        <!-- SLIDER -->
+        <div class="playback-track">
+          <input id="playbackSlider" type="range" min="0" max="0" value="0" class="form-range" />
+
+          <div class="playback-labels">
+            <span> Route playback </span>
+
+            <strong id="playbackTime"> -- </strong>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </section>

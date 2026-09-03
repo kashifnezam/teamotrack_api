@@ -1,323 +1,1180 @@
-.theme-color{
-   color: #02BBDF;
+/* ==========================================================
+   TeamoTrack
+   Login Page
+   Complete Responsive CSS
+========================================================== */
+
+/* ==========================================================
+   ROOT VARIABLES
+========================================================== */
+
+:root {
+  --primary: #00aeef;
+  --primary-dark: #0898cf;
+  --heading: #081b5b;
+  --text: #6c7293;
+  --border: #d7ddee;
+  --light-bg: #f7f9fc;
 }
 
-.login-form{
-    height: 650px;
-    width: 500px;
-    border: 1px solid gainsboro;
-    border-radius: 8px;
+/* ==========================================================
+   GLOBAL
+========================================================== */
+
+* {
+  box-sizing: border-box;
 }
+
+html,
+body {
+  width: 100%;
+  min-height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: Arial, Helvetica, sans-serif;
+  overflow-x: hidden;
+}
+
+button,
+input {
+  font-family: inherit;
+}
+
+/* ==========================================================
+   COMMON
+========================================================== */
+
+.theme-color {
+  color: var(--primary);
+}
+
+/* ==========================================================
+   MAIN LOGIN PAGE
+========================================================== */
 
 .login-page {
-    background-image: url("../images/bg.png"); /* Adjust path as needed */
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    min-height: 100vh;
+  width: 100%;
+  min-height: 100vh;
+
+  display: grid;
+
+  /*
+     * Left = content
+     * Right = dashboard + login form
+     */
+  grid-template-columns: minmax(470px, 0.85fr) minmax(700px, 1.15fr);
+
+  background-image: url('../images/bg.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+
+  overflow: hidden;
+}
+
+/* ==========================================================
+   LEFT SECTION
+========================================================== */
+
+.login-left {
+  min-width: 0;
+
+  padding: 20px 30px 40px 30px;
+
+  display: flex;
+  flex-direction: column;
+}
+
+/* ==========================================================
+   LOGO
+========================================================== */
+
+.logo {
+  display: flex;
+  align-items: center;
 }
 
 .logo-img {
-    background-image: url("../images/logo.png"); /* Adjust path as needed */
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    width: 75px;
-    height: 75px;
+  width: 75px;
+  height: 75px;
+
+  flex-shrink: 0;
+
+  background-image: url('../images/logo.png');
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 
-.icon-box{
-    width: 50px;
-    height: 50px;
-    padding: 10px;
-    background-color: whitesmoke;
-    box-shadow: rgba(60, 64, 67, 0.3) 0px 1px 2px 0px, rgba(60, 64, 67, 0.15) 0px 1px 3px 1px;
+.logo-text {
+  display: flex;
+  align-items: center;
+
+  padding-top: 8px;
+
+  font-size: 24px;
+  font-weight: 700;
 }
+
+/* ==========================================================
+   COMPANY CONTENT
+========================================================== */
+
+.company-content {
+  width: 100%;
+  max-width: 500px;
+
+  margin-top: 65px;
+  margin-left: 20px;
+}
+
+.company-overview {
+  color: #111827;
+
+  font-size: 34px;
+  line-height: 1.05;
+}
+
+.company-desc {
+  width: 400px;
+  max-width: 100%;
+
+  margin: 25px 0 35px;
+
+  color: var(--text);
+
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+/* ==========================================================
+   FEATURES
+========================================================== */
+
+.features {
+  display: flex;
+  flex-direction: column;
+
+  gap: 20px;
+}
+
+.feature-item {
+  display: flex;
+  align-items: flex-start;
+
+  gap: 15px;
+}
+
+.icon-box {
+  width: 50px;
+  height: 50px;
+
+  flex: 0 0 50px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background-color: whitesmoke;
+
+  border-radius: 8px;
+
+  box-shadow:
+    rgba(60, 64, 67, 0.2) 0px 1px 2px 0px,
+    rgba(60, 64, 67, 0.1) 0px 1px 3px 1px;
+}
+
+.icon-box i {
+  font-size: 20px;
+}
+
+.analytics-icon {
+  color: blueviolet;
+}
+
+.feature-content {
+  min-width: 0;
+
+  padding-top: 2px;
+}
+
+.feature-title {
+  margin-bottom: 4px;
+
+  color: #111827;
+
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.feature-desc {
+  width: 210px;
+  max-width: 100%;
+
+  color: var(--text);
+
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+/* ==========================================================
+   RIGHT SECTION
+========================================================== */
+
+.login-right {
+  min-width: 0;
+
+  position: relative;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  /*
+     * IMPORTANT:
+     * No gap because image and form overlap.
+     */
+  gap: 0;
+
+  padding: 30px 40px;
+}
+
+/* ==========================================================
+   DASHBOARD IMAGE
+========================================================== */
 
 .dash-img {
-    top: 150px;
-    position: relative;
-    background-image: url("../images/desk-dash.png"); /* Adjust path as needed */
-    background-size: cover;
-    background-repeat: no-repeat;
-    width: 475px;
-    height: 475px;
+  width: 475px;
+  height: 475px;
+
+  /*
+     * Do not allow the image to shrink.
+     */
+  flex: 0 0 475px;
+
+  background-image: url('../images/desk-dash.png');
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+
+  /*
+     * Original vertical positioning.
+     */
+  transform: translateY(50px);
+
+  /*
+     * Image goes BEHIND login card.
+     */
+  position: relative;
+  z-index: 1;
 }
 
-.login-form{
-    width:430px;
-    background:#fff;
-    border-radius:16px;
-    padding:55px 45px;
-    box-shadow:0 10px 35px rgba(0,0,0,.08);
+/* ==========================================================
+   LOGIN FORM
+========================================================== */
+
+.login-form {
+  width: 430px;
+
+  /*
+     * Do not shrink the card on desktop.
+     */
+  flex: 0 0 430px;
+
+  padding: 55px 45px;
+
+  background: #ffffff;
+
+  border: 1px solid #eeeeee;
+  border-radius: 16px;
+
+  box-shadow: 0 10px 35px rgba(0, 0, 0, 0.08);
+
+  /*
+     * ======================================================
+     * IMPORTANT OVERLAP
+     * ======================================================
+     *
+     * Dashboard image:
+     * 475px
+     *
+     * 40% of 475px:
+     * 475 x 0.40 = 190px
+     *
+     * Therefore the login card is pulled 190px
+     * over the dashboard image.
+     */
+  margin-left: -190px;
+
+  /*
+     * Form MUST be above image.
+     */
+  position: relative;
+  z-index: 2;
 }
 
-.login-form h1{
-    font-size:48px;
-    color:#081B5B;
+/* ==========================================================
+   LOGIN HEADING
+========================================================== */
+
+.login-form h1 {
+  margin: 0 0 15px;
+
+  color: var(--heading);
+
+  font-size: 44px;
+  line-height: 1.1;
 }
 
-.theme-color{
-    color:#00AEEF;
+.login-subtitle {
+  margin: 0 0 45px;
+
+  color: var(--text);
+
+  font-size: 16px;
+  line-height: 1.5;
 }
 
-.form-label{
-    color:#081B5B;
-    margin-bottom:12px;
+/* ==========================================================
+   FORM GROUP
+========================================================== */
+
+.form-group {
+  margin-bottom: 28px;
 }
 
-.custom-input .form-control,
-.custom-input .input-group-text{
-    height:58px;
-    border-color:#D7DDEE;
+/* ==========================================================
+   FORM LABEL
+========================================================== */
+
+.form-label {
+  display: block;
+
+  margin-bottom: 12px;
+
+  color: var(--heading);
+
+  font-size: 15px;
+  font-weight: 600;
 }
 
-.custom-input .form-control{
-    box-shadow:none;
-    font-size:16px;
+/* ==========================================================
+   PASSWORD LABEL ROW
+========================================================== */
+
+.password-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 10px;
 }
 
-.custom-input .form-control:focus{
-    border-color:#00AEEF;
-    box-shadow:none;
+.forgot-password {
+  margin-bottom: 12px;
+
+  color: var(--primary);
+
+  font-size: 14px;
+  font-weight: 600;
+
+  text-decoration: none;
+
+  white-space: nowrap;
 }
 
-.custom-input .input-group-text{
-    color:#6C7293;
+.forgot-password:hover {
+  color: var(--primary-dark);
 }
 
-.login-btn{
-    height:58px;
-    border:none;
-    border-radius:8px;
-    background:#08A8E5;
-    color:#fff;
-    font-size:22px;
-    font-weight:600;
+/* ==========================================================
+   CUSTOM INPUT
+========================================================== */
+
+.custom-input {
+  width: 100%;
+  height: 58px;
+
+  display: flex;
+  align-items: center;
+
+  background: #ffffff;
+
+  border: 1px solid var(--border);
+  border-radius: 8px;
+
+  overflow: hidden;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
-.login-btn:hover{
-    background:#0898cf;
+.custom-input:focus-within {
+  border-color: var(--primary);
+
+  box-shadow: 0 0 0 3px rgba(0, 174, 239, 0.08);
 }
 
-.form-check-label{
-    color:#6C7293;
+/* ==========================================================
+   INPUT ICON
+========================================================== */
+
+.input-icon {
+  width: 52px;
+
+  flex: 0 0 52px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  color: var(--text);
+
+  font-size: 17px;
 }
 
-/* ===========================================
-   RESPONSIVE DESIGN
-   (Keep Desktop Unchanged)
-=========================================== */
+/* ==========================================================
+   FORM CONTROL
+========================================================== */
 
-/* Large Laptop */
-@media (max-width: 1400px) {
+.custom-input .form-control {
+  min-width: 0;
 
-    .dash-img {
-        width: 420px;
-        height: 420px;
-    }
+  height: 100%;
 
-    .login-form {
-        width: 400px;
-        padding: 45px 35px;
-    }
+  flex: 1;
+
+  padding: 0 8px;
+
+  border: none;
+  outline: none;
+
+  background: transparent;
+
+  color: #111827;
+
+  font-size: 15px;
+
+  box-shadow: none;
 }
 
-/* Laptop */
-@media (max-width: 1200px) {
-
-    .company-overview {
-        font-size: 2rem !important;
-    }
-
-    .desc {
-        width: 320px !important;
-    }
-
-    .dash-img {
-        width: 360px;
-        height: 360px;
-        top: 180px;
-    }
-
-    .login-form {
-        width: 380px;
-        padding: 40px 30px;
-    }
-
-    .login-form h1 {
-        font-size: 40px;
-    }
+.custom-input .form-control::placeholder {
+  color: #9ca3af;
 }
 
-/* Tablet */
-@media (max-width: 992px) {
+.custom-input .form-control:focus {
+  border: none;
+  outline: none;
 
-    .login-page {
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        padding: 40px 20px;
-    }
-
-    .login-page>div:first-child {
-        width: 100%;
-        padding: 0 !important;
-    }
-
-    .logo {
-        justify-content: center;
-    }
-
-    .company-overview {
-        text-align: center;
-        padding-left: 0 !important;
-    }
-
-    .desc {
-        width: 100% !important;
-        max-width: 500px;
-        margin: auto;
-        text-align: center;
-    }
-
-    .login-page .d-flex.justify-content-around {
-        justify-content: center !important;
-    }
-
-    .login-page .d-flex:last-child {
-        flex-direction: column;
-        align-items: center;
-        margin-top: 30px;
-        width: 100%;
-    }
-
-    .dash-img {
-        position: static;
-        width: 420px;
-        height: 420px;
-        margin-bottom: 30px;
-    }
-
-    .login-form {
-        width: 100%;
-        max-width: 500px;
-        margin: 0 !important;
-    }
+  box-shadow: none;
 }
 
-/* Mobile */
-@media (max-width: 768px) {
+/* ==========================================================
+   PASSWORD TOGGLE
+========================================================== */
 
-    .login-page {
-        padding: 20px 15px;
-    }
+.password-toggle {
+  width: 52px;
+  height: 100%;
 
-    .logo {
-        justify-content: center;
-    }
+  flex: 0 0 52px;
 
-    .logo-img {
-        width: 60px;
-        height: 60px;
-    }
+  display: flex;
+  align-items: center;
+  justify-content: center;
 
-    .company-overview {
-        font-size: 32px !important;
-        text-align: center;
-    }
+  border: none;
 
-    .desc {
-        font-size: 15px;
-        padding: 20px !important;
-    }
+  background: transparent;
 
-    /* Feature cards */
+  color: var(--text);
 
-    .login-page .ps-4.m-3 {
-        padding-left: 0 !important;
-        margin: 18px 0 !important;
-    }
+  cursor: pointer;
 
-    .login-page .ps-3 {
-        width: calc(100% - 65px);
-    }
-
-    .login-page .text-wrap {
-        width: auto !important;
-    }
-
-    .dash-img {
-        width: 100%;
-        max-width: 330px;
-        height: 330px;
-        margin-bottom: 25px;
-    }
-
-    .login-form {
-        width: 100%;
-        padding: 35px 22px;
-        border-radius: 14px;
-    }
-
-    .login-form h1 {
-        font-size: 34px;
-    }
-
-    .login-btn {
-        font-size: 18px;
-    }
+  font-size: 17px;
 }
 
-/* Small Mobile */
-@media (max-width: 480px) {
-
-    .login-page {
-        padding: 15px;
-    }
-
-    .logo-img {
-        width: 52px;
-        height: 52px;
-    }
-
-    .company-overview {
-        font-size: 28px !important;
-    }
-
-    .desc {
-        font-size: 14px;
-        padding: 15px !important;
-    }
-
-    .dash-img {
-        max-width: 260px;
-        height: 260px;
-    }
-
-    .login-form {
-        padding: 28px 18px;
-    }
-
-    .login-form h1 {
-        font-size: 30px;
-    }
-
-    .custom-input .form-control,
-    .custom-input .input-group-text,
-    .login-btn {
-        height: 52px;
-    }
+.password-toggle:hover {
+  color: var(--primary);
 }
+
+/* ==========================================================
+   REMEMBER ME
+========================================================== */
+
+.remember-row {
+  margin-bottom: 35px;
+}
+
+.form-check {
+  display: flex;
+  align-items: center;
+
+  gap: 8px;
+}
+
+.form-check-input {
+  width: 17px;
+  height: 17px;
+
+  margin: 0;
+
+  cursor: pointer;
+}
+
+.form-check-label {
+  color: var(--text);
+
+  font-size: 14px;
+
+  cursor: pointer;
+}
+
+/* ==========================================================
+   LOGIN BUTTON
+========================================================== */
+
+.login-btn {
+  width: 100%;
+  height: 58px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border: none;
+  border-radius: 8px;
+
+  background: #08a8e5;
+
+  color: #ffffff;
+
+  font-size: 20px;
+  font-weight: 600;
+
+  transition:
+    background 0.2s ease,
+    transform 0.1s ease;
+}
+
+.login-btn:hover {
+  background: var(--primary-dark);
+
+  color: #ffffff;
+}
+
+.login-btn:active {
+  transform: translateY(1px);
+}
+
+.login-btn:disabled {
+  opacity: 0.75;
+
+  cursor: not-allowed;
+}
+
+/* ==========================================================
+   SWEET ALERT
+========================================================== */
 
 .swal2-container {
-    z-index: 999999 !important;
+  z-index: 999999 !important;
 }
 
 .swal2-backdrop-show {
-    background: rgba(0, 0, 0, 0.55) !important;
+  background: rgba(0, 0, 0, 0.55) !important;
 }
 
 .swal2-popup {
-    z-index: 1000000 !important;
+  z-index: 1000000 !important;
+}
+
+/* ==========================================================
+   SIGNUP LINK
+========================================================== */
+
+.signup-link {
+  margin-top: 25px;
+
+  color: var(--text);
+
+  font-size: 14px;
+
+  text-align: center;
+}
+
+.signup-link a {
+  color: var(--primary);
+
+  font-weight: 600;
+
+  text-decoration: none;
+}
+
+.signup-link a:hover {
+  color: var(--primary-dark);
+}
+
+/* ==========================================================
+   LARGE DESKTOP
+   <= 1500px
+========================================================== */
+
+@media (max-width: 1500px) {
+  .login-page {
+    grid-template-columns:
+      minmax(420px, 0.85fr)
+      minmax(650px, 1.15fr);
+  }
+
+  .company-content {
+    margin-top: 45px;
+  }
+
+  .dash-img {
+    width: 410px;
+    height: 410px;
+
+    flex-basis: 410px;
+
+    transform: translateY(40px);
+  }
+
+  .login-form {
+    width: 400px;
+
+    flex-basis: 400px;
+
+    padding: 45px 35px;
+
+    /*
+         * 40% of 410px = 164px
+         */
+    margin-left: -164px;
+  }
+
+  .login-form h1 {
+    font-size: 40px;
+  }
+}
+
+/* ==========================================================
+   LAPTOP
+   <= 1200px
+========================================================== */
+
+@media (max-width: 1200px) {
+  .login-page {
+    grid-template-columns:
+      minmax(350px, 0.8fr)
+      minmax(600px, 1.2fr);
+  }
+
+  .login-left {
+    padding-left: 25px;
+  }
+
+  .company-content {
+    margin-left: 10px;
+    margin-top: 35px;
+  }
+
+  .company-overview {
+    font-size: 30px;
+  }
+
+  .company-desc {
+    width: 330px;
+  }
+
+  .dash-img {
+    width: 340px;
+    height: 340px;
+
+    flex-basis: 340px;
+
+    transform: translateY(40px);
+  }
+
+  .login-form {
+    width: 370px;
+
+    flex-basis: 370px;
+
+    padding: 40px 30px;
+
+    /*
+         * 40% of 340px = 136px
+         */
+    margin-left: -136px;
+  }
+
+  .login-form h1 {
+    font-size: 38px;
+  }
+
+  .login-right {
+    padding: 20px 25px;
+  }
+}
+
+/* ==========================================================
+   TABLET
+   <= 992px
+========================================================== */
+
+@media (max-width: 992px) {
+  body {
+    overflow-x: hidden;
+  }
+
+  .login-page {
+    width: 100%;
+    min-height: 100vh;
+
+    display: flex;
+    flex-direction: column;
+
+    overflow: visible;
+  }
+
+  /* ------------------------------------------------------
+       LEFT
+    ------------------------------------------------------ */
+
+  .login-left {
+    width: 100%;
+
+    padding: 25px 25px 10px;
+
+    align-items: center;
+  }
+
+  .logo {
+    justify-content: center;
+  }
+
+  .company-content {
+    width: 100%;
+    max-width: 650px;
+
+    margin: 35px auto 0;
+
+    text-align: center;
+  }
+
+  .company-overview {
+    font-size: 34px;
+  }
+
+  .company-desc {
+    width: 100%;
+    max-width: 550px;
+
+    margin: 20px auto 35px;
+  }
+
+  .features {
+    width: 100%;
+    max-width: 500px;
+
+    margin: 0 auto;
+
+    text-align: left;
+  }
+
+  /* ------------------------------------------------------
+       RIGHT
+    ------------------------------------------------------ */
+
+  .login-right {
+    width: 100%;
+
+    display: flex;
+    flex-direction: column;
+
+    align-items: center;
+    justify-content: center;
+
+    gap: 20px;
+
+    padding: 25px 20px 50px;
+  }
+
+  /* ------------------------------------------------------
+       DASHBOARD IMAGE
+    ------------------------------------------------------ */
+
+  .dash-img {
+    width: 400px;
+    height: 400px;
+
+    max-width: 80vw;
+
+    flex: none;
+
+    transform: none;
+
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ------------------------------------------------------
+       LOGIN FORM
+    ------------------------------------------------------ */
+
+  .login-form {
+    width: 100%;
+    max-width: 500px;
+
+    flex: none;
+
+    /*
+         * REMOVE DESKTOP OVERLAP
+         */
+    margin-left: 0;
+
+    padding: 45px 35px;
+
+    position: relative;
+    z-index: 2;
+  }
+}
+
+/* ==========================================================
+   MOBILE
+   <= 768px
+========================================================== */
+
+@media (max-width: 768px) {
+  .login-left {
+    padding: 20px 18px 5px;
+  }
+
+  /* ------------------------------------------------------
+       LOGO
+    ------------------------------------------------------ */
+
+  .logo-img {
+    width: 60px;
+    height: 60px;
+  }
+
+  .logo-text {
+    font-size: 22px;
+  }
+
+  /* ------------------------------------------------------
+       COMPANY
+    ------------------------------------------------------ */
+
+  .company-content {
+    margin-top: 25px;
+  }
+
+  .company-overview {
+    font-size: 30px;
+  }
+
+  .company-desc {
+    margin: 18px auto 28px;
+
+    padding: 0 8px;
+
+    font-size: 14px;
+  }
+
+  /* ------------------------------------------------------
+       FEATURES
+    ------------------------------------------------------ */
+
+  .features {
+    gap: 17px;
+  }
+
+  .feature-item {
+    gap: 12px;
+  }
+
+  .icon-box {
+    width: 46px;
+    height: 46px;
+
+    flex-basis: 46px;
+  }
+
+  .icon-box i {
+    font-size: 18px;
+  }
+
+  .feature-title {
+    font-size: 14px;
+  }
+
+  .feature-desc {
+    width: auto;
+
+    font-size: 13px;
+  }
+
+  /* ------------------------------------------------------
+       RIGHT
+    ------------------------------------------------------ */
+
+  .login-right {
+    padding: 15px 15px 40px;
+
+    gap: 20px;
+  }
+
+  /* ------------------------------------------------------
+       DASHBOARD
+    ------------------------------------------------------ */
+
+  .dash-img {
+    width: 330px;
+    height: 330px;
+
+    max-width: 85vw;
+  }
+
+  /* ------------------------------------------------------
+       LOGIN FORM
+    ------------------------------------------------------ */
+
+  .login-form {
+    width: 100%;
+    max-width: 500px;
+
+    margin-left: 0;
+
+    padding: 35px 22px;
+
+    border-radius: 14px;
+  }
+
+  .login-form h1 {
+    font-size: 34px;
+  }
+
+  .login-subtitle {
+    margin-bottom: 35px;
+
+    font-size: 15px;
+  }
+
+  .form-group {
+    margin-bottom: 23px;
+  }
+
+  .login-btn {
+    height: 54px;
+
+    font-size: 18px;
+  }
+}
+
+/* ==========================================================
+   SMALL MOBILE
+   <= 480px
+========================================================== */
+
+@media (max-width: 480px) {
+  .login-left {
+    padding: 15px 15px 0;
+  }
+
+  .signup-link {
+    margin-top: 20px;
+    font-size: 13px;
+  }
+
+  /* ------------------------------------------------------
+       LOGO
+    ------------------------------------------------------ */
+
+  .logo-img {
+    width: 52px;
+    height: 52px;
+  }
+
+  .logo-text {
+    font-size: 20px;
+  }
+
+  /* ------------------------------------------------------
+       COMPANY
+    ------------------------------------------------------ */
+
+  .company-content {
+    margin-top: 20px;
+  }
+
+  .company-overview {
+    font-size: 27px;
+  }
+
+  .company-desc {
+    font-size: 13px;
+    line-height: 1.55;
+  }
+
+  /* ------------------------------------------------------
+       FEATURES
+    ------------------------------------------------------ */
+
+  .features {
+    gap: 15px;
+  }
+
+  .feature-item {
+    gap: 10px;
+  }
+
+  .icon-box {
+    width: 42px;
+    height: 42px;
+
+    flex-basis: 42px;
+  }
+
+  .icon-box i {
+    font-size: 16px;
+  }
+
+  .feature-title {
+    font-size: 13px;
+  }
+
+  .feature-desc {
+    font-size: 12px;
+  }
+
+  /* ------------------------------------------------------
+       RIGHT
+    ------------------------------------------------------ */
+
+  .login-right {
+    padding: 10px 12px 30px;
+  }
+
+  /* ------------------------------------------------------
+       DASHBOARD
+    ------------------------------------------------------ */
+
+  .dash-img {
+    width: 260px;
+    height: 260px;
+
+    max-width: 75vw;
+  }
+
+  /* ------------------------------------------------------
+       LOGIN FORM
+    ------------------------------------------------------ */
+
+  .login-form {
+    width: 100%;
+
+    margin-left: 0;
+
+    padding: 28px 18px;
+
+    border-radius: 12px;
+  }
+
+  .login-form h1 {
+    font-size: 29px;
+  }
+
+  .login-subtitle {
+    margin-bottom: 30px;
+
+    font-size: 14px;
+  }
+
+  /* ------------------------------------------------------
+       PASSWORD
+    ------------------------------------------------------ */
+
+  .password-label-row {
+    align-items: flex-start;
+
+    flex-direction: column;
+
+    gap: 0;
+  }
+
+  .forgot-password {
+    margin-top: -5px;
+    margin-bottom: 12px;
+  }
+
+  /* ------------------------------------------------------
+       INPUTS
+    ------------------------------------------------------ */
+
+  .custom-input {
+    height: 52px;
+  }
+
+  .input-icon {
+    width: 45px;
+
+    flex-basis: 45px;
+  }
+
+  .password-toggle {
+    width: 45px;
+
+    flex-basis: 45px;
+  }
+
+  /* ------------------------------------------------------
+       BUTTON
+    ------------------------------------------------------ */
+
+  .login-btn {
+    height: 52px;
+
+    font-size: 17px;
+  }
+}
+
+/* ==========================================================
+   VERY SMALL MOBILE
+   <= 360px
+========================================================== */
+
+@media (max-width: 360px) {
+  .company-overview {
+    font-size: 24px;
+  }
+
+  .company-desc {
+    padding: 0;
+
+    font-size: 12px;
+  }
+
+  .dash-img {
+    width: 230px;
+    height: 230px;
+  }
+
+  .login-form {
+    padding: 24px 15px;
+  }
+
+  .login-form h1 {
+    font-size: 26px;
+  }
+
+  .login-subtitle {
+    font-size: 13px;
+  }
 }

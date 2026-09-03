@@ -3,103 +3,51 @@
 ========================================================== */
 
 (function () {
+  'use strict';
 
-    "use strict";
+  window.initializeHeader = function () {
+    const wrapper = document.getElementById('headerProfileWrapper');
 
+    const profile = document.getElementById('headerProfile');
 
-    window.initializeHeader = function () {
+    const logout = document.getElementById('logoutButton');
 
-        const wrapper =
-            document.getElementById(
-                "headerProfileWrapper"
-            );
+    if (!wrapper || !profile) {
+      return;
+    }
 
-        const profile =
-            document.getElementById(
-                "headerProfile"
-            );
+    profile.onclick = (event) => {
+      event.stopPropagation();
 
-        const logout =
-            document.getElementById(
-                "logoutButton"
-            );
+      const open = wrapper.classList.toggle('open');
 
-
-        if (!wrapper || !profile) {
-            return;
-        }
-
-
-        profile.onclick = event => {
-
-            event.stopPropagation();
-
-            const open =
-                wrapper.classList.toggle(
-                    "open"
-                );
-
-            profile.setAttribute(
-                "aria-expanded",
-                String(open)
-            );
-
-        };
-
-
-        document.addEventListener(
-            "click",
-            event => {
-
-                if (
-                    !wrapper.contains(
-                        event.target
-                    )
-                ) {
-
-                    wrapper.classList.remove(
-                        "open"
-                    );
-
-                    profile.setAttribute(
-                        "aria-expanded",
-                        "false"
-                    );
-
-                }
-
-            }
-        );
-
-
-        logout?.addEventListener(
-            "click",
-            async () => {
-
-                const result =
-                    await AppAlert.confirm(
-                        "Are you sure you want to logout?"
-                    );
-
-
-                if (
-                    !result.isConfirmed
-                ) {
-                    return;
-                }
-
-
-                /*
-                 * Use your existing auth logout
-                 * implementation here.
-                 */
-
-                window.location.href =
-                    "/login";
-
-            }
-        );
-
+      profile.setAttribute('aria-expanded', String(open));
     };
 
+    document.addEventListener('click', (event) => {
+      if (!wrapper.contains(event.target)) {
+        wrapper.classList.remove('open');
+
+        profile.setAttribute('aria-expanded', 'false');
+      }
+    });
+
+    logout?.addEventListener('click', async () => {
+        console.log(2222);
+      const result = await AppAlert.confirm('Are you sure you want to logout?');
+
+      if (!result.isConfirmed) {
+        return;
+      }
+
+      console.log(2222);
+
+      /*
+       * Use your existing auth logout
+       * implementation here.
+       */
+
+      window.location.href = '/login';
+    });
+  };
 })();

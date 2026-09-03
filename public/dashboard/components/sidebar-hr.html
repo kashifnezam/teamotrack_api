@@ -1,0 +1,259 @@
+<!-- ==========================================================
+     TeamoTrack HR Sidebar
+=========================================================== -->
+
+<aside class="sidebar" id="sidebar">
+  <!-- ======================================================
+       BRAND
+  ======================================================= -->
+
+  <div class="sidebar-brand">
+    <div class="brand-logo">
+      <img src="/assets/images/logo.png" alt="TeamoTrack Logo" />
+    </div>
+
+    <div class="brand-name">
+      <h4>TeamoTrack</h4>
+
+      <small> HR Management </small>
+    </div>
+  </div>
+
+  <!-- ======================================================
+       NAVIGATION
+  ======================================================= -->
+
+  <nav class="sidebar-nav">
+    <ul class="menu">
+      <!-- ==================================================
+           DASHBOARD
+      =================================================== -->
+
+      <li class="menu-item">
+        <a href="/dashboard" class="menu-link">
+          <i class="bi bi-grid-1x2-fill"></i>
+
+          <span class="menu-text"> Dashboard </span>
+        </a>
+      </li>
+
+      <!-- ==================================================
+           PEOPLE
+      =================================================== -->
+
+      <li class="menu-item has-submenu">
+        <div class="menu-link">
+          <i class="bi bi-people-fill"></i>
+
+          <span class="menu-text"> People </span>
+
+          <i class="bi bi-chevron-right menu-arrow"></i>
+        </div>
+
+        <ul class="submenu">
+          <!-- EMPLOYEES -->
+
+          <li>
+            <a href="/employees">
+              <i class="bi bi-people"></i>
+
+              <span> Employees </span>
+            </a>
+          </li>
+
+          <!-- EXECUTIVES -->
+
+          <li>
+            <a href="/executives">
+              <i class="bi bi-person-check"></i>
+
+              <span> Executives </span>
+            </a>
+          </li>
+        </ul>
+      </li>
+
+      <!-- ==================================================
+           ATTENDANCE
+      =================================================== -->
+
+      <li class="menu-item has-submenu">
+        <div class="menu-link">
+          <i class="bi bi-calendar2-check-fill"></i>
+
+          <span class="menu-text"> Attendance </span>
+
+          <i class="bi bi-chevron-right menu-arrow"></i>
+        </div>
+
+        <ul class="submenu">
+          <!-- MY ATTENDANCE -->
+
+          <li>
+            <a href="/attendance/my">
+              <i class="bi bi-person-check-fill"></i>
+
+              <span> My Attendance </span>
+            </a>
+          </li>
+
+          <!-- ATTENDANCE -->
+
+          <li>
+            <a href="/attendance">
+              <i class="bi bi-calendar-check"></i>
+
+              <span> Attendance </span>
+            </a>
+          </li>
+
+          <!-- LIVE TRACKING -->
+
+          <li>
+            <a href="/attendance/live">
+              <i class="bi bi-geo-alt"></i>
+
+              <span> Live Tracking </span>
+            </a>
+          </li>
+
+          <!-- EXCEPTIONS -->
+
+          <li>
+            <a href="/attendance/exceptions">
+              <i class="bi bi-exclamation-triangle"></i>
+
+              <span> Exceptions </span>
+            </a>
+          </li>
+        </ul>
+      </li>
+
+      <!-- ==================================================
+           LEAVE
+      =================================================== -->
+
+      <li class="menu-item has-submenu">
+        <div class="menu-link">
+          <i class="bi bi-calendar2-week-fill"></i>
+
+          <span class="menu-text"> Leave </span>
+
+          <i class="bi bi-chevron-right menu-arrow"></i>
+        </div>
+
+        <ul class="submenu">
+          <!-- LEAVE REQUESTS -->
+
+          <li>
+            <a href="/leave/requests">
+              <i class="bi bi-inbox"></i>
+
+              <span> Leave Requests </span>
+            </a>
+          </li>
+
+          <!-- MY LEAVE -->
+
+          <li>
+            <a href="/leave/my">
+              <i class="bi bi-person-lines-fill"></i>
+
+              <span> My Leave </span>
+            </a>
+          </li>
+
+          <!-- LEAVE HISTORY -->
+
+          <li>
+            <a href="/leave/history">
+              <i class="bi bi-clock-history"></i>
+
+              <span> Leave History </span>
+            </a>
+          </li>
+        </ul>
+      </li>
+
+      <!-- ==================================================
+           CALENDAR
+      =================================================== -->
+
+      <li class="menu-item has-submenu">
+        <div class="menu-link">
+          <i class="bi bi-calendar3"></i>
+
+          <span class="menu-text"> Calendar </span>
+
+          <i class="bi bi-chevron-right menu-arrow"></i>
+        </div>
+
+        <ul class="submenu">
+          <!-- HOLIDAYS -->
+
+          <li>
+            <a href="/holidays">
+              <i class="bi bi-calendar-event"></i>
+
+              <span> Holidays </span>
+            </a>
+          </li>
+        </ul>
+      </li>
+
+      <!-- ==================================================
+           WORK
+      =================================================== -->
+
+      <li class="menu-item has-submenu">
+        <div class="menu-link">
+          <i class="bi bi-list-check"></i>
+
+          <span class="menu-text"> Work </span>
+
+          <i class="bi bi-chevron-right menu-arrow"></i>
+        </div>
+
+        <ul class="submenu">
+          <!-- TASKS -->
+
+          <li>
+            <a href="/tasks">
+              <i class="bi bi-check2-square"></i>
+
+              <span> Tasks </span>
+            </a>
+          </li>
+        </ul>
+      </li>
+
+      <!-- ==================================================
+           MY PROFILE
+      =================================================== -->
+
+      <li class="menu-item">
+        <a href="/profile" class="menu-link">
+          <i class="bi bi-person-circle"></i>
+
+          <span class="menu-text"> My Profile </span>
+        </a>
+      </li>
+    </ul>
+  </nav>
+
+  <!-- ======================================================
+       USER
+  ======================================================= -->
+
+  <div class="sidebar-footer">
+    <div class="user-card">
+      <div class="user-avatar" id="sidebarUserAvatar">U</div>
+
+      <div class="user-info">
+        <h6 class="username" id="sidebarUserName">User</h6>
+
+        <small id="sidebarUserRole"> HR </small>
+      </div>
+    </div>
+  </div>
+</aside>

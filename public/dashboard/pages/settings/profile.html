@@ -1,77 +1,148 @@
 <section class="settings-page">
-    <div class="container-fluid">
+  <div class="container-fluid">
+    <div class="settings-card">
+      <div class="settings-card-header">
+        <div>
+          <h5>My Profile</h5>
+          <p>Manage your personal information.</p>
+        </div>
+      </div>
 
-        <div class="settings-card">
+      <div class="settings-card-body">
+        <div class="profile-settings-avatar">KA</div>
 
-            <div class="settings-card-header">
-                <div>
-                    <h5>My Profile</h5>
-                    <p>Manage your personal information.</p>
-                </div>
+        <div class="row g-3">
+          <!-- Full Name -->
+          <div class="col-md-6">
+            <label class="form-label">Full Name</label>
+            <input id="fullName" class="form-control" type="text" />
+          </div>
+
+          <!-- Email -->
+          <div class="col-md-6">
+            <label class="form-label">Email</label>
+
+            <input id="email" class="form-control" type="email" disabled />
+
+            <button
+              type="button"
+              class="btn btn-link btn-sm px-0 mt-1 settings-change-email-btn"
+              onclick="openChangeEmailModal()"
+            >
+              Change email
+            </button>
+          </div>
+
+          <!-- Mobile -->
+          <div class="col-md-6">
+            <label class="form-label">Mobile</label>
+            <input id="mobile" class="form-control" type="text" />
+          </div>
+
+          <!-- New Password -->
+          <div class="col-md-6">
+            <label class="form-label">New Password</label>
+
+            <div class="password-input-wrap">
+              <input
+                id="password"
+                class="form-control"
+                type="password"
+                placeholder="Leave blank to keep current password"
+                autocomplete="new-password"
+              />
+
+              <button
+                type="button"
+                class="password-toggle-btn"
+                onclick="togglePassword('password', this)"
+                aria-label="Show password"
+              >
+                <i class="bi bi-eye"></i>
+              </button>
             </div>
 
-            <div class="settings-card-body">
+            <div class="form-text">Minimum 6 characters.</div>
+          </div>
 
-                <div class="profile-settings-avatar">
-                    KA
-                </div>
-
-                <div class="row g-3">
-
-                    <div class="col-md-6">
-                        <label class="form-label">Full Name</label>
-                        <input
-                            id="fullName"
-                            class="form-control"
-                            type="text"
-                        >
-                    </div>
-
-                    <div class="col-md-6">
-                        <label class="form-label">Email</label>
-                        <input
-                            id="email"
-                            class="form-control"
-                            type="email"
-                            disabled
-                        >
-                    </div>
-
-                    <div class="col-md-6">
-                        <label class="form-label">Mobile</label>
-                        <input
-                            id="mobile"
-                            class="form-control"
-                            type="text"
-                            disabled
-                        >
-                    </div>
-
-                    <div class="col-md-6">
-                        <label class="form-label">Role</label>
-                        <input
-                            id="role"
-                            class="form-control"
-                            type="text"
-                            disabled
-                        >
-                    </div>
-
-                </div>
-
-                <div class="mt-4">
-                    <button
-                        id="saveProfileBtn"
-                        class="btn btn-primary"
-                        onclick="saveProfile()"
-                    >
-                        Save Changes
-                    </button>
-                </div>
-
-            </div>
-
+          <!-- Role -->
+          <div class="col-md-6">
+            <label class="form-label">Role</label>
+            <input id="role" class="form-control" type="text" disabled />
+          </div>
         </div>
 
+        <div class="mt-4">
+          <button id="saveProfileBtn" type="button" class="btn btn-primary" onclick="saveProfile()">
+            Save Changes
+          </button>
+        </div>
+      </div>
     </div>
+  </div>
 </section>
+
+<!-- ==========================================================
+     CHANGE EMAIL MODAL
+========================================================== -->
+
+<div class="modal fade" id="changeEmailModal" tabindex="-1" aria-labelledby="changeEmailModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content settings-modal">
+      <div class="modal-header">
+        <div>
+          <h5 class="modal-title" id="changeEmailModalLabel">Change Email</h5>
+          <p class="settings-modal-subtitle">Verify your current password before changing your email.</p>
+        </div>
+
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Current Email -->
+        <div class="mb-3">
+          <label class="form-label">Current Email</label>
+
+          <input id="currentEmail" class="form-control" type="email" disabled />
+        </div>
+
+        <!-- New Email -->
+        <div class="mb-3">
+          <label class="form-label">New Email</label>
+
+          <input id="newEmail" class="form-control" type="email" placeholder="Enter new email" autocomplete="email" />
+        </div>
+
+        <!-- Current Password -->
+        <div class="mb-3">
+          <label class="form-label">Current Password</label>
+
+          <div class="password-input-wrap">
+            <input
+              id="emailCurrentPassword"
+              class="form-control"
+              type="password"
+              placeholder="Enter your current password"
+              autocomplete="current-password"
+            />
+
+            <button
+              type="button"
+              class="password-toggle-btn"
+              onclick="togglePassword('emailCurrentPassword', this)"
+              aria-label="Show password"
+            >
+              <i class="bi bi-eye"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+
+        <button id="changeEmailBtn" type="button" class="btn btn-primary" onclick="changeEmail()">Change Email</button>
+      </div>
+    </div>
+  </div>
+</div>

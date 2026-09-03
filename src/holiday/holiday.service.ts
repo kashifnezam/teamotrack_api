@@ -1,943 +1,398 @@
-import {
-    BadRequestException,
-    Injectable,
-    NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 
 import { FirebaseService } from '../firebase/firebase.service';
 import { HolidayDto } from './dto/holiday.dto';
 
 @Injectable()
 export class HolidayService {
+  constructor(private readonly firebase: FirebaseService) {}
 
-    constructor(
-        private readonly firebase:
-            FirebaseService,
-    ) { }
+  private get db() {
+    return this.firebase.firestore;
+  }
 
+  // ==================================================
+  // USER
+  // ==================================================
 
-    private get db() {
-        return this.firebase.firestore;
+  private async getUser(uid: string) {
+    const doc = await this.db.collection('user').doc(uid).get();
+
+    if (!doc.exists) {
+      throw new NotFoundException('User not found');
     }
 
+    return {
+      uid: doc.id,
 
-    // ==================================================
-    // USER
-    // ==================================================
+      ...doc.data(),
+    } as any;
+  }
 
-    private async getUser(
-        uid: string,
-    ) {
+  // ==================================================
+  // ROOT
+  // ==================================================
 
-        const doc =
-            await this.db
-                .collection('user')
-                .doc(uid)
-                .get();
+  private isRoot(user: any) {
+    return ['root_manager', 'root_hr', 'root', 'admin'].includes(user.role);
+  }
 
-
-        if (!doc.exists) {
-
-            throw new NotFoundException(
-                'User not found',
-            );
-
-        }
-
-
-        return {
-
-            uid:
-                doc.id,
-
-            ...doc.data(),
-
-        } as any;
-
+  private getRootId(user: any): string {
+    /*
+     * Root-level users own the
+     * organization.
+     */
+    if (this.isRoot(user)) {
+      return user.uid;
     }
 
-
-    // ==================================================
-    // ROOT
-    // ==================================================
-
-    private isRoot(
-        user: any,
-    ) {
-
-        return [
-
-            'root_manager',
-            'root_hr',
-            'root',
-            'admin',
-
-        ].includes(
-            user.role,
-        );
-
+    if (!user.rootId) {
+      throw new BadRequestException('Invalid hierarchy');
     }
 
+    return user.rootId;
+  }
 
-    private getRootId(
-        user: any,
-    ): string {
+  // ==================================================
+  // HOLIDAY MANAGER
+  // ==================================================
 
-        /*
-         * Root-level users own the
-         * organization.
-         */
-        if (
-            this.isRoot(user)
-        ) {
+  private isHolidayManager(user: any) {
+    return ['root_manager', 'root_hr'].includes(user.role);
+  }
 
-            return user.uid;
+  private async authorizeManager(uid: string) {
+    const user = await this.getUser(uid);
 
-        }
-
-
-        if (
-            !user.rootId
-        ) {
-
-            throw new BadRequestException(
-                'Invalid hierarchy',
-            );
-
-        }
-
-
-        return user.rootId;
-
+    /*
+     * IMPORTANT:
+     *
+     * Holiday management is NOT
+     * manager-hierarchy based.
+     *
+     * Only root_manager and
+     * root_hr can manage holidays.
+     */
+    if (!this.isHolidayManager(user)) {
+      throw new BadRequestException('Permission denied');
     }
 
+    return {
+      user,
 
-    // ==================================================
-    // HOLIDAY MANAGER
-    // ==================================================
+      rootId: this.getRootId(user),
+    };
+  }
 
-    private isHolidayManager(
-        user: any,
-    ) {
+  // ==================================================
+  // NORMALIZE NAME
+  // ==================================================
 
-        return [
+  private normalizeName(name: string) {
+    return name.trim().replace(/\s+/g, ' ').toLowerCase();
+  }
 
-            'root_manager',
-            'root_hr',
+  // ==================================================
+  // DATE
+  // ==================================================
 
-        ].includes(
-            user.role,
-        );
-
+  private validateDate(date: string) {
+    if (!date) {
+      throw new BadRequestException('Holiday date is required');
     }
 
-
-    private async authorizeManager(
-        uid: string,
-    ) {
-
-        const user =
-            await this.getUser(
-                uid,
-            );
-
-
-        /*
-         * IMPORTANT:
-         *
-         * Holiday management is NOT
-         * manager-hierarchy based.
-         *
-         * Only root_manager and
-         * root_hr can manage holidays.
-         */
-        if (
-            !this.isHolidayManager(
-                user,
-            )
-        ) {
-
-            throw new BadRequestException(
-                'Permission denied',
-            );
-
-        }
-
-
-        return {
-
-            user,
-
-            rootId:
-                this.getRootId(
-                    user,
-                ),
-
-        };
-
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      throw new BadRequestException('Invalid holiday date');
     }
 
+    const parsed = new Date(`${date}T00:00:00.000Z`);
 
-    // ==================================================
-    // NORMALIZE NAME
-    // ==================================================
+    if (Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== date) {
+      throw new BadRequestException('Invalid holiday date');
+    }
+  }
 
-    private normalizeName(
-        name: string,
-    ) {
+  // ==================================================
+  // HOLIDAY
+  // ==================================================
 
-        return name
-            .trim()
-            .replace(
-                /\s+/g,
-                ' ',
-            )
-            .toLowerCase();
+  private async getHoliday(rootId: string, id: string) {
+    const doc = await this.db.collection('companyHolidays').doc(id).get();
 
+    /*
+     * IMPORTANT:
+     *
+     * Never allow a holiday from
+     * another organization.
+     */
+    if (!doc.exists || doc.data()?.rootId !== rootId) {
+      throw new NotFoundException('Holiday not found');
     }
 
+    return {
+      id: doc.id,
 
-    // ==================================================
-    // DATE
-    // ==================================================
+      ...doc.data(),
+    } as any;
+  }
 
-    private validateDate(
-        date: string,
-    ) {
+  // ==================================================
+  // DUPLICATE
+  // ==================================================
 
-        if (!date) {
+  private async checkDuplicate(rootId: string, date: string, name: string, excludeId?: string) {
+    const snap = await this.db
+      .collection('companyHolidays')
+      .where('rootId', '==', rootId)
+      .where('date', '==', date)
+      .get();
 
-            throw new BadRequestException(
-                'Holiday date is required',
-            );
+    const normalizedName = this.normalizeName(name);
 
-        }
+    const duplicate = snap.docs.some((doc) => {
+      if (excludeId && doc.id === excludeId) {
+        return false;
+      }
 
+      return this.normalizeName(doc.data().name || '') === normalizedName;
+    });
 
-        if (
-            !/^\d{4}-\d{2}-\d{2}$/.test(
-                date,
-            )
-        ) {
+    if (duplicate) {
+      throw new BadRequestException('Holiday already exists');
+    }
+  }
 
-            throw new BadRequestException(
-                'Invalid holiday date',
-            );
+  // ==================================================
+  // GET ALL
+  // ==================================================
 
-        }
+  async getAll(userId: string) {
+    const user = await this.getUser(userId);
 
+    const rootId = this.getRootId(user);
 
-        const parsed =
-            new Date(
-                `${date}T00:00:00.000Z`,
-            );
+    const snap = await this.db.collection('companyHolidays').where('rootId', '==', rootId).get();
 
+    return snap.docs
 
-        if (
-            Number.isNaN(
-                parsed.getTime(),
-            ) ||
-            parsed
-                .toISOString()
-                .slice(
-                    0,
-                    10,
-                ) !== date
-        ) {
+      .map((doc) => ({
+        id: doc.id,
 
-            throw new BadRequestException(
-                'Invalid holiday date',
-            );
+        ...doc.data(),
+      }))
 
-        }
+      .sort((a: any, b: any) => a.date.localeCompare(b.date));
+  }
 
+  // ==================================================
+  // GET RANGE
+  // ==================================================
+
+  async getRange(userId: string, startDate: string, endDate: string) {
+    const user = await this.getUser(userId);
+
+    const rootId = this.getRootId(user);
+
+    this.validateDate(startDate);
+
+    this.validateDate(endDate);
+
+    if (startDate > endDate) {
+      throw new BadRequestException('Start date cannot be after end date');
     }
 
+    const snap = await this.db
+      .collection('companyHolidays')
+      .where('rootId', '==', rootId)
+      .where('active', '==', true)
+      .get();
 
-    // ==================================================
-    // HOLIDAY
-    // ==================================================
+    const holidays = snap.docs
 
-    private async getHoliday(
-        rootId: string,
-        id: string,
-    ) {
+      .map((doc) => ({
+        id: doc.id,
 
-        const doc =
-            await this.db
-                .collection(
-                    'companyHolidays',
-                )
-                .doc(id)
-                .get();
+        ...doc.data(),
+      }))
 
+      .filter((holiday: any) => holiday.date >= startDate && holiday.date <= endDate)
 
-        /*
-         * IMPORTANT:
-         *
-         * Never allow a holiday from
-         * another organization.
-         */
-        if (
-            !doc.exists ||
-            doc.data()?.rootId !== rootId
-        ) {
+      .sort((a: any, b: any) => a.date.localeCompare(b.date));
 
-            throw new NotFoundException(
-                'Holiday not found',
-            );
+    return {
+      holidays,
+    };
+  }
 
-        }
+  // ==================================================
+  // MANAGEABLE
+  // ==================================================
 
+  async getManageable(userId: string) {
+    const { rootId } = await this.authorizeManager(userId);
 
-        return {
+    const snap = await this.db.collection('companyHolidays').where('rootId', '==', rootId).get();
 
-            id:
-                doc.id,
+    return snap.docs
 
-            ...doc.data(),
+      .map((doc) => ({
+        id: doc.id,
 
-        } as any;
+        ...doc.data(),
+      }))
 
+      .sort((a: any, b: any) => a.date.localeCompare(b.date));
+  }
+
+  // ==================================================
+  // CREATE
+  // ==================================================
+
+  async create(userId: string, dto: HolidayDto) {
+    const { user, rootId } = await this.authorizeManager(userId);
+
+    if (!dto.name?.trim()) {
+      throw new BadRequestException('Holiday name is required');
     }
 
+    this.validateDate(dto.date);
 
-    // ==================================================
-    // DUPLICATE
-    // ==================================================
+    const name = dto.name.trim();
 
-    private async checkDuplicate(
-        rootId: string,
-        date: string,
-        name: string,
-        excludeId?: string,
-    ) {
+    const date = dto.date;
 
-        const snap =
-            await this.db
-                .collection(
-                    'companyHolidays',
-                )
-                .where(
-                    'rootId',
-                    '==',
-                    rootId,
-                )
-                .where(
-                    'date',
-                    '==',
-                    date,
-                )
-                .get();
+    await this.checkDuplicate(rootId, date, name);
 
+    const now = new Date();
 
-        const normalizedName =
-            this.normalizeName(
-                name,
-            );
+    const data = {
+      rootId,
 
+      name,
 
-        const duplicate =
-            snap.docs.some(
-                doc => {
+      date,
 
-                    if (
-                        excludeId &&
-                        doc.id ===
-                        excludeId
-                    ) {
+      type: dto.type?.trim() || 'public',
 
-                        return false;
+      isOptional: dto.isOptional ?? false,
 
-                    }
+      description: dto.description?.trim() || '',
 
+      active: true,
 
-                    return (
-                        this.normalizeName(
-                            doc.data()
-                                .name ||
-                            '',
-                        ) ===
-                        normalizedName
-                    );
+      createdBy: user.uid,
 
-                },
-            );
+      createdAt: now,
 
+      updatedAt: now,
+    };
 
-        if (
-            duplicate
-        ) {
+    const ref = await this.db.collection('companyHolidays').add(data);
 
-            throw new BadRequestException(
-                'Holiday already exists',
-            );
+    return {
+      id: ref.id,
 
-        }
+      ...data,
+    };
+  }
 
+  // ==================================================
+  // UPDATE
+  // ==================================================
+
+  async update(userId: string, id: string, dto: HolidayDto) {
+    const { rootId } = await this.authorizeManager(userId);
+
+    const holiday = await this.getHoliday(rootId, id);
+
+    if (!dto.name?.trim()) {
+      throw new BadRequestException('Holiday name is required');
     }
 
+    this.validateDate(dto.date);
 
-    // ==================================================
-    // GET ALL
-    // ==================================================
+    const name = dto.name.trim();
 
-    async getAll(
-        userId: string,
-    ) {
+    const date = dto.date;
 
-        const user =
-            await this.getUser(
-                userId,
-            );
+    await this.checkDuplicate(rootId, date, name, id);
 
+    const data = {
+      name,
 
-        const rootId =
-            this.getRootId(
-                user,
-            );
+      date,
 
+      type: dto.type?.trim() || 'public',
 
-        const snap =
-            await this.db
-                .collection(
-                    'companyHolidays',
-                )
-                .where(
-                    'rootId',
-                    '==',
-                    rootId,
-                )
-                .get();
+      isOptional: dto.isOptional ?? false,
 
+      description: dto.description?.trim() || '',
 
-        return snap.docs
+      updatedAt: new Date(),
+    };
 
-            .map(doc => ({
+    await this.db.collection('companyHolidays').doc(id).update(data);
 
-                id:
-                    doc.id,
+    return {
+      id: holiday.id,
 
-                ...doc.data(),
+      ...holiday,
 
-            }))
+      ...data,
+    };
+  }
 
-            .sort(
-                (
-                    a: any,
-                    b: any,
-                ) =>
-                    a.date.localeCompare(
-                        b.date,
-                    ),
-            );
+  // ==================================================
+  // DEACTIVATE
+  // ==================================================
 
+  async deactivate(userId: string, id: string) {
+    const { rootId } = await this.authorizeManager(userId);
+
+    const holiday = await this.getHoliday(rootId, id);
+
+    if (!holiday.active) {
+      throw new BadRequestException('Holiday is already inactive');
     }
 
+    await this.db.collection('companyHolidays').doc(id).update({
+      active: false,
 
-    // ==================================================
-    // GET RANGE
-    // ==================================================
+      updatedAt: new Date(),
+    });
 
-    async getRange(
-        userId: string,
-        startDate: string,
-        endDate: string,
-    ) {
+    return {
+      id,
 
-        const user =
-            await this.getUser(
-                userId,
-            );
+      active: false,
+    };
+  }
 
+  // ==================================================
+  // REACTIVATE
+  // ==================================================
 
-        const rootId =
-            this.getRootId(
-                user,
-            );
+  async reactivate(userId: string, id: string) {
+    const { rootId } = await this.authorizeManager(userId);
 
+    const holiday = await this.getHoliday(rootId, id);
 
-        this.validateDate(
-            startDate,
-        );
-
-
-        this.validateDate(
-            endDate,
-        );
-
-
-        if (
-            startDate >
-            endDate
-        ) {
-
-            throw new BadRequestException(
-                'Start date cannot be after end date',
-            );
-
-        }
-
-
-        const snap =
-            await this.db
-                .collection(
-                    'companyHolidays',
-                )
-                .where(
-                    'rootId',
-                    '==',
-                    rootId,
-                )
-                .where(
-                    'active',
-                    '==',
-                    true,
-                )
-                .get();
-
-
-        const holidays =
-            snap.docs
-
-                .map(doc => ({
-
-                    id:
-                        doc.id,
-
-                    ...doc.data(),
-
-                }))
-
-                .filter(
-                    (
-                        holiday: any,
-                    ) =>
-                        holiday.date >=
-                        startDate &&
-                        holiday.date <=
-                        endDate,
-                )
-
-                .sort(
-                    (
-                        a: any,
-                        b: any,
-                    ) =>
-                        a.date.localeCompare(
-                            b.date,
-                        ),
-                );
-
-
-        return {
-
-            holidays,
-
-        };
-
+    if (holiday.active) {
+      throw new BadRequestException('Holiday is already active');
     }
 
+    await this.checkDuplicate(rootId, holiday.date, holiday.name, id);
 
-    // ==================================================
-    // MANAGEABLE
-    // ==================================================
+    await this.db.collection('companyHolidays').doc(id).update({
+      active: true,
 
-    async getManageable(
-        userId: string,
-    ) {
+      updatedAt: new Date(),
+    });
 
-        const {
-            rootId,
-        } =
-            await this.authorizeManager(
-                userId,
-            );
+    return {
+      id,
 
-
-        const snap =
-            await this.db
-                .collection(
-                    'companyHolidays',
-                )
-                .where(
-                    'rootId',
-                    '==',
-                    rootId,
-                )
-                .get();
-
-
-        return snap.docs
-
-            .map(doc => ({
-
-                id:
-                    doc.id,
-
-                ...doc.data(),
-
-            }))
-
-            .sort(
-                (
-                    a: any,
-                    b: any,
-                ) =>
-                    a.date.localeCompare(
-                        b.date,
-                    ),
-            );
-
-    }
-
-
-    // ==================================================
-    // CREATE
-    // ==================================================
-
-    async create(
-        userId: string,
-        dto: HolidayDto,
-    ) {
-
-        const {
-            user,
-            rootId,
-        } =
-            await this.authorizeManager(
-                userId,
-            );
-
-
-        if (
-            !dto.name?.trim()
-        ) {
-
-            throw new BadRequestException(
-                'Holiday name is required',
-            );
-
-        }
-
-
-        this.validateDate(
-            dto.date,
-        );
-
-
-        const name =
-            dto.name.trim();
-
-
-        const date =
-            dto.date;
-
-
-        await this.checkDuplicate(
-            rootId,
-            date,
-            name,
-        );
-
-
-        const now =
-            new Date();
-
-
-        const data = {
-
-            rootId,
-
-            name,
-
-            date,
-
-            type:
-                dto.type?.trim() ||
-                'public',
-
-            isOptional:
-                dto.isOptional ??
-                false,
-
-            description:
-                dto.description?.trim() ||
-                '',
-
-            active:
-                true,
-
-            createdBy:
-                user.uid,
-
-            createdAt:
-                now,
-
-            updatedAt:
-                now,
-
-        };
-
-
-        const ref =
-            await this.db
-                .collection(
-                    'companyHolidays',
-                )
-                .add(
-                    data,
-                );
-
-
-        return {
-
-            id:
-                ref.id,
-
-            ...data,
-
-        };
-
-    }
-
-
-    // ==================================================
-    // UPDATE
-    // ==================================================
-
-    async update(
-        userId: string,
-        id: string,
-        dto: HolidayDto,
-    ) {
-
-        const {
-            rootId,
-        } =
-            await this.authorizeManager(
-                userId,
-            );
-
-
-        const holiday =
-            await this.getHoliday(
-                rootId,
-                id,
-            );
-
-
-        if (
-            !dto.name?.trim()
-        ) {
-
-            throw new BadRequestException(
-                'Holiday name is required',
-            );
-
-        }
-
-
-        this.validateDate(
-            dto.date,
-        );
-
-
-        const name =
-            dto.name.trim();
-
-
-        const date =
-            dto.date;
-
-
-        await this.checkDuplicate(
-            rootId,
-            date,
-            name,
-            id,
-        );
-
-
-        const data = {
-
-            name,
-
-            date,
-
-            type:
-                dto.type?.trim() ||
-                'public',
-
-            isOptional:
-                dto.isOptional ??
-                false,
-
-            description:
-                dto.description?.trim() ||
-                '',
-
-            updatedAt:
-                new Date(),
-
-        };
-
-
-        await this.db
-            .collection(
-                'companyHolidays',
-            )
-            .doc(id)
-            .update(
-                data,
-            );
-
-
-        return {
-
-            id:
-                holiday.id,
-
-            ...holiday,
-
-            ...data,
-
-        };
-
-    }
-
-
-    // ==================================================
-    // DEACTIVATE
-    // ==================================================
-
-    async deactivate(
-        userId: string,
-        id: string,
-    ) {
-
-        const {
-            rootId,
-        } =
-            await this.authorizeManager(
-                userId,
-            );
-
-
-        const holiday =
-            await this.getHoliday(
-                rootId,
-                id,
-            );
-
-
-        if (
-            !holiday.active
-        ) {
-
-            throw new BadRequestException(
-                'Holiday is already inactive',
-            );
-
-        }
-
-
-        await this.db
-            .collection(
-                'companyHolidays',
-            )
-            .doc(id)
-            .update({
-
-                active:
-                    false,
-
-                updatedAt:
-                    new Date(),
-
-            });
-
-
-        return {
-
-            id,
-
-            active:
-                false,
-
-        };
-
-    }
-
-
-    // ==================================================
-    // REACTIVATE
-    // ==================================================
-
-    async reactivate(
-        userId: string,
-        id: string,
-    ) {
-
-        const {
-            rootId,
-        } =
-            await this.authorizeManager(
-                userId,
-            );
-
-
-        const holiday =
-            await this.getHoliday(
-                rootId,
-                id,
-            );
-
-
-        if (
-            holiday.active
-        ) {
-
-            throw new BadRequestException(
-                'Holiday is already active',
-            );
-
-        }
-
-
-        await this.checkDuplicate(
-            rootId,
-            holiday.date,
-            holiday.name,
-            id,
-        );
-
-
-        await this.db
-            .collection(
-                'companyHolidays',
-            )
-            .doc(id)
-            .update({
-
-                active:
-                    true,
-
-                updatedAt:
-                    new Date(),
-
-            });
-
-
-        return {
-
-            id,
-
-            active:
-                true,
-
-        };
-
-    }
-
+      active: true,
+    };
+  }
 }

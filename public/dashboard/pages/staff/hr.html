@@ -20,33 +20,34 @@
       </button>
     </div>
 
-    <!-- ==================================================
-             SEARCH / SUMMARY
-        ================================================== -->
+    <!-- ================================================== SEARCH / SUMMARY ================================================== -->
 
     <div class="hr-filter-card">
-      <div class="row g-3 align-items-center">
-        <div class="col-lg-7">
-          <div class="hr-search-box">
-            <i class="bi bi-search"></i>
+      <form autocomplete="off" onsubmit="return false;">
+        <div class="row g-3 align-items-center">
+          <div class="col-lg-7">
+            <div class="hr-search-box">
+              <i class="bi bi-search"></i>
 
-            <input
-              id="hrSearch"
-              type="search"
-              class="form-control"
-              placeholder="Search by name, email, mobile or manager..."
-            />
+              <input
+                id="hrSearch"
+                type="search"
+                class="form-control"
+                placeholder="Search by name, email, mobile or manager..."
+                autocomplete="off"
+              />
+            </div>
+          </div>
+
+          <div class="col-lg-5 text-lg-end">
+            <div class="hr-count">
+              <strong id="hrCount"> 0 </strong>
+
+              <span> HR members </span>
+            </div>
           </div>
         </div>
-
-        <div class="col-lg-5 text-lg-end">
-          <div class="hr-count">
-            <strong id="hrCount"> 0 </strong>
-
-            <span> HR members </span>
-          </div>
-        </div>
-      </div>
+      </form>
     </div>
 
     <!-- ==================================================

@@ -1,0 +1,345 @@
+/* ==========================================================
+   TeamoTrack
+   Signup Page
+========================================================== */
+
+/* ==========================================================
+   SIGNUP FORM
+========================================================== */
+
+.signup-form {
+  /*
+   * Wider than login card because signup has
+   * a 2-column form.
+   */
+  width: 600px;
+
+  flex: 0 0 600px;
+
+  padding: 32px 38px;
+
+  /*
+   * Keep the dashboard overlap proportional
+   * to the larger card.
+   */
+  margin-left: -190px;
+}
+
+/* ==========================================================
+   HEADING
+========================================================== */
+
+.signup-form h1 {
+  margin-bottom: 8px;
+
+  font-size: 38px;
+}
+
+/* ==========================================================
+   SUBTITLE
+========================================================== */
+
+.signup-form .login-subtitle {
+  margin-bottom: 25px;
+
+  font-size: 15px;
+}
+
+/* ==========================================================
+   SIGNUP FIELDS
+========================================================== */
+
+.signup-fields {
+  display: grid;
+
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+
+  column-gap: 20px;
+
+  row-gap: 0;
+}
+
+/* ==========================================================
+   FULL WIDTH FIELD
+========================================================== */
+
+.signup-full-width {
+  grid-column: 1 / -1;
+}
+
+/* ==========================================================
+   FORM GROUP
+========================================================== */
+
+.signup-form .form-group {
+  margin-bottom: 16px;
+}
+
+/* ==========================================================
+   LABEL
+========================================================== */
+
+.signup-form .form-label {
+  margin-bottom: 7px;
+
+  font-size: 14px;
+}
+
+/* ==========================================================
+   INPUT
+========================================================== */
+
+.signup-form .custom-input {
+  height: 50px;
+}
+
+/* ==========================================================
+   INPUT ICON
+========================================================== */
+
+.signup-form .input-icon {
+  width: 45px;
+
+  flex: 0 0 45px;
+}
+
+/* ==========================================================
+   PASSWORD TOGGLE
+========================================================== */
+
+.signup-form .password-toggle {
+  width: 45px;
+
+  flex: 0 0 45px;
+
+  cursor: pointer;
+
+  pointer-events: auto;
+}
+
+/* ==========================================================
+   TERMS
+========================================================== */
+
+.signup-terms {
+  margin-top: 4px;
+
+  margin-bottom: 18px;
+}
+
+.signup-terms .form-check {
+  align-items: flex-start;
+}
+
+.signup-terms .form-check-input {
+  margin-top: 2px;
+
+  flex-shrink: 0;
+}
+
+.signup-terms .form-check-label {
+  line-height: 1.4;
+}
+
+.terms-link {
+  color: var(--primary);
+
+  font-weight: 600;
+
+  text-decoration: none;
+}
+
+.terms-link:hover {
+  color: var(--primary-dark);
+}
+
+/* ==========================================================
+   BUTTON
+========================================================== */
+
+.signup-form .login-btn {
+  width: 100%;
+
+  height: 52px;
+
+  font-size: 18px;
+}
+
+/* ==========================================================
+   LOGIN LINK
+========================================================== */
+
+.signup-login-link {
+  margin-top: 16px;
+
+  color: var(--text);
+
+  font-size: 14px;
+
+  text-align: center;
+}
+
+.signup-login-link a {
+  text-decoration: none;
+}
+
+.signup-login-link a:hover {
+  color: var(--primary-dark);
+}
+
+/* ==========================================================
+   LARGE DESKTOP
+   <= 1500px
+========================================================== */
+
+@media (max-width: 1500px) {
+  .signup-form {
+    width: 560px;
+
+    flex-basis: 560px;
+
+    padding: 30px 32px;
+
+    margin-left: -164px;
+  }
+
+  .signup-form h1 {
+    font-size: 36px;
+  }
+}
+
+/* ==========================================================
+   LAPTOP
+   <= 1200px
+========================================================== */
+
+@media (max-width: 1200px) {
+  .signup-form {
+    width: 520px;
+
+    flex-basis: 520px;
+
+    padding: 28px 28px;
+
+    margin-left: -136px;
+  }
+
+  .signup-fields {
+    column-gap: 14px;
+  }
+
+  .signup-form .form-group {
+    margin-bottom: 14px;
+  }
+}
+
+/* ==========================================================
+   TABLET
+   <= 992px
+========================================================== */
+
+@media (max-width: 992px) {
+  /*
+   * Desktop overlap is removed by login.css
+   * at this breakpoint.
+   */
+
+  .signup-form {
+    width: 100%;
+
+    max-width: 600px;
+
+    flex: none;
+
+    margin-left: 0;
+
+    padding: 32px 30px;
+  }
+
+  .signup-fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+
+    column-gap: 18px;
+  }
+}
+
+/* ==========================================================
+   MOBILE
+   <= 768px
+========================================================== */
+
+@media (max-width: 768px) {
+  .signup-form {
+    width: 100%;
+
+    max-width: 500px;
+
+    padding: 30px 22px;
+  }
+
+  /*
+   * One field per row on mobile.
+   */
+
+  .signup-fields {
+    grid-template-columns: 1fr;
+
+    column-gap: 0;
+  }
+
+  .signup-full-width {
+    grid-column: auto;
+  }
+
+  .signup-form .form-group {
+    margin-bottom: 20px;
+  }
+}
+
+/* ==========================================================
+   SMALL MOBILE
+   <= 480px
+========================================================== */
+
+@media (max-width: 480px) {
+  .signup-form {
+    width: 100%;
+
+    padding: 25px 18px;
+  }
+
+  .signup-form h1 {
+    font-size: 29px;
+  }
+
+  .signup-form .login-subtitle {
+    margin-bottom: 25px;
+
+    font-size: 14px;
+  }
+
+  .signup-form .custom-input {
+    height: 52px;
+  }
+
+  .signup-login-link {
+    margin-top: 18px;
+
+    font-size: 13px;
+  }
+}
+
+/* ==========================================================
+   VERY SMALL MOBILE
+   <= 360px
+========================================================== */
+
+@media (max-width: 360px) {
+  .signup-form {
+    padding: 22px 15px;
+  }
+
+  .signup-form h1 {
+    font-size: 26px;
+  }
+}

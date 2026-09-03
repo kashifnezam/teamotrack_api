@@ -1,0 +1,496 @@
+<!-- ==========================================================
+     TeamoTrack HR Dashboard
+=========================================================== -->
+
+<section class="section p-3">
+  <div class="container-fluid">
+    <div class="hr-dashboard">
+      <!-- ==================================================
+           HEADER
+      =================================================== -->
+
+      <header class="hr-dashboard-header">
+        <div class="hr-header-main">
+          <div class="hr-header-icon">
+            <i class="bi bi-grid-1x2-fill"></i>
+          </div>
+
+          <div>
+            <div class="hr-eyebrow">HR WORKSPACE</div>
+
+            <h1 class="hr-welcome-title">Workforce Overview</h1>
+
+            <p class="hr-welcome-description">Monitor attendance, leave, and workforce activity from one place.</p>
+          </div>
+        </div>
+
+        <div class="hr-header-date">
+          <i class="bi bi-calendar3"></i>
+
+          <div>
+            <span class="hr-date-label">Today</span>
+            <strong id="hrCurrentDate">—</strong>
+          </div>
+        </div>
+      </header>
+
+      <!-- ==================================================
+           KPI / WORKFORCE SUMMARY
+      =================================================== -->
+
+      <section class="hr-section">
+        <div class="hr-section-heading">
+          <div>
+            <h2>Workforce today</h2>
+            <p>Quick view of your workforce status.</p>
+          </div>
+        </div>
+
+        <div class="hr-stat-grid">
+          <!-- TOTAL -->
+
+          <article class="hr-stat-card">
+            <div class="hr-stat-icon">
+              <i class="bi bi-people-fill"></i>
+            </div>
+
+            <div class="hr-stat-content">
+              <span class="hr-stat-label"> Total Executives </span>
+
+              <strong class="hr-stat-value" id="totalExecutives"> — </strong>
+
+              <span class="hr-stat-meta"> Active workforce </span>
+            </div>
+          </article>
+
+          <!-- PRESENT -->
+
+          <article class="hr-stat-card hr-stat-present">
+            <div class="hr-stat-icon">
+              <i class="bi bi-person-check-fill"></i>
+            </div>
+
+            <div class="hr-stat-content">
+              <span class="hr-stat-label"> Present </span>
+
+              <strong class="hr-stat-value" id="presentCount"> — </strong>
+
+              <span class="hr-stat-meta"> Checked in today </span>
+            </div>
+          </article>
+
+          <!-- ABSENT -->
+
+          <article class="hr-stat-card">
+            <div class="hr-stat-icon">
+              <i class="bi bi-person-x-fill"></i>
+            </div>
+
+            <div class="hr-stat-content">
+              <span class="hr-stat-label"> Absent </span>
+
+              <strong class="hr-stat-value" id="absentCount"> — </strong>
+
+              <span class="hr-stat-meta"> No check-in </span>
+            </div>
+          </article>
+
+          <!-- LATE -->
+
+          <article class="hr-stat-card">
+            <div class="hr-stat-icon">
+              <i class="bi bi-clock-fill"></i>
+            </div>
+
+            <div class="hr-stat-content">
+              <span class="hr-stat-label"> Late </span>
+
+              <strong class="hr-stat-value" id="lateCount"> — </strong>
+
+              <span class="hr-stat-meta"> Beyond grace period </span>
+            </div>
+          </article>
+
+          <!-- LEAVE -->
+
+          <article class="hr-stat-card">
+            <div class="hr-stat-icon">
+              <i class="bi bi-calendar2-week-fill"></i>
+            </div>
+
+            <div class="hr-stat-content">
+              <span class="hr-stat-label"> On Leave </span>
+
+              <strong class="hr-stat-value" id="onLeaveCount"> — </strong>
+
+              <span class="hr-stat-meta"> Today </span>
+            </div>
+          </article>
+
+          <!-- PENDING -->
+
+          <article class="hr-stat-card hr-stat-warning">
+            <div class="hr-stat-icon">
+              <i class="bi bi-hourglass-split"></i>
+            </div>
+
+            <div class="hr-stat-content">
+              <span class="hr-stat-label"> Pending Leave </span>
+
+              <strong class="hr-stat-value" id="pendingLeaveCount"> — </strong>
+
+              <span class="hr-stat-meta"> Waiting for action </span>
+            </div>
+          </article>
+
+          <!-- EXCEPTIONS -->
+
+          <article class="hr-stat-card hr-stat-danger">
+            <div class="hr-stat-icon">
+              <i class="bi bi-exclamation-triangle-fill"></i>
+            </div>
+
+            <div class="hr-stat-content">
+              <span class="hr-stat-label"> Exceptions </span>
+
+              <strong class="hr-stat-value" id="exceptionCount"> — </strong>
+
+              <span class="hr-stat-meta"> Need attention </span>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <!-- ==================================================
+           ACTION CENTER
+      =================================================== -->
+
+      <section class="hr-section">
+        <div class="hr-section-heading">
+          <div>
+            <h2>Action center</h2>
+            <p>Items that may need your attention.</p>
+          </div>
+        </div>
+
+        <div class="hr-action-grid">
+          <!-- PENDING LEAVE -->
+
+          <a href="/leave/requests" class="hr-action-panel">
+            <div class="hr-action-panel-icon">
+              <i class="bi bi-calendar2-check"></i>
+            </div>
+
+            <div class="hr-action-panel-content">
+              <span>Pending leave</span>
+
+              <strong id="hrPendingLeaveAction"> — </strong>
+
+              <small> Requests waiting for review </small>
+            </div>
+
+            <i class="bi bi-arrow-up-right"></i>
+          </a>
+
+          <!-- EXCEPTIONS -->
+
+          <a href="/attendance/exceptions" class="hr-action-panel">
+            <div class="hr-action-panel-icon">
+              <i class="bi bi-exclamation-circle"></i>
+            </div>
+
+            <div class="hr-action-panel-content">
+              <span>Attendance exceptions</span>
+
+              <strong id="hrExceptionAction"> — </strong>
+
+              <small> Issues requiring attention </small>
+            </div>
+
+            <i class="bi bi-arrow-up-right"></i>
+          </a>
+
+          <!-- ATTENDANCE -->
+
+          <a href="/attendance" class="hr-action-panel">
+            <div class="hr-action-panel-icon">
+              <i class="bi bi-calendar-check"></i>
+            </div>
+
+            <div class="hr-action-panel-content">
+              <span>Today's attendance</span>
+
+              <strong id="hrAttendanceAction"> View </strong>
+
+              <small> Review the workforce </small>
+            </div>
+
+            <i class="bi bi-arrow-up-right"></i>
+          </a>
+        </div>
+      </section>
+
+      <!-- ==================================================
+           MAIN CONTENT
+      =================================================== -->
+
+      <section class="hr-main-grid">
+        <!-- ==================================================
+             ATTENDANCE
+        =================================================== -->
+
+        <section class="hr-panel hr-attendance-panel">
+          <div class="hr-panel-header">
+            <div>
+              <div class="hr-panel-title-row">
+                <div class="hr-panel-title-icon">
+                  <i class="bi bi-person-check"></i>
+                </div>
+
+                <h2>Today's attendance</h2>
+              </div>
+
+              <p>Latest attendance activity.</p>
+            </div>
+
+            <a href="/attendance" class="hr-view-link">
+              View all
+              <i class="bi bi-arrow-right"></i>
+            </a>
+          </div>
+
+          <!-- TOOLBAR -->
+
+          <div class="hr-toolbar">
+            <div class="hr-search">
+              <i class="bi bi-search"></i>
+
+              <input type="search" id="hrAttendanceSearch" placeholder="Search executive..." autocomplete="off" />
+            </div>
+
+            <select id="hrAttendanceStatus" class="hr-select">
+              <option value="all">All status</option>
+
+              <option value="present">Present</option>
+
+              <option value="working">Working</option>
+
+              <option value="late">Late</option>
+
+              <option value="absent">Absent</option>
+
+              <option value="leave">On leave</option>
+            </select>
+          </div>
+
+          <!-- TABLE -->
+
+          <div class="hr-table-container">
+            <table class="table hr-table">
+              <thead>
+                <tr>
+                  <th>Executive</th>
+
+                  <th>Check in</th>
+
+                  <th>Check out</th>
+
+                  <th>Working</th>
+
+                  <th>Status</th>
+                </tr>
+              </thead>
+
+              <tbody id="hrAttendanceTable">
+                <tr>
+                  <td colspan="5" class="hr-table-empty">Loading attendance...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="hr-panel-footer">
+            <span id="hrAttendanceSummary"> Showing 0 of 0 </span>
+
+            <a href="/attendance">
+              View complete attendance
+              <i class="bi bi-arrow-right"></i>
+            </a>
+          </div>
+        </section>
+
+        <!-- ==================================================
+             RIGHT COLUMN
+        =================================================== -->
+
+        <div class="hr-side-column">
+          <!-- ==================================================
+               EXCEPTIONS
+          =================================================== -->
+
+          <section class="hr-panel">
+            <div class="hr-panel-header">
+              <div>
+                <div class="hr-panel-title-row">
+                  <div class="hr-panel-title-icon">
+                    <i class="bi bi-exclamation-triangle"></i>
+                  </div>
+
+                  <h2>Exceptions</h2>
+                </div>
+
+                <p>Issues that need attention.</p>
+              </div>
+
+              <a href="/attendance/exceptions" class="hr-view-link"> View all </a>
+            </div>
+
+            <div class="hr-compact-list" id="hrExceptionList">
+              <div class="hr-list-loading">Loading exceptions...</div>
+            </div>
+
+            <div class="hr-panel-footer">
+              <a href="/attendance/exceptions">
+                Review exceptions
+                <i class="bi bi-arrow-right"></i>
+              </a>
+            </div>
+          </section>
+
+          <!-- ==================================================
+               LEAVE
+          =================================================== -->
+
+          <section class="hr-panel">
+            <div class="hr-panel-header">
+              <div>
+                <div class="hr-panel-title-row">
+                  <div class="hr-panel-title-icon">
+                    <i class="bi bi-calendar2-week"></i>
+                  </div>
+
+                  <h2>Pending leave</h2>
+                </div>
+
+                <p>Requests awaiting review.</p>
+              </div>
+
+              <a href="/leave/requests" class="hr-view-link"> View all </a>
+            </div>
+
+            <div class="hr-compact-list" id="hrLeaveList">
+              <div class="hr-list-loading">Loading leave requests...</div>
+            </div>
+
+            <div class="hr-panel-footer">
+              <a href="/leave/requests">
+                Review leave requests
+                <i class="bi bi-arrow-right"></i>
+              </a>
+            </div>
+          </section>
+
+          <!-- ==================================================
+               HOLIDAYS
+          =================================================== -->
+
+          <section class="hr-panel">
+            <div class="hr-panel-header">
+              <div>
+                <div class="hr-panel-title-row">
+                  <div class="hr-panel-title-icon">
+                    <i class="bi bi-calendar-event"></i>
+                  </div>
+
+                  <h2>Upcoming holidays</h2>
+                </div>
+
+                <p>Next company holidays.</p>
+              </div>
+
+              <a href="/holidays" class="hr-view-link"> Calendar </a>
+            </div>
+
+            <div class="hr-compact-list" id="hrHolidayList">
+              <div class="hr-list-loading">Loading holidays...</div>
+            </div>
+
+            <div class="hr-panel-footer">
+              <a href="/holidays">
+                Open holiday calendar
+                <i class="bi bi-arrow-right"></i>
+              </a>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <!-- ==================================================
+           QUICK ACTIONS
+      =================================================== -->
+
+      <section class="hr-section">
+        <div class="hr-section-heading">
+          <div>
+            <h2>Quick actions</h2>
+            <p>Common HR tasks.</p>
+          </div>
+        </div>
+
+        <div class="hr-quick-actions">
+          <a href="/attendance" class="hr-quick-action">
+            <span>
+              <i class="bi bi-calendar-check"></i>
+            </span>
+
+            <div>
+              <strong>Attendance</strong>
+              <small>Review workforce</small>
+            </div>
+
+            <i class="bi bi-arrow-right"></i>
+          </a>
+
+          <a href="/leave/requests" class="hr-quick-action">
+            <span>
+              <i class="bi bi-calendar2-week"></i>
+            </span>
+
+            <div>
+              <strong>Leave requests</strong>
+              <small>Review pending leave</small>
+            </div>
+
+            <i class="bi bi-arrow-right"></i>
+          </a>
+
+          <a href="/executives" class="hr-quick-action">
+            <span>
+              <i class="bi bi-people"></i>
+            </span>
+
+            <div>
+              <strong>Executives</strong>
+              <small>Manage workforce</small>
+            </div>
+
+            <i class="bi bi-arrow-right"></i>
+          </a>
+
+          <a href="/attendance/live" class="hr-quick-action">
+            <span>
+              <i class="bi bi-geo-alt"></i>
+            </span>
+
+            <div>
+              <strong>Live tracking</strong>
+              <small>Track field teams</small>
+            </div>
+
+            <i class="bi bi-arrow-right"></i>
+          </a>
+        </div>
+      </section>
+    </div>
+  </div>
+</section>

@@ -1,4 +1,3 @@
-
 /* ==========================================================
    TeamoTrack
    alert.js
@@ -6,218 +5,170 @@
    ========================================================== */
 
 const AppAlert = {
-
-    /* ======================================================
+  /* ======================================================
        Base Configuration
        ====================================================== */
 
-    base() {
+  base() {
+    return {
+      target: document.body,
+      heightAuto: false,
+      backdrop: true,
+      allowOutsideClick: true,
+      allowEscapeKey: true,
+    };
+  },
 
-        return {
-            target: document.body,
-            heightAuto: false,
-            backdrop: true,
-            allowOutsideClick: true,
-            allowEscapeKey: true
-        };
-
-    },
-
-
-    /* ======================================================
+  /* ======================================================
        Success
        ====================================================== */
 
-    success(message, title = "Success") {
+  success(message, title = 'Success') {
+    return Swal.fire({
+      ...this.base(),
 
-        return Swal.fire({
+      title: title,
+      text: message,
+      icon: 'success',
 
-            ...this.base(),
+      confirmButtonColor: '#3085d6',
+      confirmButtonText: 'OK',
+    });
+  },
 
-            title: title,
-            text: message,
-            icon: "success",
-
-            confirmButtonColor: "#3085d6",
-            confirmButtonText: "OK"
-
-        });
-
-    },
-
-
-    /* ======================================================
+  /* ======================================================
        Error
        ====================================================== */
 
-    error(message, title = "Error") {
+  error(message, title = 'Error') {
+    return Swal.fire({
+      ...this.base(),
 
-        return Swal.fire({
+      title: title,
+      text: message,
+      icon: 'error',
 
-            ...this.base(),
+      confirmButtonColor: '#d33',
+      confirmButtonText: 'OK',
+    });
+  },
 
-            title: title,
-            text: message,
-            icon: "error",
-
-            confirmButtonColor: "#d33",
-            confirmButtonText: "OK"
-
-        });
-
-    },
-
-
-    /* ======================================================
+  /* ======================================================
        Warning
        ====================================================== */
 
-    warning(message, title = "Warning") {
+  warning(message, title = 'Warning') {
+    return Swal.fire({
+      ...this.base(),
 
-        return Swal.fire({
+      title: title,
+      text: message,
+      icon: 'warning',
 
-            ...this.base(),
+      confirmButtonColor: '#f8bb86',
+      confirmButtonText: 'OK',
+    });
+  },
 
-            title: title,
-            text: message,
-            icon: "warning",
-
-            confirmButtonColor: "#f8bb86",
-            confirmButtonText: "OK"
-
-        });
-
-    },
-
-
-    /* ======================================================
+  /* ======================================================
        Information
        ====================================================== */
 
-    info(message, title = "Information") {
+  info(message, title = 'Information') {
+    return Swal.fire({
+      ...this.base(),
 
-        return Swal.fire({
+      title: title,
+      text: message,
+      icon: 'info',
 
-            ...this.base(),
+      confirmButtonColor: '#3085d6',
+      confirmButtonText: 'OK',
+    });
+  },
 
-            title: title,
-            text: message,
-            icon: "info",
-
-            confirmButtonColor: "#3085d6",
-            confirmButtonText: "OK"
-
-        });
-
-    },
-
-
-    /* ======================================================
+  /* ======================================================
        Confirmation
        ====================================================== */
 
-    async confirm(
-        message,
-        title = "Are you sure?"
-    ) {
+  async confirm(message, title = 'Are you sure?') {
+    const result = await Swal.fire({
+      ...this.base(),
 
-        const result = await Swal.fire({
+      title: title,
+      text: message,
+      icon: 'warning',
 
-            ...this.base(),
+      showCancelButton: true,
 
-            title: title,
-            text: message,
-            icon: "warning",
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
 
-            showCancelButton: true,
+      confirmButtonText: 'Yes',
+      cancelButtonText: 'Cancel',
 
-            confirmButtonColor: "#3085d6",
-            cancelButtonColor: "#d33",
+      reverseButtons: true,
+    });
 
-            confirmButtonText: "Yes",
-            cancelButtonText: "Cancel",
+    return result.isConfirmed;
+  },
 
-            reverseButtons: true
-
-        });
-
-        return result.isConfirmed;
-
-    },
-
-
-    /* ======================================================
+  /* ======================================================
        Delete Confirmation
        ====================================================== */
 
-    async deleteConfirm(
-        message = "You won't be able to revert this!",
-        title = "Are you sure?"
-    ) {
+  async deleteConfirm(message = "You won't be able to revert this!", title = 'Are you sure?') {
+    const result = await Swal.fire({
+      ...this.base(),
 
-        const result = await Swal.fire({
+      title: title,
+      text: message,
+      icon: 'warning',
 
-            ...this.base(),
+      showCancelButton: true,
 
-            title: title,
-            text: message,
-            icon: "warning",
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
 
-            showCancelButton: true,
+      confirmButtonText: 'Yes, delete it!',
+      cancelButtonText: 'Cancel',
 
-            confirmButtonColor: "#3085d6",
-            cancelButtonColor: "#d33",
+      reverseButtons: true,
+    });
 
-            confirmButtonText: "Yes, delete it!",
-            cancelButtonText: "Cancel",
+    if (result.isConfirmed) {
+      await Swal.fire({
+        ...this.base(),
 
-            reverseButtons: true
+        title: 'Deleted!',
+        text: 'The item has been deleted.',
+        icon: 'success',
 
-        });
+        confirmButtonColor: '#3085d6',
+        confirmButtonText: 'OK',
+      });
 
-        if (result.isConfirmed) {
+      return true;
+    }
 
-            await Swal.fire({
+    return false;
+  },
 
-                ...this.base(),
-
-                title: "Deleted!",
-                text: "The item has been deleted.",
-                icon: "success",
-
-                confirmButtonColor: "#3085d6",
-                confirmButtonText: "OK"
-
-            });
-
-            return true;
-        }
-
-        return false;
-
-    },
-
-
-    /* ======================================================
+  /* ======================================================
        Loading
        ====================================================== */
 
-    loading(message = "Loading...") {
+  loading(message = 'Loading...') {
+    // Remove existing loader
+    this.close();
 
-        // Remove existing loader
-        this.close();
+    const loader = document.createElement('div');
 
+    loader.id = 'appLoading';
 
-        const loader =
-            document.createElement("div");
+    loader.className = 'app-loading-overlay';
 
-        loader.id = "appLoading";
-
-        loader.className =
-            "app-loading-overlay";
-
-
-        loader.innerHTML = `
+    loader.innerHTML = `
 
             <div class="app-loading-popup">
 
@@ -242,88 +193,59 @@ const AppAlert = {
 
         `;
 
+    document.body.appendChild(loader);
 
-        document.body.appendChild(loader);
+    document.body.classList.add('app-loading-active');
+  },
 
-
-        document.body.classList.add(
-            "app-loading-active"
-        );
-
-    },
-
-
-    /* ======================================================
+  /* ======================================================
     Close Loading
     ====================================================== */
 
-    close() {
+  close() {
+    const loader = document.getElementById('appLoading');
 
-        const loader =
-            document.getElementById(
-                "appLoading"
-            );
+    if (loader) {
+      loader.remove();
+    }
 
+    document.body.classList.remove('app-loading-active');
+  },
 
-        if (loader) {
-
-            loader.remove();
-
-        }
-
-
-        document.body.classList.remove(
-            "app-loading-active"
-        );
-
-    },
-
-
-    /* ======================================================
+  /* ======================================================
     Escape HTML
     ====================================================== */
 
-    escapeHtml(value) {
+  escapeHtml(value) {
+    return String(value)
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#039;');
+  },
 
-        return String(value)
-            .replaceAll("&", "&amp;")
-            .replaceAll("<", "&lt;")
-            .replaceAll(">", "&gt;")
-            .replaceAll('"', "&quot;")
-            .replaceAll("'", "&#039;");
-
-    },
-
-
-    /* ======================================================
+  /* ======================================================
        Toast
        ====================================================== */
 
-    toast(
-        message,
-        icon = "success"
-    ) {
+  toast(message, icon = 'success') {
+    return Swal.fire({
+      ...this.base(),
 
-        return Swal.fire({
+      toast: true,
 
-            ...this.base(),
+      position: 'top-end',
 
-            toast: true,
+      icon: icon,
 
-            position: "top-end",
+      title: message,
 
-            icon: icon,
+      showConfirmButton: false,
 
-            title: message,
+      timer: 3000,
 
-            showConfirmButton: false,
-
-            timer: 3000,
-
-            timerProgressBar: true
-
-        });
-
-    }
-
+      timerProgressBar: true,
+    });
+  },
 };

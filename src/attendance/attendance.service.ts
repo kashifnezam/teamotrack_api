@@ -14,15 +14,7 @@ import { FirebaseService } from '../firebase/firebase.service';
 
 import { AttendanceDto } from './dto/attendance.dto';
 
-import {
-  AttendanceStatus,
-  LeaveInfo,
-  ProcessingSummary,
-  RunLog,
-  ShiftConfig,
-  Staff,
-  UserDocument,
-} from './interfaces/attendance-processing.interface';
+import { AttendanceStatus, ShiftConfig, UserDocument } from './interfaces/attendance-processing.interface';
 
 @Injectable()
 export class AttendanceService {
@@ -30,13 +22,13 @@ export class AttendanceService {
 
   private static readonly TIME_ZONE = 'Asia/Kolkata';
 
-  private static readonly BATCH_SIZE = 450;
-
   private static readonly ATTENDANCE_ROLES = new Set(['field_executive', 'manager', 'hr']);
 
-  private static readonly ROOT_ROLES = new Set(['root', 'admin', 'root_manager', 'root_hr']);
+  private static readonly ROOT_ROLES = new Set(['root', 'admin', 'root_manager']);
 
-  private static readonly TERMINAL_STATUSES = new Set(['present', 'absent', 'leave', 'weekly_off', 'holiday']);
+  private static readonly CHECKOUT_UNDO_WINDOW_MINUTES = 10;
+
+  private static readonly CHECKOUT_HISTORY_LIMIT = 20;
 
   constructor(private readonly firebase: FirebaseService) {}
 
@@ -65,12 +57,27 @@ export class AttendanceService {
       throw new NotFoundException('Staff not found');
     }
 
+    /*
+     * Attendance `date` is stored as a Firestore Timestamp.
+     *
+     * The boundaries represent midnight in
+     * Asia/Kolkata for the requested month.
+     *
+     * Example:
+     * September 2026:
+     * start = 1 September 2026 00:00:00 +05:30
+     * end   = 1 October 2026 00:00:00 +05:30
+     */
     const start = this.localDate(`${dto.year}-${String(dto.month).padStart(2, '0')}-01`);
 
-    const endDate = new Date(Date.UTC(dto.year, dto.month, 1));
+    const nextMonth = dto.month === 12 ? 1 : dto.month + 1;
 
-    const end = new Date(
-      `${endDate.getUTCFullYear()}-${String(endDate.getUTCMonth() + 1).padStart(2, '0')}-01T00:00:00+05:30`
+    const nextYear = dto.month === 12 ? dto.year + 1 : dto.year;
+
+    const end = this.localDate(`${nextYear}-${String(nextMonth).padStart(2, '0')}-01`);
+
+    this.logger.log(
+      `Attendance date range | staff=${dto.staffId} | start=${start.toISOString()} | end=${end.toISOString()}`
     );
 
     try {
@@ -84,16 +91,68 @@ export class AttendanceService {
 
       const records = snapshot.docs.map((doc) => this.mapRecord(doc));
 
-      records.sort((a, b) => {
-        const dateA = this.recordDateValue(a.date);
-        const dateB = this.recordDateValue(b.date);
+      /*
+       * Fetch leave requests referenced by attendance.
+       *
+       * Attendance stores only leaveRequestId.
+       */
+      const leaveIds = [
+        ...new Set(
+          records
+            .map((record: any) => record.leaveRequestId)
+            .filter((id: unknown): id is string => typeof id === 'string' && id.length > 0)
+        ),
+      ];
 
-        return dateB - dateA;
+      const leaveMap = new Map<string, any>();
+
+      if (leaveIds.length) {
+        /*
+         * Firestore `in` queries support
+         * up to 30 values.
+         */
+        for (let i = 0; i < leaveIds.length; i += 30) {
+          const chunk = leaveIds.slice(i, i + 30);
+
+          const leaveSnapshot = await this.db.collection('leaveRequests').where('__name__', 'in', chunk).get();
+
+          leaveSnapshot.docs.forEach((doc) => {
+            leaveMap.set(doc.id, {
+              id: doc.id,
+              ...doc.data(),
+            });
+          });
+        }
+      }
+
+      /*
+       * Attach the corresponding leave request.
+       */
+      const enrichedRecords = records.map((record: any) => {
+        if (!record.leaveRequestId) {
+          return record;
+        }
+
+        const leave = leaveMap.get(record.leaveRequestId);
+
+        if (!leave) {
+          return record;
+        }
+
+        return {
+          ...record,
+          leave,
+        };
       });
 
+      /*
+       * Newest attendance date first.
+       */
+      enrichedRecords.sort((a, b) => this.recordDateValue(b.date) - this.recordDateValue(a.date));
+
       return {
-        records,
-        summary: this.getSummary(records),
+        records: enrichedRecords,
+        summary: this.getSummary(enrichedRecords),
       };
     } catch (error) {
       this.logger.error(
@@ -104,7 +163,6 @@ export class AttendanceService {
       throw error;
     }
   }
-
   // ============================================================
   // MY ATTENDANCE
   // ============================================================
@@ -164,15 +222,15 @@ export class AttendanceService {
     }
 
     /*
-     * Location is compulsory ONLY when tracking
-     * is enabled for this user.
+     * Location is compulsory ONLY when
+     * tracking is enabled for this user.
      */
     if (user.isTrackingEnable === true) {
       this.validateLocation(dto.lat, dto.lng);
     } else {
       /*
-       * If location is supplied even though tracking
-       * is disabled, validate it before saving.
+       * If location is supplied while
+       * tracking is disabled, validate it.
        */
       if (dto.lat != null || dto.lng != null) {
         this.validateLocation(dto.lat, dto.lng);
@@ -198,26 +256,28 @@ export class AttendanceService {
     const shiftEnd = this.shiftEndForDate(now, shift);
 
     /*
-     * Early check-in IS allowed.
+     * Early check-in is allowed.
      *
-     * But after shift end, check-in is rejected.
+     * After shift end, check-in is rejected.
      */
     if (now.getTime() >= shiftEnd.getTime()) {
       throw new BadRequestException('Your shift has already ended. Check-in is no longer available.');
     }
 
     /*
-     * Punctuality is based on:
-     *
-     * shift start + grace period
+     * Punctuality is based on
+     * shift start + grace period.
      */
     const punctuality = this.isLate(now, shift) ? 'late' : 'on_time';
 
     let result:
       | {
           status: AttendanceStatus;
+
           attendanceType: 'full_day' | 'half_day';
+
           punctuality: 'on_time' | 'late';
+
           message: string;
         }
       | undefined;
@@ -235,14 +295,19 @@ export class AttendanceService {
       }
 
       /*
-       * Full-day leave cannot be overridden.
+       * Full-day leave cannot
+       * be overridden.
+       *
+       * The LeaveService will now
+       * create approved leave attendance.
        */
       if (existing.status === 'leave' && existing.leaveDuration !== 'half_day') {
         throw new BadRequestException('You are on full-day leave today');
       }
 
       /*
-       * Weekly off / holiday cannot be overridden.
+       * Weekly off / holiday cannot
+       * be overridden.
        */
       if (existing.status === 'weekly_off' || existing.status === 'holiday') {
         throw new BadRequestException(`Attendance is already marked as ${existing.status}`);
@@ -266,7 +331,7 @@ export class AttendanceService {
         workingMinutes: 0,
 
         /*
-         * Snapshot the shift that was actually
+         * Snapshot the exact shift
          * applicable at check-in.
          */
         shiftSnapshot: shift,
@@ -275,7 +340,9 @@ export class AttendanceService {
       };
 
       /*
-       * Preserve half-day leave.
+       * Preserve half-day leave
+       * metadata if LeaveService
+       * has already synchronized it.
        */
       if (existing.leaveDuration === 'half_day') {
         data.leaveDuration = 'half_day';
@@ -283,10 +350,19 @@ export class AttendanceService {
         if (existing.leaveTypeId) {
           data.leaveTypeId = existing.leaveTypeId;
         }
+
+        if (existing.leaveRequestId) {
+          data.leaveRequestId = existing.leaveRequestId;
+        }
+
+        if (existing.leaveStatus) {
+          data.leaveStatus = existing.leaveStatus;
+        }
       }
 
       /*
-       * Save check-in location when supplied.
+       * Save check-in location
+       * when supplied.
        */
       if (dto.lat != null && dto.lng != null) {
         data.checkInLocation = {
@@ -326,11 +402,19 @@ export class AttendanceService {
 
       date,
 
-      ...result,
+      status: result.status,
+
+      attendanceType: result.attendanceType,
+
+      punctuality: result.punctuality,
+
+      checkInTime: now.toISOString(),
+
+      checkOutTime: null,
 
       workingMinutes: 0,
 
-      checkInTime: now.toISOString(),
+      message: result.message,
     };
   }
 
@@ -355,9 +439,6 @@ export class AttendanceService {
       throw new BadRequestException('Invalid hierarchy: rootId missing');
     }
 
-    /*
-     * Location compulsory only for tracking-enabled users.
-     */
     if (user.isTrackingEnable === true) {
       this.validateLocation(dto.lat, dto.lng);
     } else if (dto.lat != null || dto.lng != null) {
@@ -373,11 +454,19 @@ export class AttendanceService {
     let result:
       | {
           checkInTime: Date;
+
           checkOutTime: Date;
+
           workingMinutes: number;
+
           status: AttendanceStatus;
+
           attendanceType: 'full_day' | 'half_day' | null;
+
           punctuality: 'on_time' | 'late';
+
+          checkoutUndoUntil: Date;
+
           message: string;
         }
       | undefined;
@@ -395,8 +484,29 @@ export class AttendanceService {
         throw new BadRequestException('You have not checked in today');
       }
 
+      /*
+       * Already checked out.
+       */
       if (existing.checkOutTime) {
-        throw new ConflictException('You have already checked out today');
+        const previousCheckout = this.toDate(existing.checkOutTime);
+
+        if (previousCheckout) {
+          const undoUntil = new Date(
+            previousCheckout.getTime() + AttendanceService.CHECKOUT_UNDO_WINDOW_MINUTES * 60 * 1000
+          );
+
+          if (new Date() <= undoUntil) {
+            throw new ConflictException(
+              `You have already checked out at ${this.formatTimeForMessage(
+                previousCheckout
+              )}. You can undo the checkout for ${AttendanceService.CHECKOUT_UNDO_WINDOW_MINUTES} minutes.`
+            );
+          }
+        }
+
+        throw new ConflictException(
+          'You have already checked out today. Checkout can no longer be changed from the employee app.'
+        );
       }
 
       const checkIn = this.toDate(existing.checkInTime);
@@ -406,12 +516,8 @@ export class AttendanceService {
       }
 
       /*
-       * IMPORTANT:
-       *
-       * Checkout MUST use the historical
-       * shift snapshot stored at check-in.
-       *
-       * Never use the current team shift here.
+       * Checkout MUST use the
+       * historical shift snapshot.
        */
       const shift = this.shiftFromSnapshot(existing.shiftSnapshot);
 
@@ -422,16 +528,8 @@ export class AttendanceService {
       const checkOut = new Date();
 
       /*
-       * Early check-in does NOT count toward
-       * working minutes.
-       *
-       * Example:
-       *
-       * Shift      = 09:00
-       * Check-in   = 08:30
-       * Check-out  = 17:30
-       *
-       * Working    = 08:30
+       * Early check-in does not
+       * count toward working minutes.
        */
       const shiftStart = this.shiftStartForDate(checkIn, shift);
 
@@ -440,16 +538,7 @@ export class AttendanceService {
       const workingMinutes = Math.max(0, Math.round((checkOut.getTime() - effectiveCheckIn.getTime()) / 60000));
 
       /*
-       * Use the SAME classification rule as the scheduler.
-       *
-       * Example:
-       * fullDayMinutes = 480
-       * halfDayMinutes = 240
-       * graceMinutes   = 15
-       *
-       * Full day = 495 minutes
-       * Half day = 255 minutes
-       * Below 255 = absent
+       * Central classification.
        */
       const classification = this.classifyWorkingMinutes(workingMinutes, shift);
 
@@ -457,11 +546,45 @@ export class AttendanceService {
 
       const attendanceType = classification.attendanceType;
 
-      /*
-       * Always calculate punctuality from the
-       * historical shift snapshot.
-       */
       const punctuality = this.isLate(checkIn, shift) ? 'late' : 'on_time';
+
+      const undoUntil = new Date(checkOut.getTime() + AttendanceService.CHECKOUT_UNDO_WINDOW_MINUTES * 60 * 1000);
+
+      /*
+       * Audit history.
+       */
+      const checkoutHistory = Array.isArray(existing.checkoutHistory) ? [...existing.checkoutHistory] : [];
+
+      checkoutHistory.push({
+        action: 'checkout',
+
+        performedBy: userId,
+
+        performedByRole: user.role ?? null,
+
+        checkOutTime: Timestamp.fromDate(checkOut),
+
+        workingMinutes,
+
+        status,
+
+        attendanceType,
+
+        recordedAt: Timestamp.fromDate(checkOut),
+
+        undoUntil: Timestamp.fromDate(undoUntil),
+
+        ...(dto.lat != null && dto.lng != null
+          ? {
+              location: {
+                lat: Number(dto.lat),
+                lng: Number(dto.lng),
+              },
+            }
+          : {}),
+      });
+
+      const limitedHistory = checkoutHistory.slice(-AttendanceService.CHECKOUT_HISTORY_LIMIT);
 
       const update: FirebaseFirestore.DocumentData = {
         checkOutTime: FieldValue.serverTimestamp(),
@@ -473,6 +596,14 @@ export class AttendanceService {
         attendanceType,
 
         punctuality,
+
+        checkoutUndoUntil: Timestamp.fromDate(undoUntil),
+
+        checkoutCount: Number(existing.checkoutCount ?? 0) + 1,
+
+        lastCheckoutAt: FieldValue.serverTimestamp(),
+
+        checkoutHistory: limitedHistory,
 
         updatedAt: FieldValue.serverTimestamp(),
       };
@@ -486,23 +617,32 @@ export class AttendanceService {
         if (existing.leaveTypeId) {
           update.leaveTypeId = existing.leaveTypeId;
         }
+
+        if (existing.leaveRequestId) {
+          update.leaveRequestId = existing.leaveRequestId;
+        }
+
+        if (existing.leaveStatus) {
+          update.leaveStatus = existing.leaveStatus;
+        }
       }
 
       /*
-       * Historical shift MUST remain untouched.
-       */
-      if (!existing.shiftSnapshot) {
-        update.shiftSnapshot = shift;
-      }
-
-      /*
-       * Optional checkout location.
+       * Checkout location.
        */
       if (dto.lat != null && dto.lng != null) {
         update.checkOutLocation = {
           lat: Number(dto.lat),
           lng: Number(dto.lng),
         };
+      }
+
+      /*
+       * Never replace historical
+       * shift snapshot.
+       */
+      if (!existing.shiftSnapshot) {
+        update.shiftSnapshot = shift;
       }
 
       transaction.set(ref, update, {
@@ -522,7 +662,9 @@ export class AttendanceService {
 
         punctuality,
 
-        message: 'Check-out recorded successfully.',
+        checkoutUndoUntil: undoUntil,
+
+        message: 'Check-out recorded successfully. You can undo this checkout for 10 minutes.',
       };
     });
 
@@ -549,313 +691,555 @@ export class AttendanceService {
 
       workingMinutes: result.workingMinutes,
 
+      checkoutUndoUntil: result.checkoutUndoUntil.toISOString(),
+
+      canUndoCheckout: true,
+
       message: result.message,
     };
   }
 
   // ============================================================
-  // MANUAL / SCHEDULER ENTRY POINT
+  // UNDO CHECK OUT
   // ============================================================
 
-  async processAttendanceForDate(
-    date: string,
-    options: {
-      mode: 'automatic' | 'manual';
-      triggeredBy: string;
-      rootId?: string;
-    }
-  ) {
-    this.logger.log(`[ATTENDANCE] START | date=${date} | mode=${options.mode} | triggeredBy=${options.triggeredBy}`);
+  async undoCheckout(userId: string) {
+    const user = await this.getUser(userId);
 
-    this.validateProcessingDate(date);
+    this.assertAttendanceStaff(user);
 
-    if (options.rootId) {
-      return this.processOrganizationDate(options.rootId, date, options.mode, options.triggeredBy);
+    const rootId = this.getRootId(user);
+
+    if (!rootId) {
+      throw new BadRequestException('Invalid hierarchy: rootId missing');
     }
 
-    const staff = await this.loadAttendanceStaff();
+    const date = this.todayIndia();
 
-    const grouped = this.groupByRootId(staff);
+    const recordId = this.dateKey(date);
 
-    const results: ProcessingSummary[] = [];
+    const ref = this.attendanceRecordRef(userId, date);
 
-    for (const [rootId] of grouped) {
-      const result = await this.processOrganizationDate(rootId, date, options.mode, options.triggeredBy);
+    let result:
+      | {
+          checkInTime: Date;
 
-      this.logger.log(
-        `[ATTENDANCE] ORGANIZATION COMPLETE | root=${rootId} | date=${date} | processed=${result.processed} | created=${result.created} | updated=${result.updated} | skipped=${result.skipped} | errors=${result.errors.length}`
-      );
+          punctuality: 'on_time' | 'late';
 
-      results.push(result);
+          message: string;
+        }
+      | undefined;
+
+    await this.db.runTransaction(async (transaction) => {
+      const snapshot = await transaction.get(ref);
+
+      if (!snapshot.exists) {
+        throw new NotFoundException('No attendance record found for today');
+      }
+
+      const existing = snapshot.data() ?? {};
+
+      if (!existing.checkInTime) {
+        throw new BadRequestException('You have not checked in today');
+      }
+
+      if (!existing.checkOutTime) {
+        throw new ConflictException('You are already working. There is no checkout to undo.');
+      }
+
+      const checkOut = this.toDate(existing.checkOutTime);
+
+      if (!checkOut) {
+        throw new InternalServerErrorException('Invalid checkout time');
+      }
+
+      const undoUntil =
+        this.toDate(existing.checkoutUndoUntil) ??
+        new Date(checkOut.getTime() + AttendanceService.CHECKOUT_UNDO_WINDOW_MINUTES * 60 * 1000);
+
+      const now = new Date();
+
+      if (now.getTime() > undoUntil.getTime()) {
+        throw new ForbiddenException('The checkout correction window has expired. Please contact your manager or HR.');
+      }
+
+      const shift = this.shiftFromSnapshot(existing.shiftSnapshot);
+
+      if (!shift) {
+        throw new InternalServerErrorException('Historical shift information is missing from attendance record');
+      }
+
+      const checkIn = this.toDate(existing.checkInTime);
+
+      if (!checkIn) {
+        throw new InternalServerErrorException('Invalid check-in time');
+      }
+
+      /*
+       * Audit.
+       */
+      const checkoutHistory = Array.isArray(existing.checkoutHistory) ? [...existing.checkoutHistory] : [];
+
+      checkoutHistory.push({
+        action: 'checkout_cancelled',
+
+        performedBy: userId,
+
+        performedByRole: user.role ?? null,
+
+        cancelledCheckoutAt: Timestamp.fromDate(checkOut),
+
+        recordedAt: Timestamp.fromDate(now),
+
+        reason: 'employee_undo',
+      });
+
+      const limitedHistory = checkoutHistory.slice(-AttendanceService.CHECKOUT_HISTORY_LIMIT);
+
+      /*
+       * Restore working state.
+       */
+      const update: FirebaseFirestore.DocumentData = {
+        checkOutTime: FieldValue.delete(),
+
+        checkoutUndoUntil: FieldValue.delete(),
+
+        lastCheckoutAt: FieldValue.delete(),
+
+        checkoutCount: Math.max(0, Number(existing.checkoutCount ?? 1) - 1),
+
+        status: 'present',
+
+        attendanceType: FieldValue.delete(),
+
+        workingMinutes: 0,
+
+        punctuality: this.isLate(checkIn, shift) ? 'late' : 'on_time',
+
+        checkoutHistory: limitedHistory,
+
+        checkOutLocation: FieldValue.delete(),
+
+        updatedAt: FieldValue.serverTimestamp(),
+      };
+
+      /*
+       * Restore half-day leave metadata.
+       */
+      if (existing.leaveDuration === 'half_day') {
+        update.leaveDuration = 'half_day';
+
+        if (existing.leaveTypeId) {
+          update.leaveTypeId = existing.leaveTypeId;
+        }
+
+        if (existing.leaveRequestId) {
+          update.leaveRequestId = existing.leaveRequestId;
+        }
+
+        if (existing.leaveStatus) {
+          update.leaveStatus = existing.leaveStatus;
+        }
+      }
+
+      transaction.set(ref, update, {
+        merge: true,
+      });
+
+      result = {
+        checkInTime: checkIn,
+
+        punctuality: this.isLate(checkIn, shift) ? 'late' : 'on_time',
+
+        message: 'Checkout cancelled successfully. You are working again.',
+      };
+    });
+
+    if (!result) {
+      throw new InternalServerErrorException('Unable to undo checkout');
     }
 
-    return this.mergeSummaries(date, results);
-  }
+    return {
+      id: recordId,
 
-  // ============================================================
-  // ORGANIZATION PROCESSOR
-  // ============================================================
+      staffId: userId,
 
-  private async processOrganizationDate(
-    rootId: string,
-    date: string,
-    mode: 'automatic' | 'manual',
-    triggeredBy: string
-  ): Promise<ProcessingSummary> {
-    const lock = await this.acquireRun(rootId, date, mode, triggeredBy);
-
-    if (!lock) {
-      throw new ConflictException(`Attendance processing is already running for ${date}`);
-    }
-
-    const summary: ProcessingSummary = {
       date,
 
-      processed: 0,
+      status: 'present',
 
-      created: 0,
+      attendanceType: 'full_day',
 
-      updated: 0,
+      punctuality: result.punctuality,
 
-      skipped: 0,
+      checkInTime: result.checkInTime.toISOString(),
 
-      errors: [],
+      checkOutTime: null,
+
+      workingMinutes: 0,
+
+      canUndoCheckout: false,
+
+      message: result.message,
     };
+  }
 
-    try {
-      const staff = (await this.loadAttendanceStaff()).filter((x) => x.rootId === rootId);
+  // ============================================================
+  // MANAGER / HR CHECKOUT CORRECTION
+  // ============================================================
 
-      if (!staff.length) {
-        await this.completeRun(rootId, date, summary);
+  async correctCheckout(
+    requesterId: string,
+    staffId: string,
+    dto: {
+      checkOutTime: string;
+      reason: string;
+    }
+  ) {
+    const requester = await this.getUser(requesterId);
 
-        return summary;
+    if (!['manager', 'hr', 'root', 'root_manager', 'admin'].includes(requester.role ?? '')) {
+      throw new ForbiddenException('You are not authorized to correct attendance');
+    }
+
+    if (!dto.reason || dto.reason.trim().length < 3) {
+      throw new BadRequestException('A correction reason is required');
+    }
+
+    const checkoutDate = new Date(dto.checkOutTime);
+
+    if (Number.isNaN(checkoutDate.getTime())) {
+      throw new BadRequestException('Invalid checkout time');
+    }
+
+    const staff = await this.getUser(staffId);
+
+    const requesterRoot = this.getRootId(requester);
+
+    const staffRoot = this.getRootId(staff);
+
+    if (!requesterRoot || !staffRoot || requesterRoot !== staffRoot) {
+      throw new ForbiddenException('You are not authorized to modify this attendance');
+    }
+
+    /*
+     * ----------------------------------------------------------
+     * MANAGER AUTHORIZATION
+     * ----------------------------------------------------------
+     */
+    if (requester.role === 'manager') {
+      const users = await this.loadRootUsers(requesterRoot);
+
+      const descendants = this.getDescendantIds(requester.uid, users);
+
+      if (staff.uid !== requester.uid && !descendants.has(staff.uid)) {
+        throw new ForbiddenException('You are not authorized to correct this staff attendance');
       }
+    }
 
-      const teams = await this.loadTeams(staff);
+    /*
+     * ----------------------------------------------------------
+     * HR AUTHORIZATION
+     * ----------------------------------------------------------
+     */
+    if (requester.role === 'hr') {
+      const authorizedIds = this.getHrAuthorizedStaffIds(requester);
 
-      const shifts = await this.loadShifts(staff, teams);
+      if (staff.uid !== requester.uid && !authorizedIds.has(staff.uid)) {
+        throw new ForbiddenException('You are not authorized to correct this staff attendance');
+      }
+    }
 
-      const holidays = await this.loadHoliday(rootId, date);
+    /*
+     * Correction is based on
+     * the India local date.
+     */
+    const date = this.getIndiaDateParts(checkoutDate);
 
-      const leaves = await this.loadApprovedLeaves(rootId, date);
+    const ref = this.attendanceRecordRef(staffId, date);
 
-      const attendance = await this.loadAttendanceRecords(staff, date);
+    let result:
+      | {
+          status: AttendanceStatus;
 
-      const operations: Array<{
-        staff: Staff;
+          attendanceType: 'full_day' | 'half_day' | null;
 
-        ref: FirebaseFirestore.DocumentReference;
-
-        existing?: FirebaseFirestore.DocumentData;
-
-        update?: FirebaseFirestore.DocumentData;
-
-        create?: FirebaseFirestore.DocumentData;
-      }> = [];
-
-      for (const employee of staff) {
-        summary.processed++;
-
-        try {
-          /*
-           * IMPORTANT:
-           *
-           * If an attendance record already exists,
-           * its shiftSnapshot has absolute priority.
-           *
-           * This is what makes processing an older date
-           * safe after the team/user shift has changed.
-           *
-           * Current team/user shift is used ONLY
-           * when no historical snapshot exists.
-           */
-          const existing = attendance.get(employee.uid);
-
-          const shift = this.resolveHistoricalOrCurrentShift(existing, employee, teams, shifts);
-
-          const leave = leaves.get(employee.uid);
-
-          const decision = this.calculateAttendance(employee, date, shift, existing, leave, holidays);
-
-          const ref = this.db.collection('attendance').doc(employee.uid).collection('records').doc(this.dateKey(date));
-
-          if (decision.action === 'skip') {
-            summary.skipped++;
-
-            continue;
-          }
-
-          if (decision.action === 'create') {
-            summary.created++;
-
-            operations.push({
-              staff: employee,
-
-              ref,
-
-              create: decision.data,
-            });
-          } else {
-            summary.updated++;
-
-            operations.push({
-              staff: employee,
-
-              ref,
-
-              existing,
-
-              update: decision.data,
-            });
-          }
-        } catch (error) {
-          summary.errors.push({
-            staffId: employee.uid,
-
-            error: error instanceof Error ? error.message : String(error),
-          });
-
-          this.logger.error(
-            `Attendance staff processing failed | root=${rootId} | staff=${employee.uid} | date=${date}`,
-            error instanceof Error ? error.stack : String(error)
-          );
+          workingMinutes: number;
         }
-      }
+      | undefined;
 
-      await this.commitOperations(operations);
+    await this.db.runTransaction(async (transaction) => {
+      const snapshot = await transaction.get(ref);
 
-      await this.completeRun(rootId, date, summary);
-
-      return summary;
-    } catch (error) {
-      await this.failRun(rootId, date, summary, error);
-
-      throw error;
-    }
-  }
-
-  // ============================================================
-  // STAFF LOADING
-  // ============================================================
-
-  private async loadAttendanceStaff(): Promise<Staff[]> {
-    const snapshot = await this.db.collection('user').where('isActive', '==', true).get();
-
-    return snapshot.docs
-      .map((doc) => {
-        const data = doc.data();
-
-        return {
-          uid: doc.id,
-
-          rootId: data.rootId,
-
-          role: data.role,
-
-          parentId: data.parentId,
-
-          teamId: data.teamId,
-
-          shiftId: data.shiftId,
-
-          isActive: data.isActive,
-
-          isTrackingEnable: data.isTrackingEnable === true,
-
-          userName: data.userName ?? data.name,
-
-          fullName: data.fullName ?? data.userName ?? data.name,
-        } as Staff;
-      })
-      .filter((user) => !!user.rootId && AttendanceService.ATTENDANCE_ROLES.has(user.role ?? ''));
-  }
-
-  private groupByRootId(staff: Staff[]) {
-    const map = new Map<string, Staff[]>();
-
-    for (const user of staff) {
-      const current = map.get(user.rootId) ?? [];
-
-      current.push(user);
-
-      map.set(user.rootId, current);
-    }
-
-    return map;
-  }
-
-  // ============================================================
-  // TEAM PRELOAD
-  // ============================================================
-
-  private async loadTeams(staff: Staff[]): Promise<Map<string, FirebaseFirestore.DocumentData>> {
-    const ids = [...new Set(staff.map((x) => x.teamId).filter((x): x is string => !!x))];
-
-    if (!ids.length) {
-      return new Map();
-    }
-
-    const refs = ids.map((id) => this.db.collection('teams').doc(id));
-
-    const snapshots = await this.db.getAll(...refs);
-
-    return new Map(snapshots.filter((snapshot) => snapshot.exists).map((snapshot) => [snapshot.id, snapshot.data()!]));
-  }
-
-  // ============================================================
-  // SHIFT PRELOAD
-  // ============================================================
-
-  private async loadShifts(
-    staff: Staff[],
-    teams: Map<string, FirebaseFirestore.DocumentData>
-  ): Promise<Map<string, ShiftConfig>> {
-    const ids = new Set<string>();
-
-    for (const user of staff) {
-      /*
-       * Manager / HR / any direct shift
-       * takes priority.
-       */
-      if (user.shiftId) {
-        ids.add(user.shiftId);
-
-        continue;
-      }
-
-      /*
-       * Team-based executive.
-       */
-      if (user.teamId) {
-        const team = teams.get(user.teamId);
-
-        if (team?.shiftId) {
-          ids.add(team.shiftId);
-        }
-      }
-    }
-
-    if (!ids.size) {
-      return new Map();
-    }
-
-    const refs = [...ids].map((id) => this.db.collection('shifts').doc(id));
-
-    const snapshots = await this.db.getAll(...refs);
-
-    const result = new Map<string, ShiftConfig>();
-
-    for (const snapshot of snapshots) {
       if (!snapshot.exists) {
-        continue;
+        throw new NotFoundException('Attendance record not found');
       }
 
-      const data = snapshot.data()!;
+      const existing = snapshot.data() ?? {};
 
-      result.set(snapshot.id, this.mapShift(snapshot.id, data));
+      if (!existing.checkInTime) {
+        throw new BadRequestException('Employee has not checked in');
+      }
+
+      const checkIn = this.toDate(existing.checkInTime);
+
+      if (!checkIn) {
+        throw new InternalServerErrorException('Invalid check-in time');
+      }
+
+      /*
+       * Historical shift is
+       * authoritative.
+       */
+      const shift = this.shiftFromSnapshot(existing.shiftSnapshot);
+
+      if (!shift) {
+        throw new InternalServerErrorException('Historical shift information is missing from attendance record');
+      }
+
+      /*
+       * Do not allow checkout
+       * before check-in.
+       */
+      if (checkoutDate.getTime() <= checkIn.getTime()) {
+        throw new BadRequestException('Checkout time must be after check-in time');
+      }
+
+      /*
+       * Early check-in does not
+       * count toward working minutes.
+       */
+      const shiftStart = this.shiftStartForDate(checkIn, shift);
+
+      const effectiveCheckIn = checkIn.getTime() < shiftStart.getTime() ? shiftStart : checkIn;
+
+      const workingMinutes = Math.max(0, Math.round((checkoutDate.getTime() - effectiveCheckIn.getTime()) / 60000));
+
+      const classification = this.classifyWorkingMinutes(workingMinutes, shift);
+
+      const punctuality = this.isLate(checkIn, shift) ? 'late' : 'on_time';
+
+      /*
+       * Audit history.
+       */
+      const checkoutHistory = Array.isArray(existing.checkoutHistory) ? [...existing.checkoutHistory] : [];
+
+      checkoutHistory.push({
+        action: 'manager_hr_correction',
+
+        performedBy: requester.uid,
+
+        performedByRole: requester.role ?? null,
+
+        previousCheckOutTime: existing.checkOutTime ? this.toDate(existing.checkOutTime) : null,
+
+        newCheckOutTime: Timestamp.fromDate(checkoutDate),
+
+        workingMinutes,
+
+        status: classification.status,
+
+        attendanceType: classification.attendanceType,
+
+        reason: dto.reason.trim(),
+
+        recordedAt: Timestamp.fromDate(new Date()),
+      });
+
+      const limitedHistory = checkoutHistory.slice(-AttendanceService.CHECKOUT_HISTORY_LIMIT);
+
+      const update: FirebaseFirestore.DocumentData = {
+        checkOutTime: Timestamp.fromDate(checkoutDate),
+
+        workingMinutes,
+
+        status: classification.status,
+
+        punctuality,
+
+        checkoutHistory: limitedHistory,
+
+        /*
+         * Employee undo is no
+         * longer available.
+         */
+        checkoutUndoUntil: FieldValue.delete(),
+
+        updatedAt: FieldValue.serverTimestamp(),
+      };
+
+      if (classification.attendanceType) {
+        update.attendanceType = classification.attendanceType;
+      } else {
+        update.attendanceType = FieldValue.delete();
+      }
+
+      /*
+       * Preserve half-day leave
+       * metadata.
+       */
+      if (existing.leaveDuration === 'half_day') {
+        update.leaveDuration = 'half_day';
+
+        if (existing.leaveTypeId) {
+          update.leaveTypeId = existing.leaveTypeId;
+        }
+
+        if (existing.leaveRequestId) {
+          update.leaveRequestId = existing.leaveRequestId;
+        }
+
+        if (existing.leaveStatus) {
+          update.leaveStatus = existing.leaveStatus;
+        }
+      }
+
+      transaction.set(ref, update, {
+        merge: true,
+      });
+
+      result = {
+        status: classification.status,
+
+        attendanceType: classification.attendanceType,
+
+        workingMinutes,
+      };
+    });
+
+    if (!result) {
+      throw new InternalServerErrorException('Unable to correct checkout');
     }
 
-    return result;
+    return {
+      staffId,
+
+      date,
+
+      status: result.status,
+
+      attendanceType: result.attendanceType,
+
+      workingMinutes: result.workingMinutes,
+
+      correctedBy: requester.uid,
+
+      correctedByRole: requester.role,
+
+      message: 'Attendance checkout corrected successfully.',
+    };
+  }
+
+  // ============================================================
+  // ATTENDANCE CLASSIFICATION
+  // ============================================================
+
+  /*
+   * This method is intentionally kept in
+   * AttendanceService because both normal
+   * checkout and manager/HR correction use it.
+   *
+   * SchedulerService can also call this
+   * later if we expose it appropriately.
+   */
+  classifyWorkingMinutes(
+    workingMinutes: number,
+    shift: ShiftConfig
+  ): {
+    status: AttendanceStatus;
+
+    attendanceType: 'full_day' | 'half_day' | null;
+  } {
+    const graceMinutes = Math.max(0, Number(shift.graceMinutes ?? 0));
+
+    /*
+     * Existing TeamoTrack rule:
+     *
+     * fullDayMinutes = 480
+     * graceMinutes   = 15
+     *
+     * Full-day threshold = 465
+     *
+     * halfDayMinutes = 240
+     *
+     * Half-day threshold = 225
+     *
+     * This preserves the current
+     * implementation's classification
+     * behavior.
+     */
+    const fullDayThreshold = Math.max(0, Number(shift.fullDayMinutes ?? 480)) - graceMinutes;
+
+    const halfDayThreshold = Math.max(0, Number(shift.halfDayMinutes ?? 240)) - graceMinutes;
+
+    if (workingMinutes >= fullDayThreshold) {
+      return {
+        status: 'present',
+
+        attendanceType: 'full_day',
+      };
+    }
+
+    if (workingMinutes >= halfDayThreshold) {
+      return {
+        status: 'present',
+
+        attendanceType: 'half_day',
+      };
+    }
+
+    return {
+      status: 'absent',
+
+      attendanceType: null,
+    };
+  }
+
+  // ============================================================
+  // SHIFT RESOLUTION FOR LIVE ATTENDANCE
+  // ============================================================
+
+  private async resolveUserShift(user: any): Promise<ShiftConfig | undefined> {
+    /*
+     * Manager / HR:
+     *
+     * Direct user.shiftId.
+     */
+    if (user.shiftId && (user.role === 'manager' || user.role === 'hr')) {
+      return this.loadShiftById(user.shiftId);
+    }
+
+    /*
+     * Any direct shift.
+     */
+    if (user.shiftId) {
+      return this.loadShiftById(user.shiftId);
+    }
+
+    /*
+     * Field executive:
+     *
+     * user.teamId ->
+     * teams.shiftId ->
+     * shifts
+     */
+    if (user.teamId) {
+      const snapshot = await this.db.collection('teams').doc(user.teamId).get();
+
+      if (!snapshot.exists) {
+        return undefined;
+      }
+
+      const team = snapshot.data() ?? {};
+
+      if (!team.shiftId) {
+        return undefined;
+      }
+
+      return this.loadShiftById(team.shiftId);
+    }
+
+    return undefined;
   }
 
   private async loadShiftById(shiftId: string): Promise<ShiftConfig | undefined> {
@@ -891,37 +1275,8 @@ export class AttendanceService {
   }
 
   // ============================================================
-  // HISTORICAL SHIFT RESOLUTION
+  // HISTORICAL SHIFT
   // ============================================================
-
-  private resolveHistoricalOrCurrentShift(
-    existing: FirebaseFirestore.DocumentData | undefined,
-    staff: Staff,
-    teams: Map<string, FirebaseFirestore.DocumentData>,
-    shifts: Map<string, ShiftConfig>
-  ): ShiftConfig | undefined {
-    /*
-     * HIGHEST PRIORITY:
-     *
-     * Historical shift snapshot already stored
-     * on this attendance record.
-     */
-    if (existing?.shiftSnapshot) {
-      const historical = this.shiftFromSnapshot(existing.shiftSnapshot);
-
-      if (historical) {
-        return historical;
-      }
-    }
-
-    /*
-     * No snapshot:
-     *
-     * resolve the shift that is currently
-     * applicable to this staff member.
-     */
-    return this.resolveShift(staff, teams, shifts);
-  }
 
   private shiftFromSnapshot(snapshot: any): ShiftConfig | undefined {
     if (!snapshot || typeof snapshot !== 'object') {
@@ -929,7 +1284,7 @@ export class AttendanceService {
     }
 
     /*
-     * Zero is valid for midnight, so use null/undefined checks.
+     * Zero is valid for midnight.
      */
     if (
       snapshot.startHour == null ||
@@ -958,768 +1313,6 @@ export class AttendanceService {
   }
 
   // ============================================================
-  // CURRENT SHIFT RESOLUTION
-  // ============================================================
-
-  private resolveShift(
-    staff: Staff,
-    teams: Map<string, FirebaseFirestore.DocumentData>,
-    shifts: Map<string, ShiftConfig>
-  ): ShiftConfig | undefined {
-    /*
-     * Direct shift has priority.
-     *
-     * This is important for manager / HR.
-     */
-    if (staff.shiftId) {
-      return shifts.get(staff.shiftId);
-    }
-
-    /*
-     * Team-based staff.
-     *
-     * Primarily field executives.
-     */
-    if (staff.teamId) {
-      const team = teams.get(staff.teamId);
-
-      if (team?.shiftId) {
-        return shifts.get(team.shiftId);
-      }
-    }
-
-    return undefined;
-  }
-
-  private async resolveUserShift(user: any): Promise<ShiftConfig | undefined> {
-    /*
-     * Manager / HR:
-     *
-     * Direct user.shiftId.
-     */
-    if (user.shiftId && (user.role === 'manager' || user.role === 'hr')) {
-      return this.loadShiftById(user.shiftId);
-    }
-
-    /*
-     * Any direct shift.
-     */
-    if (user.shiftId) {
-      return this.loadShiftById(user.shiftId);
-    }
-
-    /*
-     * Team-based executive.
-     */
-    if (user.teamId) {
-      const snapshot = await this.db.collection('teams').doc(user.teamId).get();
-
-      if (!snapshot.exists) {
-        return undefined;
-      }
-
-      const team = snapshot.data() ?? {};
-
-      if (!team.shiftId) {
-        return undefined;
-      }
-
-      return this.loadShiftById(team.shiftId);
-    }
-
-    return undefined;
-  }
-
-  // ============================================================
-  // HOLIDAY
-  // ============================================================
-
-  private async loadHoliday(rootId: string, date: string): Promise<boolean> {
-    const snapshot = await this.db.collection('companyHolidays').where('rootId', '==', rootId).get();
-
-    return snapshot.docs.some((doc) => {
-      const data = doc.data();
-
-      return data.active === true && data.date === date;
-    });
-  }
-
-  // ============================================================
-  // LEAVE
-  // ============================================================
-
-  private async loadApprovedLeaves(rootId: string, date: string): Promise<Map<string, LeaveInfo>> {
-    const snapshot = await this.db.collection('leaves').where('rootId', '==', rootId).get();
-
-    const result = new Map<string, LeaveInfo>();
-
-    for (const doc of snapshot.docs) {
-      const data = doc.data();
-
-      if (String(data.status ?? '').toLowerCase() !== 'approved') {
-        continue;
-      }
-
-      if (!data.startDate || !data.endDate) {
-        continue;
-      }
-
-      if (date < String(data.startDate) || date > String(data.endDate)) {
-        continue;
-      }
-
-      const duration = data.duration === 'half_day' ? 'half_day' : 'day';
-
-      result.set(data.userId, {
-        userId: data.userId,
-
-        leaveTypeId: data.leaveTypeId,
-
-        startDate: data.startDate,
-
-        endDate: data.endDate,
-
-        days: data.days,
-
-        status: data.status,
-
-        duration,
-      });
-    }
-
-    return result;
-  }
-
-  // ============================================================
-  // ATTENDANCE PRELOAD
-  // ============================================================
-
-  private async loadAttendanceRecords(
-    staff: Staff[],
-    date: string
-  ): Promise<Map<string, FirebaseFirestore.DocumentData>> {
-    const refs = staff.map((user) => this.attendanceRecordRef(user.uid, date));
-
-    const result = new Map<string, FirebaseFirestore.DocumentData>();
-
-    for (let i = 0; i < refs.length; i += 100) {
-      const chunk = refs.slice(i, i + 100);
-
-      const snapshots = await this.db.getAll(...chunk);
-
-      for (let index = 0; index < snapshots.length; index++) {
-        const snapshot = snapshots[index];
-
-        if (snapshot.exists) {
-          result.set(staff[i + index].uid, snapshot.data()!);
-        }
-      }
-    }
-
-    return result;
-  }
-
-  // ============================================================
-  // BUSINESS DECISION
-  // ============================================================
-
-  private calculateAttendance(
-    staff: Staff,
-    date: string,
-    shift: ShiftConfig | undefined,
-    existing: FirebaseFirestore.DocumentData | undefined,
-    leave: LeaveInfo | undefined,
-    holiday: boolean
-  ):
-    | {
-        action: 'skip';
-      }
-    | {
-        action: 'create';
-        data: FirebaseFirestore.DocumentData;
-      }
-    | {
-        action: 'update';
-        data: FirebaseFirestore.DocumentData;
-      } {
-    /*
-     * No applicable shift.
-     */
-    if (!shift) {
-      if (existing) {
-        return {
-          action: 'skip',
-        };
-      }
-
-      throw new Error('No applicable shift found');
-    }
-
-    /*
-     * ========================================================
-     * ACTIVE ATTENDANCE
-     * ========================================================
-     *
-     * Do NOT modify actual check-in time.
-     *
-     * But derived fields such as punctuality
-     * can be corrected.
-     */
-    if (existing?.checkInTime && !existing?.checkOutTime) {
-      const checkIn = this.toDate(existing.checkInTime);
-
-      if (!checkIn) {
-        return {
-          action: 'skip',
-        };
-      }
-
-      const punctuality = this.isLate(checkIn, shift) ? 'late' : 'on_time';
-
-      const update: FirebaseFirestore.DocumentData = {
-        status: 'present',
-
-        /*
-         * Duration is not final until checkout.
-         */
-        punctuality,
-
-        workingMinutes: 0,
-
-        /*
-         * Only add snapshot if the
-         * old record somehow does not
-         * have one.
-         */
-        ...(!existing.shiftSnapshot
-          ? {
-              shiftSnapshot: shift,
-            }
-          : {}),
-
-        updatedAt: FieldValue.serverTimestamp(),
-      };
-
-      if (leave?.duration === 'half_day') {
-        update.leaveDuration = 'half_day';
-
-        update.leaveTypeId = leave.leaveTypeId;
-      }
-
-      return {
-        action: 'update',
-        data: update,
-      };
-    }
-
-    /*
-     * ========================================================
-     * COMPLETED ATTENDANCE
-     * ========================================================
-     *
-     * Recalculate using the historical
-     * shift snapshot.
-     */
-    if (existing?.checkInTime && existing?.checkOutTime) {
-      return {
-        action: 'update',
-
-        data: this.classifyCompletedAttendance(existing, shift, leave),
-      };
-    }
-
-    /*
-     * ========================================================
-     * FULL-DAY LEAVE
-     * ========================================================
-     */
-    if (leave && leave.duration !== 'half_day') {
-      return {
-        action: existing ? 'update' : 'create',
-
-        data: this.leaveRecord(staff, date, shift, leave),
-      };
-    }
-
-    /*
-     * ========================================================
-     * HALF-DAY LEAVE
-     * ========================================================
-     */
-    if (leave?.duration === 'half_day') {
-      return {
-        action: existing ? 'update' : 'create',
-
-        data: this.halfDayLeaveRecord(staff, date, shift, leave),
-      };
-    }
-
-    /*
-     * ========================================================
-     * COMPANY HOLIDAY
-     * ========================================================
-     */
-    if (holiday) {
-      return {
-        action: existing ? 'update' : 'create',
-
-        data: {
-          staffId: staff.uid,
-
-          date: this.localDate(date),
-
-          status: 'holiday',
-
-          workingMinutes: 0,
-
-          shiftSnapshot: shift,
-
-          rootId: staff.rootId,
-
-          updatedAt: FieldValue.serverTimestamp(),
-        },
-      };
-    }
-
-    /*
-     * ========================================================
-     * WEEKLY OFF
-     * ========================================================
-     */
-    if (this.isWeeklyOff(date, shift)) {
-      return {
-        action: existing ? 'update' : 'create',
-
-        data: {
-          staffId: staff.uid,
-
-          date: this.localDate(date),
-
-          status: 'weekly_off',
-
-          workingMinutes: 0,
-
-          shiftSnapshot: shift,
-
-          rootId: staff.rootId,
-
-          updatedAt: FieldValue.serverTimestamp(),
-        },
-      };
-    }
-
-    /*
-     * ========================================================
-     * EXISTING TERMINAL RECORD
-     * ========================================================
-     *
-     * Leave / holiday / weekly-off have already been handled.
-     * A normal scheduler-generated absent/present record without
-     * timestamps is already final for this processing run.
-     */
-    if (existing && this.isTerminalStatus(existing.status)) {
-      return {
-        action: 'skip',
-      };
-    }
-
-    /*
-     * ========================================================
-     * ABSENT
-     * ========================================================
-     */
-    return {
-      action: existing ? 'update' : 'create',
-
-      data: {
-        staffId: staff.uid,
-
-        date: this.localDate(date),
-
-        status: 'absent',
-
-        workingMinutes: 0,
-
-        shiftSnapshot: shift,
-
-        rootId: staff.rootId,
-
-        updatedAt: FieldValue.serverTimestamp(),
-      },
-    };
-  }
-
-  // ============================================================
-  // COMPLETED ATTENDANCE
-  // ============================================================
-
-  private classifyCompletedAttendance(
-    attendance: FirebaseFirestore.DocumentData,
-    shift: ShiftConfig,
-    leave?: LeaveInfo
-  ) {
-    const checkIn = this.toDate(attendance.checkInTime);
-
-    const checkOut = this.toDate(attendance.checkOutTime);
-
-    if (!checkIn || !checkOut) {
-      return {};
-    }
-
-    /*
-     * Early check-in does NOT count toward working minutes.
-     *
-     * Effective start =
-     * max(actual check-in, shift start)
-     */
-    const shiftStart = this.shiftStartForDate(checkIn, shift);
-
-    const effectiveCheckIn = checkIn.getTime() < shiftStart.getTime() ? shiftStart : checkIn;
-
-    const workingMinutes = Math.max(0, Math.round((checkOut.getTime() - effectiveCheckIn.getTime()) / 60000));
-
-    /*
-     * IMPORTANT:
-     *
-     * Scheduler/manual processing uses exactly the
-     * same classification function as checkout.
-     */
-    const classification = this.classifyWorkingMinutes(workingMinutes, shift);
-
-    /*
-     * Always recalculate punctuality from the
-     * historical shift snapshot.
-     */
-    const punctuality = this.isLate(checkIn, shift) ? 'late' : 'on_time';
-
-    const update: FirebaseFirestore.DocumentData = {
-      status: classification.status,
-
-      workingMinutes,
-
-      punctuality,
-
-      updatedAt: FieldValue.serverTimestamp(),
-    };
-
-    /*
-     * Absent means the employee did not reach the
-     * half-day threshold, so do not retain a stale
-     * full_day/half_day attendanceType.
-     */
-    if (classification.attendanceType) {
-      update.attendanceType = classification.attendanceType;
-    } else {
-      update.attendanceType = FieldValue.delete();
-    }
-
-    /*
-     * Historical shift snapshot is authoritative.
-     * Never replace an existing snapshot.
-     */
-    if (!attendance.shiftSnapshot) {
-      update.shiftSnapshot = shift;
-    }
-
-    /*
-     * Preserve half-day leave metadata.
-     */
-    if (leave?.duration === 'half_day') {
-      update.leaveDuration = 'half_day';
-
-      update.leaveTypeId = leave.leaveTypeId;
-    }
-
-    return update;
-  }
-
-  // ============================================================
-  // WORKING-MINUTE CLASSIFICATION
-  // ============================================================
-
-  private classifyWorkingMinutes(
-    workingMinutes: number,
-    shift: ShiftConfig
-  ): {
-    status: AttendanceStatus;
-    attendanceType: 'full_day' | 'half_day' | null;
-  } {
-    /*
-     * Grace is added to BOTH duration thresholds.
-     *
-     * Example:
-     *
-     * fullDayMinutes = 480
-     * halfDayMinutes = 240
-     * graceMinutes   = 15
-     *
-     * fullDayThreshold = 495
-     * halfDayThreshold = 255
-     *
-     * < 255       => absent
-     * 255 - 494   => present + half_day
-     * >= 495      => present + full_day
-     */
-    const graceMinutes = Math.max(0, Number(shift.graceMinutes ?? 0));
-
-    const fullDayThreshold = Math.max(0, Number(shift.fullDayMinutes ?? 480)) + graceMinutes;
-
-    const halfDayThreshold = Math.max(0, Number(shift.halfDayMinutes ?? 240)) + graceMinutes;
-
-    if (workingMinutes >= fullDayThreshold) {
-      return {
-        status: 'present',
-        attendanceType: 'full_day',
-      };
-    }
-
-    if (workingMinutes >= halfDayThreshold) {
-      return {
-        status: 'present',
-        attendanceType: 'half_day',
-      };
-    }
-
-    return {
-      status: 'absent',
-      attendanceType: null,
-    };
-  }
-
-  // ============================================================
-  // LEAVE RECORDS
-  // ============================================================
-
-  private leaveRecord(staff: Staff, date: string, shift: ShiftConfig, leave: LeaveInfo) {
-    return {
-      staffId: staff.uid,
-
-      date: this.localDate(date),
-
-      status: 'leave',
-
-      leaveDuration: 'day',
-
-      leaveTypeId: leave.leaveTypeId,
-
-      workingMinutes: 0,
-
-      shiftSnapshot: shift,
-
-      rootId: staff.rootId,
-
-      updatedAt: FieldValue.serverTimestamp(),
-    };
-  }
-
-  private halfDayLeaveRecord(staff: Staff, date: string, shift: ShiftConfig, leave: LeaveInfo) {
-    return {
-      staffId: staff.uid,
-
-      date: this.localDate(date),
-
-      status: 'leave',
-
-      leaveDuration: 'half_day',
-
-      leaveTypeId: leave.leaveTypeId,
-
-      workingMinutes: 0,
-
-      shiftSnapshot: shift,
-
-      rootId: staff.rootId,
-
-      updatedAt: FieldValue.serverTimestamp(),
-    };
-  }
-
-  // ============================================================
-  // WRITE OPERATIONS
-  // ============================================================
-
-  private async commitOperations(
-    operations: Array<{
-      ref: FirebaseFirestore.DocumentReference;
-
-      create?: FirebaseFirestore.DocumentData;
-
-      update?: FirebaseFirestore.DocumentData;
-    }>
-  ) {
-    for (let i = 0; i < operations.length; i += AttendanceService.BATCH_SIZE) {
-      const chunk = operations.slice(i, i + AttendanceService.BATCH_SIZE);
-
-      const batch = this.db.batch();
-
-      for (const operation of chunk) {
-        if (operation.create) {
-          batch.set(
-            operation.ref,
-            {
-              ...operation.create,
-
-              createdAt: FieldValue.serverTimestamp(),
-
-              updatedAt: FieldValue.serverTimestamp(),
-            },
-            {
-              merge: true,
-            }
-          );
-        } else if (operation.update) {
-          batch.set(operation.ref, operation.update, {
-            merge: true,
-          });
-        }
-      }
-
-      await batch.commit();
-    }
-  }
-
-  // ============================================================
-  // RUN LOCK
-  // ============================================================
-
-  private runRef(rootId: string, date: string) {
-    return this.db.collection('attendanceSchedulerRuns').doc(`${rootId}_${this.dateKey(date)}`);
-  }
-
-  private async acquireRun(
-    rootId: string,
-    date: string,
-    mode: 'automatic' | 'manual',
-    triggeredBy: string
-  ): Promise<boolean> {
-    const ref = this.runRef(rootId, date);
-
-    return this.db.runTransaction(async (transaction) => {
-      const snapshot = await transaction.get(ref);
-
-      if (snapshot.exists) {
-        const data = snapshot.data()!;
-
-        if (data.status === 'running') {
-          return false;
-        }
-      }
-
-      const run: RunLog = {
-        rootId,
-
-        date,
-
-        mode,
-
-        triggeredBy,
-
-        status: 'running',
-
-        startedAt: null,
-
-        completedAt: null,
-
-        processedStaff: 0,
-
-        created: 0,
-
-        updated: 0,
-
-        skipped: 0,
-
-        errors: 0,
-      };
-
-      transaction.set(
-        ref,
-        {
-          ...run,
-
-          startedAt: FieldValue.serverTimestamp(),
-
-          completedAt: null,
-        },
-        {
-          merge: true,
-        }
-      );
-
-      return true;
-    });
-  }
-
-  private async completeRun(rootId: string, date: string, summary: ProcessingSummary) {
-    await this.runRef(rootId, date).set(
-      {
-        status: summary.errors.length ? 'partial_failed' : 'completed',
-
-        completedAt: FieldValue.serverTimestamp(),
-
-        processedStaff: summary.processed,
-
-        created: summary.created,
-
-        updated: summary.updated,
-
-        skipped: summary.skipped,
-
-        errors: summary.errors.length,
-      },
-      {
-        merge: true,
-      }
-    );
-  }
-
-  private async failRun(rootId: string, date: string, summary: ProcessingSummary, error: unknown) {
-    await this.runRef(rootId, date).set(
-      {
-        status: 'failed',
-
-        completedAt: FieldValue.serverTimestamp(),
-
-        processedStaff: summary.processed,
-
-        created: summary.created,
-
-        updated: summary.updated,
-
-        skipped: summary.skipped,
-
-        errors: summary.errors.length + 1,
-
-        fatalError: error instanceof Error ? error.message : String(error),
-      },
-      {
-        merge: true,
-      }
-    );
-  }
-
-  // ============================================================
-  // AUTHORIZATION
-  // ============================================================
-
-  async assertCanProcess(userId: string) {
-    const user = await this.getUser(userId);
-
-    if (!AttendanceService.ROOT_ROLES.has(user.role!)) {
-      throw new ForbiddenException('You are not authorized to process attendance');
-    }
-
-    // const rootId = this.getRootId(user);
-
-    // if (!rootId) {
-    //   throw new BadRequestException('Invalid hierarchy: rootId missing');
-    // }
-
-    return {
-      ...user,
-    };
-  }
-
-  // ============================================================
   // ATTENDANCE VIEW AUTHORIZATION
   // ============================================================
 
@@ -1742,7 +1335,7 @@ export class AttendanceService {
     }
 
     /*
-     * Executive.
+     * Field executive.
      */
     if (requester.role === 'field_executive') {
       if (target.uid !== requester.uid) {
@@ -1834,7 +1427,7 @@ export class AttendanceService {
       visited.add(parentId);
 
       for (const child of children.get(parentId) || []) {
-        const id = child.uid || child.id;
+        const id = child.uid ?? child.id;
 
         if (!id || ids.has(id)) {
           continue;
@@ -1843,7 +1436,11 @@ export class AttendanceService {
         ids.add(id);
 
         /*
-         * Only managers continue recursively.
+         * Only managers continue
+         * recursively.
+         *
+         * HR does not create
+         * another hierarchy.
          */
         if (child.role === 'manager') {
           walk(id);
@@ -1877,7 +1474,15 @@ export class AttendanceService {
   }
 
   private getRootId(user: any): string | undefined {
-    return user.rootId ?? (user.role === 'root' ? user.uid : undefined);
+    /*
+     * Top-level organization users
+     * can use their own UID as rootId.
+     */
+    if (user.role === 'root' || user.role === 'root_manager' || user.role === 'admin') {
+      return user.rootId ?? user.uid;
+    }
+
+    return user.rootId;
   }
 
   private assertAttendanceStaff(user: any) {
@@ -1933,24 +1538,6 @@ export class AttendanceService {
   // ============================================================
   // DATE HELPERS
   // ============================================================
-
-  private validateProcessingDate(date: string) {
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-      throw new BadRequestException('date must be YYYY-MM-DD');
-    }
-
-    const parsed = new Date(`${date}T00:00:00+05:30`);
-
-    if (Number.isNaN(parsed.getTime())) {
-      throw new BadRequestException('Invalid processing date');
-    }
-
-    const today = this.todayIndia();
-
-    if (date >= today) {
-      throw new BadRequestException('Attendance can only be processed for a completed date');
-    }
-  }
 
   private todayIndia(): string {
     const formatter = new Intl.DateTimeFormat('en-CA', {
@@ -2008,7 +1595,7 @@ export class AttendanceService {
     const endMinutes = shift.endHour * 60 + shift.endMinute;
 
     /*
-     * Support overnight shifts.
+     * Overnight shift.
      *
      * Example:
      * 22:00 -> 06:00
@@ -2029,24 +1616,16 @@ export class AttendanceService {
     );
   }
 
-  private isWeeklyOff(date: string, shift: ShiftConfig): boolean {
-    const day = new Intl.DateTimeFormat('en-US', {
-      timeZone: AttendanceService.TIME_ZONE,
-
-      weekday: 'long',
-    }).format(this.localDate(date));
-
-    return shift.weeklyOff.includes(day);
-  }
-
   private isLate(checkIn: Date, shift: ShiftConfig): boolean {
     const shiftStart = this.shiftStartForDate(checkIn, shift);
 
     const graceMinutes = Math.max(0, Number(shift.graceMinutes ?? 0));
 
     /*
-     * Exactly at shift start + grace is on time.
-     * Late begins only after the grace period has passed.
+     * Exactly at shift start +
+     * grace is still on time.
+     *
+     * Late starts only after grace.
      */
     return checkIn.getTime() > shiftStart.getTime() + graceMinutes * 60000;
   }
@@ -2087,10 +1666,6 @@ export class AttendanceService {
     return date ? date.getTime() : 0;
   }
 
-  private isTerminalStatus(status: string | undefined) {
-    return AttendanceService.TERMINAL_STATUSES.has(status ?? '');
-  }
-
   private mapRecord(doc: FirebaseFirestore.QueryDocumentSnapshot) {
     const data = doc.data();
 
@@ -2119,6 +1694,22 @@ export class AttendanceService {
           }
         : {}),
 
+      /*
+       * Leave information is now
+       * stored directly on attendance.
+       */
+      ...(data.leaveRequestId
+        ? {
+            leaveRequestId: data.leaveRequestId,
+          }
+        : {}),
+
+      ...(data.leaveStatus
+        ? {
+            leaveStatus: data.leaveStatus,
+          }
+        : {}),
+
       ...(data.leaveDuration
         ? {
             leaveDuration: data.leaveDuration,
@@ -2134,6 +1725,24 @@ export class AttendanceService {
       ...(data.shiftSnapshot
         ? {
             shiftSnapshot: data.shiftSnapshot,
+          }
+        : {}),
+
+      ...(data.checkoutUndoUntil
+        ? {
+            checkoutUndoUntil: data.checkoutUndoUntil,
+          }
+        : {}),
+
+      ...(data.checkoutCount != null
+        ? {
+            checkoutCount: Number(data.checkoutCount),
+          }
+        : {}),
+
+      ...(Array.isArray(data.checkoutHistory)
+        ? {
+            checkoutHistory: data.checkoutHistory,
           }
         : {}),
     };
@@ -2164,22 +1773,18 @@ export class AttendanceService {
   }
 
   // ============================================================
-  // SUMMARY MERGE
+  // MESSAGE FORMAT
   // ============================================================
 
-  private mergeSummaries(date: string, summaries: ProcessingSummary[]): ProcessingSummary {
-    return {
-      date,
+  private formatTimeForMessage(date: Date): string {
+    return new Intl.DateTimeFormat('en-IN', {
+      hour: '2-digit',
 
-      processed: summaries.reduce((a, b) => a + b.processed, 0),
+      minute: '2-digit',
 
-      created: summaries.reduce((a, b) => a + b.created, 0),
+      hour12: true,
 
-      updated: summaries.reduce((a, b) => a + b.updated, 0),
-
-      skipped: summaries.reduce((a, b) => a + b.skipped, 0),
-
-      errors: summaries.flatMap((x) => x.errors),
-    };
+      timeZone: AttendanceService.TIME_ZONE,
+    }).format(date);
   }
 }

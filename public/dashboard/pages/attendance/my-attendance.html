@@ -120,15 +120,27 @@
           <div class="attendance-action-buttons">
             <button type="button" class="attendance-action-btn check-in" id="attendanceCheckInBtn">
               <i class="bi bi-box-arrow-in-right"></i>
-
               <span>Check In</span>
             </button>
 
             <button type="button" class="attendance-action-btn check-out" id="attendanceCheckOutBtn" disabled>
               <i class="bi bi-box-arrow-right"></i>
-
               <span>Check Out</span>
             </button>
+
+            <button type="button" class="attendance-action-btn undo-checkout" id="attendanceUndoCheckoutBtn" hidden>
+              <i class="bi bi-arrow-counterclockwise"></i>
+
+              <span>Undo Checkout</span>
+
+              <small id="attendanceUndoCountdown"></small>
+            </button>
+          </div>
+
+          <div class="attendance-correction-note" id="attendanceCorrectionNote" hidden>
+            <i class="bi bi-shield-check"></i>
+
+            <span id="attendanceCorrectionNoteText"></span>
           </div>
         </div>
       </div>

@@ -3,225 +3,268 @@
 ========================================================== */
 
 .settings-page {
-    padding: 0 0 32px;
+  padding: 0 0 32px;
 }
-
 
 .settings-page-header {
-    padding: 4px 0 20px;
+  padding: 4px 0 20px;
 }
-
 
 .settings-page-header h4 {
-    margin: 2px 0 4px;
-    font-size: 20px;
-    font-weight: 700;
-    color: var(--text-primary, #111827);
+  margin: 2px 0 4px;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary, #111827);
 }
-
 
 .settings-page-header p {
-    margin: 0;
-    max-width: 700px;
-    color: var(--text-secondary, #6b7280);
-    font-size: 13px;
+  margin: 0;
+  max-width: 700px;
+  color: var(--text-secondary, #6b7280);
+  font-size: 13px;
 }
-
 
 .settings-eyebrow {
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: .08em;
-    color: var(--bs-primary);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--bs-primary);
 }
-
 
 /* ==========================================================
    CARD
 ========================================================== */
 
 .settings-card {
-    background: var(--card-bg, #fff);
-    border: 1px solid var(--border-color, #e5e7eb);
-    border-radius: 14px;
-    overflow: hidden;
+  background: var(--card-bg, #fff);
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 14px;
+  overflow: hidden;
 }
-
 
 .settings-card-header {
-    padding: 20px;
-    border-bottom: 1px solid var(--border-color, #e5e7eb);
+  padding: 20px;
+  border-bottom: 1px solid var(--border-color, #e5e7eb);
 }
-
 
 .settings-card-header h5 {
-    margin: 0;
-    font-size: 16px;
-    font-weight: 650;
+  margin: 0;
+  font-size: 16px;
+  font-weight: 650;
 }
-
 
 .settings-card-header p {
-    margin: 4px 0 0;
-    color: var(--text-secondary, #6b7280);
-    font-size: 13px;
+  margin: 4px 0 0;
+  color: var(--text-secondary, #6b7280);
+  font-size: 13px;
 }
-
 
 .settings-card-body {
-    padding: 20px;
+  padding: 20px;
 }
 
+.settings-change-email-btn {
+  font-size: 12px;
+  text-decoration: none;
+}
+
+.settings-change-email-btn:hover {
+  text-decoration: underline;
+}
+
+.settings-modal-subtitle {
+  margin: 4px 0 0;
+  color: var(--text-secondary, #6b7280);
+  font-size: 12px;
+}
+
+.settings-modal .modal-content {
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 14px;
+}
+
+.settings-modal .modal-header,
+.settings-modal .modal-body,
+.settings-modal .modal-footer {
+  padding: 18px 20px;
+}
+
+/* ==========================================================
+   PASSWORD INPUT
+========================================================== */
+
+.password-input-wrap {
+  position: relative;
+}
+
+.password-input-wrap .form-control {
+  padding-right: 44px;
+}
+
+.password-toggle-btn {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+
+  width: 32px;
+  height: 32px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  transform: translateY(-50%);
+
+  border: 0;
+  background: transparent;
+
+  color: var(--text-secondary, #6b7280);
+
+  cursor: pointer;
+  padding: 0;
+
+  border-radius: 6px;
+}
+
+.password-toggle-btn:hover {
+  color: var(--text-primary, #111827);
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.password-toggle-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(var(--bs-primary-rgb), 0.15);
+}
+
+.password-toggle-btn i {
+  font-size: 16px;
+}
 
 /* ==========================================================
    ORGANIZATION BRAND
 ========================================================== */
 
 .organization-brand {
-    padding: 16px;
-    border: 1px solid var(--border-color, #e5e7eb);
-    border-radius: 12px;
-    background: var(--bs-light, #f8f9fa);
+  padding: 16px;
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 12px;
+  background: var(--bs-light, #f8f9fa);
 }
-
 
 .company-logo-wrap {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    flex-wrap: wrap;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
 }
-
 
 .company-logo {
-    width: 76px;
-    height: 76px;
-    flex: 0 0 76px;
+  width: 76px;
+  height: 76px;
+  flex: 0 0 76px;
 
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 
-    border-radius: 16px;
+  border-radius: 16px;
 
-    background:
-        linear-gradient(
-            135deg,
-            rgba(var(--bs-primary-rgb), .12),
-            rgba(var(--bs-primary-rgb), .04)
-        );
+  background: linear-gradient(135deg, rgba(var(--bs-primary-rgb), 0.12), rgba(var(--bs-primary-rgb), 0.04));
 
-    border: 1px solid
-        rgba(var(--bs-primary-rgb), .16);
+  border: 1px solid rgba(var(--bs-primary-rgb), 0.16);
 
-    color: var(--bs-primary);
+  color: var(--bs-primary);
 
-    font-size: 28px;
+  font-size: 28px;
 
-    overflow: hidden;
+  overflow: hidden;
 }
-
 
 .company-logo img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
-
 
 /* ==========================================================
    FORM
 ========================================================== */
 
 .settings-card .form-label {
-    margin-bottom: 6px;
-    font-size: 13px;
-    font-weight: 600;
+  margin-bottom: 6px;
+  font-size: 13px;
+  font-weight: 600;
 }
-
 
 .settings-card .form-control {
-    min-height: 42px;
-    border-radius: 9px;
+  min-height: 42px;
+  border-radius: 9px;
 }
-
 
 .settings-card textarea.form-control {
-    min-height: 92px;
+  min-height: 92px;
 }
-
 
 .settings-card .form-text {
-    margin-top: 5px;
-    font-size: 11px;
+  margin-top: 5px;
+  font-size: 11px;
 }
-
 
 /* ==========================================================
    SAVE BAR
 ========================================================== */
 
 .settings-save-bar {
-    margin-top: 16px;
+  margin-top: 16px;
 
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
 
-    padding: 16px 18px;
+  padding: 16px 18px;
 
-    background: var(--card-bg, #fff);
+  background: var(--card-bg, #fff);
 
-    border: 1px solid
-        var(--border-color, #e5e7eb);
+  border: 1px solid var(--border-color, #e5e7eb);
 
-    border-radius: 14px;
+  border-radius: 14px;
 }
-
 
 .settings-save-bar .btn {
-    min-width: 140px;
+  min-width: 140px;
 }
-
 
 /* ==========================================================
    MOBILE
 ========================================================== */
 
 @media (max-width: 576px) {
+  .settings-page-header {
+    padding-bottom: 16px;
+  }
 
-    .settings-page-header {
-        padding-bottom: 16px;
-    }
+  .settings-card-header,
+  .settings-card-body {
+    padding: 16px;
+  }
 
+  .organization-brand {
+    padding: 14px;
+  }
 
-    .settings-card-header,
-    .settings-card-body {
-        padding: 16px;
-    }
+  .company-logo {
+    width: 64px;
+    height: 64px;
+    flex-basis: 64px;
+  }
 
+  .settings-save-bar {
+    align-items: stretch;
+    flex-direction: column;
+  }
 
-    .organization-brand {
-        padding: 14px;
-    }
-
-
-    .company-logo {
-        width: 64px;
-        height: 64px;
-        flex-basis: 64px;
-    }
-
-
-    .settings-save-bar {
-        align-items: stretch;
-        flex-direction: column;
-    }
-
-
-    .settings-save-bar .btn {
-        width: 100%;
-    }
-
+  .settings-save-bar .btn {
+    width: 100%;
+  }
 }

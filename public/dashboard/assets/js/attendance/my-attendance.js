@@ -17,6 +17,10 @@
 
   let todayAttendance = null;
 
+  let undoCountdownTimer = null;
+
+  let actionInProgress = false;
+
   /* ========================================================
      INITIALIZE
   ======================================================== */
@@ -40,17 +44,23 @@
 
     document.getElementById('attendanceCheckOutBtn')?.addEventListener('click', handleCheckOut);
 
-    document.getElementById('myAttendanceRefreshBtn')?.addEventListener('click', loadAttendance);
+    document.getElementById('attendanceUndoCheckoutBtn')?.addEventListener('click', handleUndoCheckout);
 
-    document.getElementById('myAttendanceMonth')?.addEventListener('change', loadAttendance);
+    document.getElementById('myAttendanceRefreshBtn')?.addEventListener('click', () => loadAttendance({ force: true }));
+
+    document.getElementById('myAttendanceMonth')?.addEventListener('change', () => loadAttendance({ force: true }));
   }
 
   /* ========================================================
      LOAD ATTENDANCE
   ======================================================== */
 
-  async function loadAttendance() {
-    if (isLoading) {
+  /* ========================================================
+   LOAD ATTENDANCE
+======================================================== */
+
+  async function loadAttendance(options = {}) {
+    if (isLoading && !options.force) {
       return;
     }
 
@@ -63,7 +73,6 @@
     const parts = monthValue.split('-').map(Number);
 
     const year = parts[0];
-
     const month = parts[1];
 
     try {
@@ -86,10 +95,8 @@
       renderRecords();
 
       /*
-       * The monthly endpoint gives us the selected month.
-       *
-       * For the Today card we only use a record if the
-       * selected month is the current month.
+       * Only update TODAY when the selected
+       * month is the current month.
        */
       if (isCurrentMonth(year, month)) {
         const todayKey = getTodayKey();
@@ -97,11 +104,23 @@
         todayAttendance = records.find((record) => getRecordDateKey(record.date) === todayKey) || null;
 
         renderTodayAttendance();
+      } else {
+        /*
+         * We are looking at another month.
+         * Do not leave stale today data visible.
+         */
+        todayAttendance = null;
+
+        renderTodayUnavailable();
       }
+
+      return data;
     } catch (error) {
       console.error('My attendance load failed:', error);
 
-      AppAlert.error(error.message || 'Unable to load attendance');
+      AppAlert.error(getApiErrorMessage(error, 'Unable to load attendance'));
+
+      return null;
     } finally {
       isLoading = false;
 
@@ -110,24 +129,64 @@
   }
 
   /* ========================================================
-     CHECK IN
+   TODAY UNAVAILABLE
+======================================================== */
+
+  function renderTodayUnavailable() {
+    stopUndoCountdown();
+
+    setText('myAttendanceStatusText', 'CURRENT MONTH ONLY');
+
+    setStatusClass('status-not-marked');
+
+    setText('myCheckIn', '--');
+
+    setText('myCheckOut', '--');
+
+    setText('myWorkingTime', '--');
+
+    setText('myPunctuality', '--');
+
+    setText('attendanceShiftTime', '--');
+
+    const checkInBtn = document.getElementById('attendanceCheckInBtn');
+
+    const checkOutBtn = document.getElementById('attendanceCheckOutBtn');
+
+    const undoBtn = document.getElementById('attendanceUndoCheckoutBtn');
+
+    if (checkInBtn) {
+      checkInBtn.disabled = true;
+      checkInBtn.hidden = true;
+    }
+
+    if (checkOutBtn) {
+      checkOutBtn.disabled = true;
+      checkOutBtn.hidden = true;
+    }
+
+    if (undoBtn) {
+      undoBtn.hidden = true;
+    }
+
+    hideCorrectionNote();
+
+    setText('attendanceActionMessage', 'Select the current month to manage today’s attendance.');
+  }
+
+  /* ========================================================
+    CHECK IN
   ======================================================== */
 
   async function handleCheckIn() {
-    if (isLoading) {
+    if (actionInProgress) {
       return;
     }
 
     try {
-      /*
-       * Browser location is optional.
-       *
-       * If the user denies location, attendance can still
-       * be attempted because the backend is the authority.
-       */
-      const location = await getCurrentLocation();
+      actionInProgress = true;
 
-      isLoading = true;
+      const location = await getCurrentLocation();
 
       setActionLoading('attendanceCheckInBtn', true, 'Checking in...');
 
@@ -135,25 +194,44 @@
 
       if (location) {
         payload.lat = location.lat;
-
         payload.lng = location.lng;
       }
 
       const data = await Api.post('/attendance/check-in', payload);
 
+      /*
+       * Immediately update UI.
+       */
       if (data) {
+        updateTodayFromApiResponse(data);
+
         AppAlert.success(data.message || 'Check-in recorded successfully.');
       }
 
-      await loadAttendance();
+      /*
+       * Then synchronize the monthly
+       * record and summary.
+       */
+      await loadAttendance({
+        force: true,
+        silent: true,
+      });
     } catch (error) {
       console.error('Check-in failed:', error);
 
       AppAlert.error(getApiErrorMessage(error, 'Unable to check in'));
     } finally {
-      isLoading = false;
+      actionInProgress = false;
 
       setActionLoading('attendanceCheckInBtn', false, 'Check In');
+
+      /*
+       * renderTodayAttendance() determines
+       * the final button state.
+       */
+      if (todayAttendance) {
+        renderTodayAttendance();
+      }
     }
   }
 
@@ -162,19 +240,14 @@
   ======================================================== */
 
   async function handleCheckOut() {
-    if (isLoading) {
+    if (actionInProgress) {
       return;
     }
 
-    /*
-     * We intentionally allow checkout before shift end.
-     *
-     * The backend determines the final attendance classification.
-     */
     try {
-      const location = await getCurrentLocation();
+      actionInProgress = true;
 
-      isLoading = true;
+      const location = await getCurrentLocation();
 
       setActionLoading('attendanceCheckOutBtn', true, 'Checking out...');
 
@@ -182,25 +255,104 @@
 
       if (location) {
         payload.lat = location.lat;
-
         payload.lng = location.lng;
       }
 
       const data = await Api.post('/attendance/check-out', payload);
 
+      /*
+       * Immediately update the UI.
+       */
       if (data) {
+        updateTodayFromApiResponse(data);
+
         AppAlert.success(data.message || 'Check-out recorded successfully.');
       }
 
-      await loadAttendance();
+      /*
+       * Synchronize monthly history.
+       */
+      await loadAttendance({
+        force: true,
+        silent: true,
+      });
     } catch (error) {
       console.error('Check-out failed:', error);
 
       AppAlert.error(getApiErrorMessage(error, 'Unable to check out'));
     } finally {
-      isLoading = false;
+      actionInProgress = false;
 
       setActionLoading('attendanceCheckOutBtn', false, 'Check Out');
+
+      if (todayAttendance) {
+        renderTodayAttendance();
+      }
+    }
+  }
+
+  /* ========================================================
+    UNDO CHECK OUT
+  ======================================================== */
+
+  async function handleUndoCheckout() {
+    if (actionInProgress) {
+      return;
+    }
+
+    const confirmed = await AppAlert.confirm(
+      'Undo Checkout',
+      'Are you sure you want to undo your checkout? You will be marked as working again.'
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      actionInProgress = true;
+
+      setActionLoading('attendanceUndoCheckoutBtn', true, 'Undoing...');
+
+      const data = await Api.post('/attendance/undo-check-out', {});
+
+      /*
+       * Immediately update UI.
+       */
+      if (data) {
+        updateTodayFromApiResponse(data);
+
+        AppAlert.success(data.message || 'Checkout cancelled successfully.');
+      }
+
+      /*
+       * Synchronize monthly history.
+       */
+      await loadAttendance({
+        force: true,
+        silent: true,
+      });
+    } catch (error) {
+      console.error('Undo checkout failed:', error);
+
+      AppAlert.error(getApiErrorMessage(error, 'Unable to undo checkout'));
+
+      /*
+       * Server is authoritative.
+       * Reload after a failed undo.
+       */
+      await loadAttendance({
+        force: true,
+        silent: true,
+      });
+    } finally {
+      actionInProgress = false;
+
+      setActionLoading('attendanceUndoCheckoutBtn', false, 'Undo Checkout');
+
+      if (todayAttendance) {
+        renderTodayAttendance();
+      }
     }
   }
 
@@ -241,6 +393,64 @@
   }
 
   /* ========================================================
+   UPDATE TODAY FROM API RESPONSE
+======================================================== */
+
+  function updateTodayFromApiResponse(data) {
+    if (!data) {
+      return;
+    }
+
+    /*
+     * Different backend methods may return:
+     *
+     * data.record
+     * data.attendance
+     * or the attendance object itself.
+     */
+
+    const record =
+      data.record ||
+      data.attendance ||
+      (data.checkInTime !== undefined || data.checkOutTime !== undefined || data.status !== undefined ? data : null);
+
+    if (!record) {
+      return;
+    }
+
+    todayAttendance = {
+      ...todayAttendance,
+      ...record,
+    };
+
+    /*
+     * Immediately repaint the Today card.
+     */
+    renderTodayAttendance();
+
+    /*
+     * Also update the matching monthly
+     * record already in memory.
+     */
+    const todayKey = getTodayKey();
+
+    const index = records.findIndex((item) => getRecordDateKey(item.date) === todayKey);
+
+    if (index >= 0) {
+      records[index] = {
+        ...records[index],
+        ...record,
+      };
+    } else {
+      records.push(record);
+    }
+
+    /*
+     * Update the table immediately too.
+     */
+    renderRecords();
+  }
+  /* ========================================================
      TODAY
   ======================================================== */
 
@@ -257,14 +467,20 @@
   }
 
   function renderTodayAttendance() {
+    stopUndoCountdown();
+
     const record = todayAttendance;
 
     const checkInBtn = document.getElementById('attendanceCheckInBtn');
 
     const checkOutBtn = document.getElementById('attendanceCheckOutBtn');
 
+    const undoBtn = document.getElementById('attendanceUndoCheckoutBtn');
+
     /*
-     * No record.
+     * --------------------------------------------------------
+     * NO RECORD
+     * --------------------------------------------------------
      */
 
     if (!record) {
@@ -284,11 +500,19 @@
 
       if (checkInBtn) {
         checkInBtn.disabled = false;
+        checkInBtn.hidden = false;
       }
 
       if (checkOutBtn) {
         checkOutBtn.disabled = true;
+        checkOutBtn.hidden = false;
       }
+
+      if (undoBtn) {
+        undoBtn.hidden = true;
+      }
+
+      hideCorrectionNote();
 
       setText('attendanceActionMessage', 'Your attendance for today has not been marked.');
 
@@ -296,7 +520,9 @@
     }
 
     /*
-     * Shift snapshot.
+     * --------------------------------------------------------
+     * SHIFT
+     * --------------------------------------------------------
      */
 
     renderShift(record.shiftSnapshot);
@@ -306,10 +532,9 @@
     const hasCheckOut = !!record.checkOutTime;
 
     /*
-     * Status.
-     *
-     * "working" is a UI state derived from an open
-     * check-in. Final attendance status comes from backend.
+     * --------------------------------------------------------
+     * WORKING
+     * --------------------------------------------------------
      */
 
     if (hasCheckIn && !hasCheckOut) {
@@ -322,6 +547,12 @@
       setStatusClass(getStatusClass(record.status));
     }
 
+    /*
+     * --------------------------------------------------------
+     * METRICS
+     * --------------------------------------------------------
+     */
+
     setText('myCheckIn', formatTime(record.checkInTime));
 
     setText('myCheckOut', formatTime(record.checkOutTime));
@@ -331,26 +562,101 @@
     setText('myPunctuality', formatPunctuality(record.punctuality));
 
     /*
-     * Buttons.
+     * --------------------------------------------------------
+     * BUTTON STATE
+     * --------------------------------------------------------
      */
 
     if (checkInBtn) {
       checkInBtn.disabled = hasCheckIn || isTerminalNonAttendanceStatus(record.status);
-    }
 
-    if (checkOutBtn) {
-      checkOutBtn.disabled = !hasCheckIn || hasCheckOut;
+      checkInBtn.hidden = hasCheckIn;
     }
 
     /*
-     * Message.
+     * Currently working.
+     */
+    if (hasCheckIn && !hasCheckOut) {
+      if (checkOutBtn) {
+        checkOutBtn.disabled = false;
+        checkOutBtn.hidden = false;
+      }
+
+      if (undoBtn) {
+        undoBtn.hidden = true;
+      }
+
+      hideCorrectionNote();
+
+      setText('attendanceActionMessage', 'You are currently checked in. Check out when your workday is complete.');
+
+      return;
+    }
+
+    /*
+     * --------------------------------------------------------
+     * COMPLETED CHECKOUT
+     * --------------------------------------------------------
      */
 
-    if (hasCheckIn && !hasCheckOut) {
-      setText('attendanceActionMessage', 'You are currently checked in. Check out when your workday is complete.');
-    } else if (hasCheckIn && hasCheckOut) {
+    if (hasCheckIn && hasCheckOut) {
+      if (checkOutBtn) {
+        checkOutBtn.disabled = true;
+        checkOutBtn.hidden = true;
+      }
+
+      const undoUntil = getRecordDate(record.checkoutUndoUntil);
+
+      if (undoUntil && Date.now() < undoUntil.getTime()) {
+        /*
+         * Undo is still available.
+         */
+        if (undoBtn) {
+          undoBtn.hidden = false;
+          undoBtn.disabled = false;
+        }
+
+        showUndoCountdown(undoUntil);
+
+        setText(
+          'attendanceActionMessage',
+          'Checkout recorded. Made a mistake? You can undo your checkout before the correction window expires.'
+        );
+
+        return;
+      }
+
+      /*
+       * Undo expired.
+       */
+      if (undoBtn) {
+        undoBtn.hidden = true;
+      }
+
+      showCorrectionNote(
+        'Checkout correction is now locked. Please contact your manager or HR if the checkout time is incorrect.'
+      );
+
       setText('attendanceActionMessage', "Today's attendance has been completed.");
-    } else if (record.status === 'leave') {
+
+      return;
+    }
+
+    /*
+     * --------------------------------------------------------
+     * OTHER STATUSES
+     * --------------------------------------------------------
+     */
+
+    if (checkOutBtn) {
+      checkOutBtn.disabled = true;
+    }
+
+    if (undoBtn) {
+      undoBtn.hidden = true;
+    }
+
+    if (record.status === 'leave') {
       setText('attendanceActionMessage', 'You are marked on approved leave today.');
     } else if (record.status === 'weekly_off') {
       setText('attendanceActionMessage', 'Today is your scheduled weekly off.');
@@ -361,6 +667,85 @@
     }
   }
 
+  /* ========================================================
+   UNDO COUNTDOWN
+======================================================== */
+
+  function showUndoCountdown(undoUntil) {
+    stopUndoCountdown();
+
+    const update = () => {
+      const remaining = undoUntil.getTime() - Date.now();
+
+      if (remaining <= 0) {
+        stopUndoCountdown();
+
+        const undoBtn = document.getElementById('attendanceUndoCheckoutBtn');
+
+        if (undoBtn) {
+          undoBtn.hidden = true;
+        }
+
+        showCorrectionNote(
+          'Checkout correction is now locked. Please contact your manager or HR if the checkout time is incorrect.'
+        );
+
+        setText('attendanceActionMessage', "Today's attendance has been completed.");
+
+        return;
+      }
+
+      const totalSeconds = Math.ceil(remaining / 1000);
+
+      const minutes = Math.floor(totalSeconds / 60);
+
+      const seconds = totalSeconds % 60;
+
+      const countdown = `${minutes}:${String(seconds).padStart(2, '0')}`;
+
+      setText('attendanceUndoCountdown', countdown);
+    };
+
+    update();
+
+    undoCountdownTimer = window.setInterval(update, 1000);
+  }
+
+  function stopUndoCountdown() {
+    if (undoCountdownTimer) {
+      window.clearInterval(undoCountdownTimer);
+
+      undoCountdownTimer = null;
+    }
+
+    setText('attendanceUndoCountdown', '');
+  }
+
+  /* ========================================================
+   CORRECTION NOTE
+======================================================== */
+
+  function showCorrectionNote(message) {
+    const note = document.getElementById('attendanceCorrectionNote');
+
+    if (!note) {
+      return;
+    }
+
+    note.hidden = false;
+
+    setText('attendanceCorrectionNoteText', message);
+  }
+
+  function hideCorrectionNote() {
+    const note = document.getElementById('attendanceCorrectionNote');
+
+    if (note) {
+      note.hidden = true;
+    }
+
+    setText('attendanceCorrectionNoteText', '');
+  }
   /* ========================================================
      SHIFT
   ======================================================== */
@@ -750,24 +1135,55 @@
 
     button.disabled = loading;
 
-    button.innerHTML = loading
-      ? `
-          <span
-            class="spinner-border spinner-border-sm"
-            role="status"
-          ></span>
+    const text = button.querySelector('span:not(.spinner-border)');
 
-          <span>
-            ${escapeHtml(label)}
-          </span>
-        `
-      : `
-          <i class="bi ${id === 'attendanceCheckInBtn' ? 'bi-box-arrow-in-right' : 'bi-box-arrow-right'}"></i>
+    if (loading) {
+      button.innerHTML = `
+      <span
+        class="spinner-border spinner-border-sm"
+        role="status"
+        aria-hidden="true"
+      ></span>
 
-          <span>
-            ${escapeHtml(label)}
-          </span>
-        `;
+      <span>${escapeHtml(label)}</span>
+    `;
+
+      return;
+    }
+
+    const iconMap = {
+      attendanceCheckInBtn: 'bi-box-arrow-in-right',
+
+      attendanceCheckOutBtn: 'bi-box-arrow-right',
+
+      attendanceUndoCheckoutBtn: 'bi-arrow-counterclockwise',
+    };
+
+    if (id === 'attendanceUndoCheckoutBtn') {
+      button.innerHTML = `
+      <i class="bi ${iconMap[id]}"></i>
+
+      <span>
+        Undo Checkout
+      </span>
+
+      <small id="attendanceUndoCountdown"></small>
+    `;
+
+      /*
+       * renderTodayAttendance() will immediately
+       * decide whether this button should be visible.
+       */
+      return;
+    }
+
+    button.innerHTML = `
+    <i class="bi ${iconMap[id]}"></i>
+
+    <span>
+      ${escapeHtml(label)}
+    </span>
+  `;
   }
 
   function setLoadingState(loading) {

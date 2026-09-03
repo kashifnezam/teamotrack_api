@@ -1,223 +1,172 @@
-<div class="container-fluid py-3">
+<section class="section p-3">
+  <div class="container-fluid py-3">
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
-        <div>
-            <h4 class="mb-1">Company Holidays</h4>
-            <p class="text-muted mb-0">
-                View and manage your organization's holiday calendar.
-            </p>
-        </div>
+      <div>
+        <h4 class="mb-1">Company Holidays</h4>
+        <p class="text-muted mb-0">View and manage your organization's holiday calendar.</p>
+      </div>
 
-        <button
-            id="addHolidayBtn"
-            class="btn btn-primary d-none"
-            type="button"
-            data-bs-toggle="modal"
-            data-bs-target="#holidayModal">
-            <i class="bi bi-plus-lg me-1"></i>
-            Add Holiday
-        </button>
+      <button
+        id="addHolidayBtn"
+        class="btn btn-primary d-none"
+        type="button"
+        data-bs-toggle="modal"
+        data-bs-target="#holidayModal"
+      >
+        <i class="bi bi-plus-lg me-1"></i>
+        Add Holiday
+      </button>
     </div>
 
     <div class="card border-0 shadow-sm mb-3">
-        <div class="card-body">
-            <div class="row g-2">
-                <div class="col-12 col-md-4">
-                    <label class="form-label small">Year</label>
-                    <select id="holidayYear" class="form-select">
-                    </select>
-                </div>
+      <div class="card-body">
+        <div class="row g-2">
+          <div class="col-12 col-md-4">
+            <label class="form-label small">Year</label>
+            <select id="holidayYear" class="form-select"></select>
+          </div>
 
-                <div class="col-12 col-md-4">
-                    <label class="form-label small">Status</label>
-                    <select id="holidayStatus" class="form-select">
-                        <option value="active">Active</option>
-                        <option value="all">All</option>
-                        <option value="inactive">Inactive</option>
-                    </select>
-                </div>
+          <div class="col-12 col-md-4">
+            <label class="form-label small">Status</label>
+            <select id="holidayStatus" class="form-select">
+              <option value="active">Active</option>
+              <option value="all">All</option>
+              <option value="inactive">Inactive</option>
+            </select>
+          </div>
 
-                <div class="col-12 col-md-4 d-flex align-items-end">
-                    <button
-                        id="refreshHolidaysBtn"
-                        class="btn btn-outline-secondary w-100"
-                        type="button">
-                        <i class="bi bi-arrow-clockwise me-1"></i>
-                        Refresh
-                    </button>
-                </div>
-            </div>
+          <div class="col-12 col-md-4 d-flex align-items-end">
+            <button id="refreshHolidaysBtn" class="btn btn-outline-secondary w-100" type="button">
+              <i class="bi bi-arrow-clockwise me-1"></i>
+              Refresh
+            </button>
+          </div>
         </div>
+      </div>
     </div>
 
     <div id="holidayStats" class="row g-3 mb-3">
-        <div class="col-6 col-lg-3">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <div class="text-muted small">Total</div>
-                    <div id="totalHolidayCount" class="fs-4 fw-semibold">0</div>
-                </div>
-            </div>
+      <div class="col-6 col-lg-3">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-body">
+            <div class="text-muted small">Total</div>
+            <div id="totalHolidayCount" class="fs-4 fw-semibold">0</div>
+          </div>
         </div>
+      </div>
 
-        <div class="col-6 col-lg-3">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <div class="text-muted small">Active</div>
-                    <div id="activeHolidayCount" class="fs-4 fw-semibold">0</div>
-                </div>
-            </div>
+      <div class="col-6 col-lg-3">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-body">
+            <div class="text-muted small">Active</div>
+            <div id="activeHolidayCount" class="fs-4 fw-semibold">0</div>
+          </div>
         </div>
+      </div>
 
-        <div class="col-6 col-lg-3">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <div class="text-muted small">Optional</div>
-                    <div id="optionalHolidayCount" class="fs-4 fw-semibold">0</div>
-                </div>
-            </div>
+      <div class="col-6 col-lg-3">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-body">
+            <div class="text-muted small">Optional</div>
+            <div id="optionalHolidayCount" class="fs-4 fw-semibold">0</div>
+          </div>
         </div>
+      </div>
 
-        <div class="col-6 col-lg-3">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <div class="text-muted small">Inactive</div>
-                    <div id="inactiveHolidayCount" class="fs-4 fw-semibold">0</div>
-                </div>
-            </div>
+      <div class="col-6 col-lg-3">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-body">
+            <div class="text-muted small">Inactive</div>
+            <div id="inactiveHolidayCount" class="fs-4 fw-semibold">0</div>
+          </div>
         </div>
+      </div>
     </div>
 
     <div class="card border-0 shadow-sm">
-        <div class="card-body p-0">
-            <div id="holidayLoading" class="text-center py-5">
-                <div class="spinner-border text-primary" role="status"></div>
-                <div class="small text-muted mt-2">Loading holidays...</div>
-            </div>
-
-            <div id="holidayEmpty" class="text-center py-5 d-none">
-                <i class="bi bi-calendar3 fs-1 text-muted"></i>
-                <h6 class="mt-3">No holidays found</h6>
-                <p class="text-muted small mb-0">
-                    No company holidays match the selected filters.
-                </p>
-            </div>
-
-            <div id="holidayTableWrap" class="table-responsive d-none">
-                <table class="table table-hover align-middle mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Holiday</th>
-                            <th>Date</th>
-                            <th>Type</th>
-                            <th>Optional</th>
-                            <th>Status</th>
-                            <th class="text-end">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody id="holidayTableBody"></tbody>
-                </table>
-            </div>
-
-            <div id="holidayMobileList" class="d-none"></div>
+      <div class="card-body p-0">
+        <div id="holidayLoading" class="text-center py-5">
+          <div class="spinner-border text-primary" role="status"></div>
+          <div class="small text-muted mt-2">Loading holidays...</div>
         </div>
-    </div>
-</div>
 
-<div
-    class="modal fade"
-    id="holidayModal"
-    tabindex="-1"
-    aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-header">
-                <h5 id="holidayModalTitle" class="modal-title">
-                    Add Holiday
-                </h5>
-                <button
-                    type="button"
-                    class="btn-close"
-                    data-bs-dismiss="modal"
-                    aria-label="Close">
-                </button>
-            </div>
-
-            <form id="holidayForm">
-                <div class="modal-body">
-                    <input type="hidden" id="holidayId">
-
-                    <div class="mb-3">
-                        <label class="form-label">
-                            Holiday Name <span class="text-danger">*</span>
-                        </label>
-                        <input
-                            id="holidayName"
-                            type="text"
-                            class="form-control"
-                            maxlength="100"
-                            required>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label">
-                            Date <span class="text-danger">*</span>
-                        </label>
-                        <input
-                            id="holidayDate"
-                            type="date"
-                            class="form-control"
-                            required>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label">Type</label>
-                        <select id="holidayType" class="form-select">
-                            <option value="public">Public</option>
-                            <option value="national">National</option>
-                            <option value="festival">Festival</option>
-                            <option value="company">Company</option>
-                            <option value="other">Other</option>
-                        </select>
-                    </div>
-
-                    <div class="form-check mb-3">
-                        <input
-                            id="holidayOptional"
-                            class="form-check-input"
-                            type="checkbox">
-                        <label
-                            class="form-check-label"
-                            for="holidayOptional">
-                            Optional holiday
-                        </label>
-                    </div>
-
-                    <div>
-                        <label class="form-label">Description</label>
-                        <textarea
-                            id="holidayDescription"
-                            class="form-control"
-                            rows="3"
-                            maxlength="500"></textarea>
-                    </div>
-                </div>
-
-                <div class="modal-footer">
-                    <button
-                        type="button"
-                        class="btn btn-light"
-                        data-bs-dismiss="modal">
-                        Cancel
-                    </button>
-
-                    <button
-                        id="saveHolidayBtn"
-                        type="submit"
-                        class="btn btn-primary">
-                        Save Holiday
-                    </button>
-                </div>
-            </form>
+        <div id="holidayEmpty" class="text-center py-5 d-none">
+          <i class="bi bi-calendar3 fs-1 text-muted"></i>
+          <h6 class="mt-3">No holidays found</h6>
+          <p class="text-muted small mb-0">No company holidays match the selected filters.</p>
         </div>
+
+        <div id="holidayTableWrap" class="table-responsive d-none">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Holiday</th>
+                <th>Date</th>
+                <th>Type</th>
+                <th>Optional</th>
+                <th>Status</th>
+                <th class="text-end">Action</th>
+              </tr>
+            </thead>
+            <tbody id="holidayTableBody"></tbody>
+          </table>
+        </div>
+
+        <div id="holidayMobileList" class="d-none"></div>
+      </div>
     </div>
+  </div>
+</section>
+<div class="modal fade" id="holidayModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header">
+        <h5 id="holidayModalTitle" class="modal-title">Add Holiday</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <form id="holidayForm">
+        <div class="modal-body">
+          <input type="hidden" id="holidayId" />
+
+          <div class="mb-3">
+            <label class="form-label"> Holiday Name <span class="text-danger">*</span> </label>
+            <input id="holidayName" type="text" class="form-control" maxlength="100" required />
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label"> Date <span class="text-danger">*</span> </label>
+            <input id="holidayDate" type="date" class="form-control" required />
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Type</label>
+            <select id="holidayType" class="form-select">
+              <option value="public">Public</option>
+              <option value="national">National</option>
+              <option value="festival">Festival</option>
+              <option value="company">Company</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+
+          <div class="form-check mb-3">
+            <input id="holidayOptional" class="form-check-input" type="checkbox" />
+            <label class="form-check-label" for="holidayOptional"> Optional holiday </label>
+          </div>
+
+          <div>
+            <label class="form-label">Description</label>
+            <textarea id="holidayDescription" class="form-control" rows="3" maxlength="500"></textarea>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+
+          <button id="saveHolidayBtn" type="submit" class="btn btn-primary">Save Holiday</button>
+        </div>
+      </form>
+    </div>
+  </div>
 </div>

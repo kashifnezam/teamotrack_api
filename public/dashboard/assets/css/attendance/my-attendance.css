@@ -619,6 +619,60 @@
 }
 
 /* ==========================================================
+   CHECKOUT CORRECTION
+========================================================== */
+
+.attendance-action-btn.undo-checkout {
+  border: 1px solid rgba(245, 158, 11, 0.35);
+
+  background: rgba(245, 158, 11, 0.08);
+
+  color: #b45309;
+
+  gap: 8px;
+}
+
+.attendance-action-btn.undo-checkout:hover:not(:disabled) {
+  background: rgba(245, 158, 11, 0.14);
+}
+
+.attendance-action-btn.undo-checkout small {
+  font-weight: 700;
+
+  font-size: 11px;
+
+  font-variant-numeric: tabular-nums;
+
+  opacity: 0.85;
+}
+
+.attendance-correction-note {
+  display: flex;
+
+  align-items: center;
+
+  gap: 8px;
+
+  margin-top: 10px;
+
+  padding: 9px 12px;
+
+  border-radius: 8px;
+
+  background: rgba(100, 116, 139, 0.07);
+
+  color: #64748b;
+
+  font-size: 12px;
+
+  line-height: 1.4;
+}
+
+.attendance-correction-note i {
+  flex: 0 0 auto;
+}
+
+/* ==========================================================
    RESPONSIVE
 ========================================================== */
 

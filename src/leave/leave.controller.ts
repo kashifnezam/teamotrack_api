@@ -1,292 +1,162 @@
-import {
-    Body,
-    Controller,
-    Delete,
-    Get,
-    Param,
-    Patch,
-    Post,
-    Res,
-    UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Res, UseGuards } from '@nestjs/common';
 
 import type { Response } from 'express';
 
 import { LeaveService } from './leave.service';
 
-import {
-    LeaveDto,
-    LeaveTypeDto,
-} from './dto/leave.dto';
+import { LeaveDto, LeaveTypeDto } from './dto/leave.dto';
 
 import { FirebaseAuthGuard } from '../auth/firebase-auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 
-
 @Controller('leave')
 export class LeaveController {
+  constructor(private readonly service: LeaveService) {}
 
-    constructor(
-        private readonly service: LeaveService,
-    ) { }
+  // ==================================================
+  // SPA SHELL
+  // ==================================================
 
+  @Get()
+  page(@Res() res: Response) {
+    return res.sendFile('shell.html', {
+      root: './public/dashboard',
+    });
+  }
 
-    // ==================================================
-    // SPA SHELL
-    // ==================================================
+  // ==================================================
+  // LEAVE REQUESTS
+  // ==================================================
 
-    @Get()
-    page(
-        @Res() res: Response,
-    ) {
+  @Get('data')
+  @UseGuards(FirebaseAuthGuard)
+  get(@CurrentUser() user: any) {
+    return this.service.getAll(user.uid);
+  }
 
-        return res.sendFile(
-            'shell.html',
-            {
-                root:
-                    './public/dashboard',
-            },
-        );
-    }
+  @Get('team')
+  @UseGuards(FirebaseAuthGuard)
+  getTeamLeaves(@CurrentUser() user: any) {
+    return this.service.getTeamLeaves(user.uid);
+  }
 
+  // ==================================================
+  // PENDING APPROVALS
+  // ==================================================
 
-    // ==================================================
-    // LEAVE REQUESTS
-    // ==================================================
+  @Get('approvals')
+  @UseGuards(FirebaseAuthGuard)
+  getApprovals(@CurrentUser() user: any) {
+    return this.service.getApprovals(user.uid);
+  }
 
-    @Get('data')
-    @UseGuards(FirebaseAuthGuard)
-    get(
-        @CurrentUser() user: any,
-    ) {
+  // ==================================================
+  // CREATE LEAVE
+  // ==================================================
 
-        return this.service.getAll(
-            user.uid,
-        );
-    }
+  @Post()
+  @UseGuards(FirebaseAuthGuard)
+  create(@CurrentUser() user: any, @Body() dto: LeaveDto) {
+    return this.service.create(user.uid, dto);
+  }
 
+  // ==================================================
+  // UPDATE LEAVE
+  // ==================================================
 
-    @Get('team')
-    @UseGuards(FirebaseAuthGuard)
-    getTeamLeaves(
-        @CurrentUser() user: any,
-    ) {
+  @Patch(':id')
+  @UseGuards(FirebaseAuthGuard)
+  update(@CurrentUser() user: any, @Param('id') id: string, @Body() dto: LeaveDto) {
+    return this.service.update(user.uid, id, dto);
+  }
 
-        return this.service.getTeamLeaves(
-            user.uid,
-        );
-    }
+  // ==================================================
+  // CANCEL / DELETE LEAVE
+  // ==================================================
 
+  @Delete(':id')
+  @UseGuards(FirebaseAuthGuard)
+  remove(@CurrentUser() user: any, @Param('id') id: string) {
+    return this.service.remove(user.uid, id);
+  }
 
-    // ==================================================
-    // PENDING APPROVALS
-    // ==================================================
+  // ==================================================
+  // APPROVE LEAVE
+  // ==================================================
 
-    @Get('approvals')
-    @UseGuards(FirebaseAuthGuard)
-    getApprovals(
-        @CurrentUser() user: any,
-    ) {
+  @Patch(':id/approve')
+  @UseGuards(FirebaseAuthGuard)
+  approve(@CurrentUser() user: any, @Param('id') id: string) {
+    return this.service.approve(user.uid, id);
+  }
 
-        return this.service.getApprovals(
-            user.uid,
-        );
-    }
+  // ==================================================
+  // REJECT LEAVE
+  // ==================================================
 
+  @Patch(':id/reject')
+  @UseGuards(FirebaseAuthGuard)
+  reject(@CurrentUser() user: any, @Param('id') id: string, @Body('reason') reason?: string) {
+    return this.service.reject(user.uid, id, reason);
+  }
 
-    // ==================================================
-    // CREATE LEAVE
-    // ==================================================
+  // ==================================================
+  // LEAVE TYPE ACCESS
+  // ==================================================
 
-    @Post()
-    @UseGuards(FirebaseAuthGuard)
-    create(
-        @CurrentUser() user: any,
-        @Body() dto: LeaveDto,
-    ) {
+  @Get('types/access')
+  @UseGuards(FirebaseAuthGuard)
+  getTypeAccess(@CurrentUser() user: any) {
+    return this.service.getTypeAccess(user.uid);
+  }
 
-        return this.service.create(
-            user.uid,
-            dto,
-        );
-    }
+  // ==================================================
+  // MANAGEABLE LEAVE TYPES
+  // ==================================================
 
+  @Get('types/manage')
+  @UseGuards(FirebaseAuthGuard)
+  getManageableTypes(@CurrentUser() user: any) {
+    return this.service.getManageableTypes(user.uid);
+  }
 
-    // ==================================================
-    // UPDATE LEAVE
-    // ==================================================
+  // ==================================================
+  // ACTIVE LEAVE TYPES
+  // ==================================================
 
-    @Patch(':id')
-    @UseGuards(FirebaseAuthGuard)
-    update(
-        @CurrentUser() user: any,
-        @Param('id') id: string,
-        @Body() dto: LeaveDto,
-    ) {
+  @Get('types')
+  @UseGuards(FirebaseAuthGuard)
+  getTypes(@CurrentUser() user: any) {
+    return this.service.getTypes(user.uid);
+  }
 
-        return this.service.update(
-            user.uid,
-            id,
-            dto,
-        );
-    }
+  // ==================================================
+  // CREATE LEAVE TYPE
+  // ==================================================
 
+  @Post('types')
+  @UseGuards(FirebaseAuthGuard)
+  createType(@CurrentUser() user: any, @Body() dto: LeaveTypeDto) {
+    return this.service.createType(user.uid, dto);
+  }
 
-    // ==================================================
-    // CANCEL / DELETE LEAVE
-    // ==================================================
+  // ==================================================
+  // DEACTIVATE LEAVE TYPE
+  // ==================================================
 
-    @Delete(':id')
-    @UseGuards(FirebaseAuthGuard)
-    remove(
-        @CurrentUser() user: any,
-        @Param('id') id: string,
-    ) {
+  @Patch('types/:id/deactivate')
+  @UseGuards(FirebaseAuthGuard)
+  deactivateType(@CurrentUser() user: any, @Param('id') id: string) {
+    return this.service.deactivateType(user.uid, id);
+  }
 
-        return this.service.remove(
-            user.uid,
-            id,
-        );
-    }
+  // ==================================================
+  // REACTIVATE LEAVE TYPE
+  // ==================================================
 
-
-    // ==================================================
-    // APPROVE LEAVE
-    // ==================================================
-
-    @Patch(':id/approve')
-    @UseGuards(FirebaseAuthGuard)
-    approve(
-        @CurrentUser() user: any,
-        @Param('id') id: string,
-    ) {
-
-        return this.service.approve(
-            user.uid,
-            id,
-        );
-    }
-
-
-    // ==================================================
-    // REJECT LEAVE
-    // ==================================================
-
-    @Patch(':id/reject')
-    @UseGuards(FirebaseAuthGuard)
-    reject(
-        @CurrentUser() user: any,
-        @Param('id') id: string,
-        @Body('reason') reason?: string,
-    ) {
-
-        return this.service.reject(
-            user.uid,
-            id,
-            reason,
-        );
-    }
-
-
-    // ==================================================
-    // LEAVE TYPE ACCESS
-    // ==================================================
-
-    @Get('types/access')
-    @UseGuards(FirebaseAuthGuard)
-    getTypeAccess(
-        @CurrentUser() user: any,
-    ) {
-
-        return this.service.getTypeAccess(
-            user.uid,
-        );
-    }
-
-
-    // ==================================================
-    // MANAGEABLE LEAVE TYPES
-    // ==================================================
-
-    @Get('types/manage')
-    @UseGuards(FirebaseAuthGuard)
-    getManageableTypes(
-        @CurrentUser() user: any,
-    ) {
-
-        return this.service.getManageableTypes(
-            user.uid,
-        );
-    }
-
-
-    // ==================================================
-    // ACTIVE LEAVE TYPES
-    // ==================================================
-
-    @Get('types')
-    @UseGuards(FirebaseAuthGuard)
-    getTypes(
-        @CurrentUser() user: any,
-    ) {
-
-        return this.service.getTypes(
-            user.uid,
-        );
-    }
-
-
-    // ==================================================
-    // CREATE LEAVE TYPE
-    // ==================================================
-
-    @Post('types')
-    @UseGuards(FirebaseAuthGuard)
-    createType(
-        @CurrentUser() user: any,
-        @Body() dto: LeaveTypeDto,
-    ) {
-
-        return this.service.createType(
-            user.uid,
-            dto,
-        );
-    }
-
-
-    // ==================================================
-    // DEACTIVATE LEAVE TYPE
-    // ==================================================
-
-    @Patch('types/:id/deactivate')
-    @UseGuards(FirebaseAuthGuard)
-    deactivateType(
-        @CurrentUser() user: any,
-        @Param('id') id: string,
-    ) {
-
-        return this.service.deactivateType(
-            user.uid,
-            id,
-        );
-    }
-
-
-    // ==================================================
-    // REACTIVATE LEAVE TYPE
-    // ==================================================
-
-    @Patch('types/:id/reactivate')
-    @UseGuards(FirebaseAuthGuard)
-    reactivateType(
-        @CurrentUser() user: any,
-        @Param('id') id: string,
-    ) {
-
-        return this.service.reactivateType(
-            user.uid,
-            id,
-        );
-    }
-
+  @Patch('types/:id/reactivate')
+  @UseGuards(FirebaseAuthGuard)
+  reactivateType(@CurrentUser() user: any, @Param('id') id: string) {
+    return this.service.reactivateType(user.uid, id);
+  }
 }

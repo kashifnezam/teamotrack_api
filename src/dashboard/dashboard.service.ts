@@ -4,15 +4,42 @@ import { DashboardDto, DashboardScopeType } from './dto/dashboard.dto';
 
 import { FirebaseService } from '../firebase/firebase.service';
 
+import { LeaveService } from '../leave/leave.service';
+
+import { HolidayService } from '../holiday/holiday.service';
+
 @Injectable()
 export class DashboardService {
   private readonly logger = new Logger(DashboardService.name);
 
   private static readonly TIME_ZONE = 'Asia/Kolkata';
 
+  /*
+   * IMPORTANT:
+   *
+   * Manager dashboard intentionally includes:
+   *
+   * - field executives
+   * - child managers
+   * - HR
+   *
+   * Do NOT reduce this to field_executive only.
+   */
   private static readonly STAFF_ROLES = ['field_executive', 'manager', 'hr'];
 
-  constructor(private readonly firebase: FirebaseService) {}
+  constructor(
+    private readonly firebase: FirebaseService,
+
+    /*
+     * Existing Leave business logic.
+     */
+    private readonly leaveService: LeaveService,
+
+    /*
+     * Existing Holiday business logic.
+     */
+    private readonly holidayService: HolidayService
+  ) {}
 
   private get db() {
     return this.firebase.firestore;
@@ -27,8 +54,10 @@ export class DashboardService {
       // ------------------------------------------------------
       // VALIDATE USER
       // ------------------------------------------------------
-        this.logger.log(user);
-      if (!user?.uid && !user?.id) {
+
+      const uid = user?.uid ?? user?.id;
+
+      if (!uid) {
         throw new BadRequestException('User UID is missing');
       }
 
@@ -40,7 +69,7 @@ export class DashboardService {
       // ALWAYS LOAD FRESH USER DOCUMENT
       // ------------------------------------------------------
 
-      const currentUser = await this.getUser(user.uid);
+      const currentUser = await this.getUser(uid);
 
       // ------------------------------------------------------
       // ROOT
@@ -49,7 +78,7 @@ export class DashboardService {
       const rootId = this.getRootId(currentUser);
 
       // ------------------------------------------------------
-      // TODAY
+      // DASHBOARD DATE
       // ------------------------------------------------------
 
       const date = this.resolveDashboardDate(requestedDate);
@@ -66,13 +95,13 @@ export class DashboardService {
 
       const users = userSnapshot.docs.map((doc) => ({
         id: doc.id,
+
         ...doc.data(),
       })) as any[];
 
       /*
-       * Root users may not have rootId.
+       * Root users may not contain rootId.
        */
-
       if (this.isRoot(currentUser)) {
         const rootExists = users.some((item) => (item.uid || item.id) === currentUser.uid);
 
@@ -97,6 +126,22 @@ export class DashboardService {
       // DETERMINE AUTHORIZED STAFF
       // ======================================================
 
+      /*
+       * IMPORTANT:
+       *
+       * Existing manager visibility is preserved.
+       *
+       * Manager:
+       *   executives
+       *   child managers
+       *   HR
+       *
+       * HR:
+       *   authorized executives only
+       *
+       * Executive:
+       *   self
+       */
       const visibleStaff = this.getVisibleStaff(currentUser, enrichedUsers);
 
       this.logger.log(
@@ -110,21 +155,17 @@ export class DashboardService {
       /*
        * IMPORTANT:
        *
-       * loadAttendance only reads existing attendance
-       * documents.
+       * loadAttendance ONLY reads existing
+       * attendance records.
        *
-       * It NEVER creates attendance.
+       * Missing record =
+       * not_marked
        *
-       * Therefore:
-       *
-       * no document = not_marked
-       *
-       * The dashboard must never infer "absent".
+       * Never infer absent.
        */
-
       const attendanceMap = await this.loadAttendance(visibleStaff, date);
 
-      const todayAttendance = attendanceMap.get(date) || new Map<string, any>();
+      const todayAttendance = attendanceMap.get(date) ?? new Map<string, any>();
 
       // ======================================================
       // STAFF ROWS
@@ -155,12 +196,11 @@ export class DashboardService {
       // ======================================================
 
       /*
-       * Filter options are generated from the COMPLETE
+       * Filters are generated from the complete
        * authorized staff list.
        *
-       * NOT from an already-filtered list.
+       * Existing manager behavior is preserved.
        */
-
       const filterOptions = this.getFilterOptions(visibleStaff, enrichedUsers);
 
       // ======================================================
@@ -195,16 +235,33 @@ export class DashboardService {
         staff,
       };
 
+      // ======================================================
+      // HR DASHBOARD
+      // ======================================================
+
+      /*
+       * HR gets additional dashboard information.
+       *
+       * Manager response remains unchanged.
+       */
+      if (currentUser.role === 'hr') {
+        result.hr = await this.buildHrDashboard(currentUser, visibleStaff, date, todayAttendance);
+      }
+
+      // ======================================================
+      // LOG
+      // ======================================================
+
       this.logger.log(
         `Dashboard ready | uid=${currentUser.uid} | role=${currentUser.role} | total=${attendance.total} | marked=${attendance.marked} | notMarked=${attendance.notMarked} | present=${attendance.present} | working=${attendance.working} | late=${attendance.late} | leave=${attendance.leave} | absent=${attendance.absent} | weeklyOff=${attendance.weeklyOff} | holiday=${attendance.holiday} | online=${tracking.online}`
       );
 
       return result;
     } catch (error) {
+      const uid = user?.uid ?? user?.id ?? 'unknown';
+
       this.logger.error(
-        `Dashboard fetch failed | uid=${user?.uid ?? 'unknown'} | ${
-          error instanceof Error ? error.message : String(error)
-        }`,
+        `Dashboard fetch failed | uid=${uid} | ${error instanceof Error ? error.message : String(error)}`,
         error instanceof Error ? error.stack : undefined
       );
 
@@ -221,6 +278,183 @@ export class DashboardService {
   }
 
   // ==========================================================
+  // HR DASHBOARD
+  // ==========================================================
+
+  private async buildHrDashboard(user: any, staff: any[], date: string, todayAttendance: Map<string, any>) {
+    /*
+     * These operations are independent,
+     * so execute them concurrently.
+     */
+    const [pendingLeave, exceptions, holidays] = await Promise.all([
+      this.loadPendingLeave(user),
+
+      this.loadAttendanceExceptions(staff, todayAttendance, date),
+
+      this.loadUpcomingHolidays(user, date),
+    ]);
+
+    return {
+      pendingLeave,
+
+      exceptions,
+
+      holidays,
+    };
+  }
+
+  // ==========================================================
+  // HR - PENDING LEAVE
+  // ==========================================================
+
+  private async loadPendingLeave(user: any) {
+    /*
+     * Reuse LeaveService authorization.
+     *
+     * For HR this internally checks:
+     *
+     * leave.approve.all
+     *
+     * and only returns requests where
+     * the HR user is the current approver.
+     *
+     * This prevents DashboardService from
+     * duplicating leave approval logic.
+     */
+    const result = await this.leaveService.getApprovals(user.uid);
+
+    return result?.approvals ?? [];
+  }
+
+  // ==========================================================
+  // HR - ATTENDANCE EXCEPTIONS
+  // ==========================================================
+
+  private async loadAttendanceExceptions(staff: any[], todayAttendance: Map<string, any>, date: string) {
+    const exceptions: any[] = [];
+
+    for (const employee of staff) {
+      const staffId = employee.uid ?? employee.id;
+
+      const attendance = todayAttendance.get(staffId);
+
+      if (!attendance) {
+        continue;
+      }
+
+      const exception = this.getAttendanceException(attendance);
+
+      if (!exception) {
+        continue;
+      }
+
+      exceptions.push({
+        id: `${staffId}_${date}`,
+
+        userId: staffId,
+
+        fullName: employee.fullName ?? employee.userName ?? employee.name ?? 'Unknown',
+
+        role: employee.role ?? '',
+
+        date,
+
+        ...exception,
+      });
+    }
+
+    return exceptions;
+  }
+
+  // ==========================================================
+  // ATTENDANCE EXCEPTION
+  // ==========================================================
+
+  private getAttendanceException(attendance: any) {
+    if (!attendance) {
+      return null;
+    }
+
+    /*
+     * --------------------------------------------------------
+     * EXPLICIT EXCEPTION DATA
+     * --------------------------------------------------------
+     *
+     * If the attendance service already stores
+     * an explicit exception, preserve it.
+     */
+
+    if (Array.isArray(attendance.exceptions) && attendance.exceptions.length) {
+      return {
+        type: 'attendance',
+        label: 'Attendance exception',
+        details: attendance.exceptions,
+      };
+    }
+
+    if (attendance.exception && typeof attendance.exception === 'object') {
+      return {
+        type: attendance.exception.type ?? 'attendance',
+        label: attendance.exception.label ?? 'Attendance exception',
+        details: attendance.exception,
+      };
+    }
+
+    /*
+     * --------------------------------------------------------
+     * PUNCTUALITY
+     * --------------------------------------------------------
+     *
+     * Late is already calculated by the
+     * attendance service/scheduler.
+     *
+     * Dashboard does NOT recalculate grace
+     * period or shift time.
+     */
+
+    if (attendance.punctuality === 'late') {
+      return {
+        type: 'late',
+
+        label: 'Late arrival',
+
+        punctuality: 'late',
+      };
+    }
+
+    /*
+     * No exception.
+     */
+    return null;
+  }
+
+  // ==========================================================
+  // HR - UPCOMING HOLIDAYS
+  // ==========================================================
+
+  private async loadUpcomingHolidays(user: any, date: string) {
+    /*
+     * Dashboard date is YYYYMMDD.
+     *
+     * HolidayService expects:
+     * YYYY-MM-DD
+     */
+    const startDate = this.dashboardDateToIso(date);
+
+    /*
+     * Show the next 30 calendar days.
+     *
+     * This keeps the dashboard lightweight
+     * while providing useful upcoming holidays.
+     */
+    const endDate = this.addDaysToIsoDate(startDate, 30);
+
+    const result = await this.holidayService.getRange(user.uid, startDate, endDate);
+
+    return result?.holidays ?? [];
+  }
+
+  // ==========================================================
   // VISIBLE STAFF
   // ==========================================================
 
@@ -230,6 +464,9 @@ export class DashboardService {
     // --------------------------------------------------------
 
     if (this.isRoot(user)) {
+      /*
+       * Preserve existing root behavior.
+       */
       return users.filter((item) => DashboardService.STAFF_ROLES.includes(item.role));
     }
 
@@ -242,9 +479,35 @@ export class DashboardService {
     }
 
     // --------------------------------------------------------
-    // BUILD PARENT MAP
+    // HR
     // --------------------------------------------------------
 
+    /*
+     * HR is NOT a recursive hierarchy node.
+     *
+     * HR sees field executives associated
+     * with the same parent relationship.
+     *
+     * This preserves the existing TeamoTrack
+     * hierarchy model.
+     */
+    if (user.role === 'hr') {
+      return users.filter((item) => item.role === 'field_executive' && item.parentId === user.parentId);
+    }
+
+    // --------------------------------------------------------
+    // MANAGER
+    // --------------------------------------------------------
+
+    /*
+     * Manager hierarchy remains recursive.
+     *
+     * This intentionally includes:
+     *
+     * - field executives
+     * - child managers
+     * - HR
+     */
     const byParent = new Map<string, any[]>();
 
     for (const item of users) {
@@ -252,16 +515,12 @@ export class DashboardService {
         continue;
       }
 
-      if (!byParent.has(item.parentId)) {
-        byParent.set(item.parentId, []);
-      }
+      const list = byParent.get(item.parentId) ?? [];
 
-      byParent.get(item.parentId)!.push(item);
+      list.push(item);
+
+      byParent.set(item.parentId, list);
     }
-
-    // --------------------------------------------------------
-    // MANAGER / HR
-    // --------------------------------------------------------
 
     const result: any[] = [];
 
@@ -274,22 +533,25 @@ export class DashboardService {
 
       visited.add(parentId);
 
-      for (const child of byParent.get(parentId) || []) {
-        /*
-         * Dashboard includes actual
-         * attendance staff.
-         */
+      const children = byParent.get(parentId) ?? [];
 
+      for (const child of children) {
+        /*
+         * IMPORTANT:
+         *
+         * Keep existing manager response.
+         */
         if (DashboardService.STAFF_ROLES.includes(child.role)) {
           result.push(child);
         }
 
         /*
-         * Manager hierarchy is recursive.
+         * Only managers continue
+         * recursively.
          *
-         * HR is NOT a recursive hierarchy node.
+         * HR does not become another
+         * hierarchy node.
          */
-
         if (child.role === 'manager') {
           walk(child.uid || child.id);
         }
@@ -297,24 +559,6 @@ export class DashboardService {
     };
 
     walk(user.uid);
-
-    // --------------------------------------------------------
-    // HR
-    // --------------------------------------------------------
-
-    /*
-     * HR does not inherit recursive
-     * manager hierarchy.
-     *
-     * Current model:
-     *
-     * HR sees field executives directly
-     * under the same parent relationship.
-     */
-
-    if (user.role === 'hr') {
-      return result.filter((item) => item.role === 'field_executive' && item.parentId === user.parentId);
-    }
 
     return result;
   }
@@ -333,6 +577,7 @@ export class DashboardService {
 
       result.set(doc.id, {
         id: doc.id,
+
         ...data,
       });
     });
@@ -382,7 +627,7 @@ export class DashboardService {
         continue;
       }
 
-      const name = item.teamName || 'Unnamed Team';
+      const name = item.teamName ?? 'Unnamed Team';
 
       teams.set(item.teamId, name);
     }
@@ -396,6 +641,10 @@ export class DashboardService {
     for (const item of visibleStaff) {
       const itemId = item.uid || item.id;
 
+      /*
+       * Preserve manager filtering
+       * behavior.
+       */
       if (item.role === 'manager') {
         managerIds.add(itemId);
       }
@@ -413,6 +662,7 @@ export class DashboardService {
       teams: Array.from(teams.entries())
         .map(([id, name]) => ({
           id,
+
           name,
         }))
         .sort((a, b) => a.name.localeCompare(b.name)),
@@ -429,19 +679,10 @@ export class DashboardService {
   }
 
   // ==========================================================
-  // LOAD TODAY ATTENDANCE
+  // LOAD ATTENDANCE
   // ==========================================================
 
   private async loadAttendance(staff: any[], date: string): Promise<Map<string, Map<string, any>>> {
-    /*
-     * REQUIRED STRUCTURE:
-     *
-     * attendanceMap
-     *    date
-     *       staffId
-     *          attendance
-     */
-
     const attendanceMap = new Map<string, Map<string, any>>();
 
     const dateMap = new Map<string, any>();
@@ -462,23 +703,17 @@ export class DashboardService {
       return this.db.collection('attendance').doc(staffId).collection('records').doc(date);
     });
 
-    /*
-     * Batched Firestore read.
-     */
+    // --------------------------------------------------------
+    // BATCH READ
+    // --------------------------------------------------------
 
     const snapshots = await this.db.getAll(...refs);
 
     snapshots.forEach((doc, index) => {
       /*
-       * IMPORTANT:
-       *
-       * Missing document means
-       * there is no attendance yet.
-       *
-       * We deliberately DO NOT insert
-       * an absent record here.
+       * Missing attendance remains
+       * not_marked.
        */
-
       if (!doc.exists) {
         return;
       }
@@ -487,6 +722,7 @@ export class DashboardService {
 
       dateMap.set(staffId, {
         id: doc.id,
+
         ...(doc.data() ?? {}),
       });
     });
@@ -567,13 +803,6 @@ export class DashboardService {
     // ATTENDANCE TYPE
     // --------------------------------------------------------
 
-    /*
-     * Do not invent attendanceType.
-     *
-     * It only exists when the attendance
-     * service/scheduler actually calculated it.
-     */
-
     if (attendance?.attendanceType === 'full_day' || attendance?.attendanceType === 'half_day') {
       result.attendanceType = attendance.attendanceType;
     }
@@ -581,14 +810,6 @@ export class DashboardService {
     // --------------------------------------------------------
     // PUNCTUALITY
     // --------------------------------------------------------
-
-    /*
-     * Late is based on the attendance
-     * service's punctuality calculation.
-     *
-     * Dashboard does NOT independently
-     * calculate late.
-     */
 
     if (attendance?.punctuality === 'on_time' || attendance?.punctuality === 'late') {
       result.punctuality = attendance.punctuality;
@@ -625,22 +846,10 @@ export class DashboardService {
     attendance: any
   ): 'not_marked' | 'present' | 'working' | 'late' | 'leave' | 'absent' | 'weekly_off' | 'holiday' {
     /*
-     * ========================================================
-     * CRITICAL RULE
-     * ========================================================
+     * NO RECORD
      *
-     * NO ATTENDANCE RECORD
-     * =
-     * NOT MARKED
-     *
-     * NEVER:
-     *
-     * no record -> absent
-     *
-     * "absent" must come from an actual
-     * attendance document.
+     * = NOT MARKED
      */
-
     if (!attendance) {
       return 'not_marked';
     }
@@ -669,30 +878,13 @@ export class DashboardService {
     // ACTIVE WORK
     // --------------------------------------------------------
 
-    /*
-     * Checked in but not checked out.
-     *
-     * The person is currently working.
-     */
-
     if (attendance.checkInTime && !attendance.checkOutTime) {
       return 'working';
     }
 
     // --------------------------------------------------------
-    // PUNCTUALITY
+    // LATE
     // --------------------------------------------------------
-
-    /*
-     * Late is independent from present.
-     *
-     * Example:
-     *
-     * status       = present
-     * punctuality  = late
-     *
-     * Dashboard should display late.
-     */
 
     if (attendance.punctuality === 'late') {
       return 'late';
@@ -706,26 +898,13 @@ export class DashboardService {
       return 'present';
     }
 
-    /*
-     * Backward compatibility:
-     *
-     * Older attendance records may contain
-     * checkInTime but no status.
-     *
-     * Since attendance definitely occurred,
-     * treat it as present rather than absent.
-     */
+    // --------------------------------------------------------
+    // BACKWARD COMPATIBILITY
+    // --------------------------------------------------------
 
     if (attendance.checkInTime) {
       return 'present';
     }
-
-    /*
-     * Attendance document exists but does
-     * not contain enough information.
-     *
-     * Do NOT infer absent.
-     */
 
     return 'not_marked';
   }
@@ -740,12 +919,6 @@ export class DashboardService {
     // --------------------------------------------------------
     // PRESENT
     // --------------------------------------------------------
-
-    /*
-     * "present" means attendance occurred.
-     *
-     * Working and late are also attendance.
-     */
 
     const present = staff.filter(
       (item) => item.status === 'present' || item.status === 'working' || item.status === 'late'
@@ -773,11 +946,6 @@ export class DashboardService {
     // ABSENT
     // --------------------------------------------------------
 
-    /*
-     * Only explicitly marked absent
-     * employees are counted.
-     */
-
     const absent = staff.filter((item) => item.status === 'absent').length;
 
     // --------------------------------------------------------
@@ -799,23 +967,14 @@ export class DashboardService {
     const notMarked = staff.filter((item) => item.status === 'not_marked').length;
 
     /*
-     * Marked attendance means an actual
-     * attendance outcome exists.
-     *
-     * not_marked is excluded.
+     * Actual attendance outcomes.
      */
-
     const marked = present + leave + absent + weeklyOff + holiday;
 
     /*
-     * Attendance percentage:
-     *
-     * Present / marked records
-     *
-     * Employees with no attendance record
-     * are excluded.
+     * Present percentage is based on
+     * marked records only.
      */
-
     const percentage = marked > 0 ? Math.round((present / marked) * 100) : 0;
 
     return {
@@ -884,6 +1043,7 @@ export class DashboardService {
 
     return {
       lat,
+
       lng,
     };
   }
@@ -964,11 +1124,12 @@ export class DashboardService {
     }).format(new Date());
 
     /*
-     * Attendance document IDs are:
+     * YYYY-MM-DD
+     *
+     * becomes
      *
      * YYYYMMDD
      */
-
     return value.replace(/-/g, '');
   }
 
@@ -1026,7 +1187,6 @@ export class DashboardService {
      *
      * Use today in India.
      */
-
     if (!requestedDate) {
       return this.resolveToday();
     }
@@ -1038,7 +1198,6 @@ export class DashboardService {
      *
      * YYYY-MM-DD
      */
-
     if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
       throw new BadRequestException('Invalid date. Expected YYYY-MM-DD');
     }
@@ -1048,20 +1207,45 @@ export class DashboardService {
     const date = new Date(Date.UTC(year, month - 1, day));
 
     /*
-     * Prevent invalid dates such as:
+     * Prevent invalid dates:
      *
      * 2026-02-31
      */
-
     if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) {
       throw new BadRequestException('Invalid dashboard date');
     }
 
     /*
-     * Firestore attendance record IDs
-     * use YYYYMMDD.
+     * YYYYMMDD
      */
-
     return [String(year).padStart(4, '0'), String(month).padStart(2, '0'), String(day).padStart(2, '0')].join('');
+  }
+
+  // ==========================================================
+  // DASHBOARD DATE -> ISO
+  // ==========================================================
+
+  private dashboardDateToIso(date: string): string {
+    if (!/^\d{8}$/.test(date)) {
+      throw new BadRequestException('Invalid dashboard date');
+    }
+
+    return [date.substring(0, 4), date.substring(4, 6), date.substring(6, 8)].join('-');
+  }
+
+  // ==========================================================
+  // ADD DAYS
+  // ==========================================================
+
+  private addDaysToIsoDate(date: string, days: number): string {
+    const parsed = new Date(`${date}T00:00:00.000Z`);
+
+    if (Number.isNaN(parsed.getTime())) {
+      throw new BadRequestException('Invalid date');
+    }
+
+    parsed.setUTCDate(parsed.getUTCDate() + days);
+
+    return parsed.toISOString().slice(0, 10);
   }
 }

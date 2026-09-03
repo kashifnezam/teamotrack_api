@@ -106,4 +106,13 @@ export class DashboardDto {
   tracking!: DashboardTrackingDto;
 
   staff!: DashboardStaffDto[];
+
+  /*
+   * HR dashboard
+   */
+  hr?: {
+    pendingLeave: any[];
+    exceptions: any[];
+    holidays: any[];
+  };
 }

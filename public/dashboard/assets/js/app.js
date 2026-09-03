@@ -1,7 +1,7 @@
 /* ==========================================================
    TeamoTrack SPA
    app.js
-========================================================== */
+=========================================================== */
 
 if (window.TeamoTrackApp) {
   console.warn('TeamoTrack app.js already loaded.');
@@ -15,18 +15,72 @@ if (window.TeamoTrackApp) {
 
     loadedCss: window.__TT_LOADED_CSS || new Set(),
 
+    initialized: false,
+
     /* ==================================================
-           INIT
-        ================================================== */
+       INIT
+    ================================================== */
 
     async init() {
       if (this.initialized) {
         return;
       }
 
+      console.log('=== TeamoTrack Auth Check ===');
+
+      const userDataRaw = localStorage.getItem('userData');
+
+      console.log('userData from localStorage:', userDataRaw);
+
+      if (!userDataRaw) {
+        console.log('User is NOT logged in.');
+        console.log('Redirecting to /login...');
+
+        if (window.location.pathname !== '/login') {
+          window.location.replace('/login');
+        }
+
+        return;
+      }
+
+      let userData;
+
+      try {
+        userData = JSON.parse(userDataRaw);
+
+        console.log('Parsed userData:', userData);
+      } catch (error) {
+        console.error('Invalid userData in localStorage:', error);
+
+        localStorage.removeItem('userData');
+
+        console.log('Redirecting to /login...');
+
+        if (window.location.pathname !== '/login') {
+          window.location.replace('/login');
+        }
+
+        return;
+      }
+
+      const role = String(userData.role || userData.roleName || '')
+        .trim()
+        .toLowerCase();
+
+      console.log('Logged-in user:', userData.fullName || userData.name);
+      console.log('User role:', role);
+
+      if (!role) {
+        console.error('User is logged in, but role is missing.');
+        console.log('userData:', userData);
+
+        return;
+      }
+
       this.initialized = true;
 
-      console.log('Initializing TeamoTrack...');
+      console.log('Authentication successful.');
+      console.log('Loading TeamoTrack shell...');
 
       try {
         await this.loadShell();
@@ -35,19 +89,19 @@ if (window.TeamoTrackApp) {
 
         await this.navigate(window.location.pathname, false);
 
-        console.log('TeamoTrack initialized');
+        console.log('TeamoTrack initialized successfully.');
       } catch (error) {
         console.error('Application initialization failed:', error);
       }
     },
 
     /* ==================================================
-           STATIC SHELL
-        ================================================== */
+       STATIC SHELL
+    ================================================== */
 
     async loadShell() {
       await Promise.all([
-        loadComponent('sidebar-container', '/dashboard/components/sidebar.html'),
+        this.loadRoleBasedSidebar(),
 
         loadComponent('header-container', '/dashboard/components/header.html'),
       ]);
@@ -70,8 +124,100 @@ if (window.TeamoTrackApp) {
     },
 
     /* ==================================================
-           NAVIGATION
-        ================================================== */
+       ROLE
+    ================================================== */
+
+    getCurrentUserRole() {
+      const userDataRaw = localStorage.getItem('userData');
+
+      if (!userDataRaw) {
+        console.log('No userData found.');
+        return '';
+      }
+
+      try {
+        const userData = JSON.parse(userDataRaw);
+
+        const role = String(userData.role || userData.roleName || '')
+          .trim()
+          .toLowerCase();
+
+        return role;
+      } catch (error) {
+        console.error('Failed to parse userData:', error);
+        return '';
+      }
+    },
+
+    /* ==================================================
+       ROLE BASED SIDEBAR
+    ================================================== */
+
+    async loadRoleBasedSidebar() {
+      const role = this.getCurrentUserRole();
+
+      let sidebarFile;
+
+      switch (role) {
+        /*
+         * HR workspace
+         */
+        case 'hr':
+          sidebarFile = '/dashboard/components/sidebar-hr.html';
+          break;
+
+        /*
+         * Executive workspace
+         */
+        case 'field_executive':
+          sidebarFile = '/dashboard/components/sidebar-executive.html';
+          break;
+
+        /*
+         * Management workspace
+         */
+        case 'root_manager':
+        case 'manager':
+          sidebarFile = '/dashboard/components/sidebar.html';
+          break;
+
+        /*
+         * Root HR currently uses the
+         * management/root workspace.
+         *
+         * This can be given a dedicated
+         * root-HR workspace later if required.
+         */
+        // case 'root_hr':
+        //   sidebarFile = '/dashboard/components/sidebar.html';
+        //   break;
+
+        /*
+         * Other root/admin roles.
+         */
+        case 'root':
+        case 'admin':
+          sidebarFile = '/dashboard/components/sidebar.html';
+          break;
+
+        /*
+         * Never silently give an unknown
+         * role the manager workspace.
+         */
+        default:
+          throw new Error(`Unsupported TeamoTrack role: ${role || 'unknown'}`);
+      }
+
+      console.log('TeamoTrack role:', role);
+
+      console.log('Loading sidebar:', sidebarFile);
+
+      await loadComponent('sidebar-container', sidebarFile);
+    },
+
+    /* ==================================================
+       NAVIGATION
+    ================================================== */
 
     bindNavigation() {
       if (this.navigationBound) {
@@ -83,10 +229,12 @@ if (window.TeamoTrackApp) {
       document.addEventListener('click', (event) => {
         const link = event.target.closest('a[href]');
 
-        if (!link) return;
+        if (!link) {
+          return;
+        }
 
         /*
-         * Only handle real SPA navigation links.
+         * External/download links.
          */
         if (link.target === '_blank' || link.hasAttribute('download')) {
           return;
@@ -114,6 +262,9 @@ if (window.TeamoTrackApp) {
 
         event.preventDefault();
 
+        /*
+         * Close mobile sidebar.
+         */
         if (window.innerWidth <= 992) {
           document.body.classList.remove('sidebar-open');
         }
@@ -127,8 +278,8 @@ if (window.TeamoTrackApp) {
     },
 
     /* ==================================================
-           NAVIGATE
-        ================================================== */
+       NAVIGATE
+    ================================================== */
 
     async navigate(path, push = true) {
       path = path.replace(/\/$/, '') || '/dashboard';
@@ -152,15 +303,14 @@ if (window.TeamoTrackApp) {
       this.currentPath = path;
 
       /* ==================================================
-               HEADER
-            ================================================== */
+         HEADER
+      ================================================== */
 
       updatePageHeader(page.title, page.description);
 
       /* ==================================================
-               SIDEBAR
-               Update immediately
-            ================================================== */
+         SIDEBAR
+      ================================================== */
 
       setActiveMenu(path);
 
@@ -169,13 +319,13 @@ if (window.TeamoTrackApp) {
       if (!content) {
         return;
       }
-
+      cleanupBootstrapModals();
       content.innerHTML = `<div class="page-loader"></div>`;
 
       try {
         /* ==============================================
-                   HTML
-                ============================================== */
+           HTML
+        ============================================== */
 
         const response = await fetch(page.html);
 
@@ -186,20 +336,20 @@ if (window.TeamoTrackApp) {
         content.innerHTML = await response.text();
 
         /* ==============================================
-                   CSS
-                ============================================== */
+           CSS
+        ============================================== */
 
         await this.loadPageCss(page.css);
 
         /* ==============================================
-                   JS
-                ============================================== */
+           JS
+        ============================================== */
 
         await this.loadPageScript(page.js);
 
         /* ==============================================
-                   INITIALIZE PAGE
-                ============================================== */
+           INITIALIZE PAGE
+        ============================================== */
 
         const initializer = window[page.init];
 
@@ -210,34 +360,30 @@ if (window.TeamoTrackApp) {
         await initializer();
 
         /* ==============================================
-                   RIPPLE
-                ============================================== */
+           RIPPLE
+        ============================================== */
 
         initializeRipple();
       } catch (error) {
         console.error('Page loading failed:', error);
 
         content.innerHTML = `
+          <div class="empty-state">
+            <h5>
+              Unable to load page
+            </h5>
 
-            <div class="empty-state">
-
-                <h5>
-                    Unable to load page
-                </h5>
-
-                <p>
-                    ${escapeHtml(error.message)}
-                </p>
-
-            </div>
-
+            <p>
+              ${escapeHtml(error.message)}
+            </p>
+          </div>
         `;
       }
     },
 
     /* ==================================================
-           PAGE SCRIPT
-        ================================================== */
+       PAGE SCRIPT
+    ================================================== */
 
     loadPageScript(script) {
       if (!script) {
@@ -258,8 +404,8 @@ if (window.TeamoTrackApp) {
     },
 
     /* ==================================================
-           PAGE CSS
-        ================================================== */
+       PAGE CSS
+    ================================================== */
 
     loadPageCss(css) {
       if (!css) {
@@ -293,33 +439,31 @@ if (window.TeamoTrackApp) {
           resolve();
         };
 
-        link.onerror = () => {
-          reject(new Error(`Unable to load ${css}`));
-        };
+        link.onerror = () => reject(new Error(`Unable to load ${css}`));
 
         document.head.appendChild(link);
       });
     },
 
     /* ==================================================
-           PAGES
-        ================================================== */
+       PAGES
+    ================================================== */
 
     getPage(path) {
       const pages = {
+        /* ==================================================
+           DASHBOARD
+        ================================================== */
+
         '/dashboard': {
-          html: '/dashboard/pages/dashboard.html',
-
-          js: '/dashboard/assets/js/dashboard.js',
-
-          css: null,
-
-          init: 'initializeDashboard',
+          ...getDashboardPage(),
 
           title: 'Dashboard',
-
-          description: "Welcome back! Here's what's happening today.",
         },
+
+        /* ==================================================
+           TASKS
+        ================================================== */
 
         '/tasks': {
           html: '/dashboard/pages/task/tasks.html',
@@ -335,6 +479,10 @@ if (window.TeamoTrackApp) {
           description: "Manage and track your team's tasks.",
         },
 
+        /* ==================================================
+           EXECUTIVES
+        ================================================== */
+
         '/executives': {
           html: '/dashboard/pages/team/executives.html',
 
@@ -348,6 +496,10 @@ if (window.TeamoTrackApp) {
 
           description: 'Manage your field executives.',
         },
+
+        /* ==================================================
+           TEAMS
+        ================================================== */
 
         '/teams': {
           html: '/dashboard/pages/team/teams.html',
@@ -363,6 +515,10 @@ if (window.TeamoTrackApp) {
           description: 'Manage your teams and members.',
         },
 
+        /* ==================================================
+           SHIFTS
+        ================================================== */
+
         '/shifts': {
           html: '/dashboard/pages/team/shifts.html',
 
@@ -376,6 +532,10 @@ if (window.TeamoTrackApp) {
 
           description: 'Manage executive shifts and schedules.',
         },
+
+        /* ==================================================
+           ATTENDANCE
+        ================================================== */
 
         '/attendance/my': {
           html: '/dashboard/pages/attendance/my-attendance.html',
@@ -419,9 +579,23 @@ if (window.TeamoTrackApp) {
           description: 'Track field executives and review their routes.',
         },
 
+        '/attendance/exceptions': {
+          html: '/dashboard/pages/attendance/exceptions.html',
+
+          js: '/dashboard/assets/js/attendance/exceptions.js',
+
+          css: '/dashboard/assets/css/attendance/exceptions.css',
+
+          init: 'initializeAttendanceExceptionsPage',
+
+          title: 'Attendance Exceptions',
+
+          description: 'Review attendance exceptions that require attention.',
+        },
+
         /* ==================================================
-                LEAVE
-                ================================================== */
+           LEAVE
+        ================================================== */
 
         '/leave': {
           html: '/dashboard/pages/leave/leave.html',
@@ -437,68 +611,157 @@ if (window.TeamoTrackApp) {
           description: 'Manage leave requests, approvals and leave policies.',
         },
 
+        '/leave/requests': {
+          html: '/dashboard/pages/leave/requests.html',
+
+          js: '/dashboard/assets/js/leave/requests.js',
+
+          css: '/dashboard/assets/css/leave/requests.css',
+
+          init: 'initializeLeaveRequestsPage',
+
+          title: 'Leave Requests',
+
+          description: 'Review and manage leave requests.',
+        },
+
+        '/leave/my': {
+          html: '/dashboard/pages/leave/my-leave.html',
+
+          js: '/dashboard/assets/js/leave/my-leave.js',
+
+          css: '/dashboard/assets/css/leave/my-leave.css',
+
+          init: 'initializeMyLeavePage',
+
+          title: 'My Leave',
+
+          description: 'View and manage your leave.',
+        },
+
+        '/leave/history': {
+          html: '/dashboard/pages/leave/history.html',
+
+          js: '/dashboard/assets/js/leave/history.js',
+
+          css: '/dashboard/assets/css/leave/history.css',
+
+          init: 'initializeLeaveHistoryPage',
+
+          title: 'Leave History',
+
+          description: 'View leave history.',
+        },
+
+        /* ==================================================
+           HOLIDAYS
+        ================================================== */
+
         '/holidays': {
           html: '/dashboard/pages/holidays/holiday.html',
+
           js: '/dashboard/assets/js/holidays/holiday.js',
+
           css: '/dashboard/assets/css/holidays/holiday.css',
+
           init: 'initializeHolidaysPage',
+
           title: 'Company Holidays',
-          description: 'Manage company holidays',
+
+          description: 'Manage company holidays.',
         },
+
+        /* ==================================================
+           PAYROLL
+        ================================================== */
 
         '/salary-structures': {
           html: '/dashboard/pages/salary-structures/salary-structure.html',
+
           js: '/dashboard/assets/js/salary-structures/salary-structure.js',
+
           css: '/dashboard/assets/css/salary-structures/salary-structure.css',
+
           init: 'initializeSalaryStructuresPage',
+
           title: 'Salary Structures',
-          description: 'Manage salary structures',
+
+          description: 'Manage salary structures.',
         },
 
         '/salary-assignments': {
           html: '/dashboard/pages/salary-assignments/salary-assignment.html',
+
           js: '/dashboard/assets/js/salary-assignments/salary-assignment.js',
+
           css: '/dashboard/assets/css/salary-assignments/salary-assignment.css',
+
           init: 'initializeSalaryAssignmentsPage',
+
           title: 'Salary Assignments',
-          description: 'Manage employee salary assignments',
+
+          description: 'Manage employee salary assignments.',
         },
 
         '/payroll-periods': {
           html: '/dashboard/pages/payroll-periods/payroll-period.html',
+
           js: '/dashboard/assets/js/payroll-periods/payroll-period.js',
+
           css: '/dashboard/assets/css/payroll-periods/payroll-period.css',
+
           init: 'initializePayrollPeriodsPage',
+
           title: 'Payroll Periods',
-          description: 'Manage payroll periods',
+
+          description: 'Manage payroll periods.',
         },
 
         '/payroll-calculations': {
           html: '/dashboard/pages/payroll-calculations/payroll-calculation.html',
+
           js: '/dashboard/assets/js/payroll-calculations/payroll-calculation.js',
+
           css: '/dashboard/assets/css/payroll-calculations/payroll-calculation.css',
+
           init: 'initializePayrollCalculationsPage',
+
           title: 'Payroll Calculation',
-          description: 'Calculate and review payroll',
+
+          description: 'Calculate and review payroll.',
         },
 
         '/payments': {
           html: '/dashboard/pages/payments/payment.html',
+
           js: '/dashboard/assets/js/payments/payment.js',
+
           css: '/dashboard/assets/css/payments/payment.css',
+
           init: 'initializePaymentsPage',
+
           title: 'Payments',
-          description: 'Manage employee salary payments',
+
+          description: 'Manage employee salary payments.',
         },
 
         '/payslips': {
           html: '/dashboard/pages/payslips/payslip.html',
+
           js: '/dashboard/assets/js/payslips/payslip.js',
+
           css: '/dashboard/assets/css/payslips/payslip.css',
+
           init: 'initializePayslipsPage',
+
           title: 'Payslips',
-          description: 'View employee salary payslips',
+
+          description: 'View employee salary payslips.',
         },
+
+        /* ==================================================
+           PROFILE
+        ================================================== */
 
         '/profile': {
           html: '/dashboard/pages/settings/profile.html',
@@ -513,6 +776,10 @@ if (window.TeamoTrackApp) {
 
           description: 'Manage your personal information.',
         },
+
+        /* ==================================================
+           SETTINGS
+        ================================================== */
 
         '/settings/company': {
           html: '/dashboard/pages/settings/company.html',
@@ -531,9 +798,9 @@ if (window.TeamoTrackApp) {
         '/settings/roles': {
           html: '/dashboard/pages/settings/roles.html',
 
-          js: '/dashboard/assets/js/settings/settings.js',
+          js: '/dashboard/assets/js/settings/roles.js',
 
-          css: '/dashboard/assets/css/settings/settings.css',
+          css: '/dashboard/assets/css/settings/roles.css',
 
           init: 'initializeRolesPage',
 
@@ -541,6 +808,10 @@ if (window.TeamoTrackApp) {
 
           description: 'Control what your team can do.',
         },
+
+        /* ==================================================
+           MANAGERS
+        ================================================== */
 
         '/managers': {
           html: '/dashboard/pages/staff/managers.html',
@@ -555,6 +826,10 @@ if (window.TeamoTrackApp) {
 
           description: 'Manage managers and your management hierarchy.',
         },
+
+        /* ==================================================
+           HR
+        ================================================== */
 
         '/hr': {
           html: '/dashboard/pages/staff/hr.html',
@@ -578,8 +853,112 @@ if (window.TeamoTrackApp) {
   window.App = App;
 
   /* ======================================================
+       DASHBOARD PAGE RESOLVER
+  ====================================================== */
+
+  function getDashboardPage() {
+    const role = App.getCurrentUserRole();
+
+    switch (role) {
+      /* ==================================================
+         HR
+      ================================================== */
+
+      case 'hr':
+        return {
+          html: '/dashboard/pages/hr/dashboard-hr.html',
+
+          js: '/dashboard/assets/js/hr/dashboard-hr.js',
+
+          css: '/dashboard/assets/css/hr/dashboard-hr.css',
+
+          init: 'initializeHrDashboard',
+
+          description: "Here's what's happening with your workforce today.",
+        };
+
+      /* ==================================================
+         FIELD EXECUTIVE
+      ================================================== */
+
+      case 'field_executive':
+        return {
+          html: '/dashboard/pages/executive/dashboard-executive.html',
+
+          js: '/dashboard/assets/js/executive/dashboard-executive.js',
+
+          css: '/dashboard/assets/css/executive/dashboard-executive.css',
+
+          init: 'initializeExecutiveDashboard',
+
+          description: "Here's your attendance and work summary.",
+        };
+
+      /* ==================================================
+         MANAGER
+      ================================================== */
+
+      case 'manager':
+      case 'root_manager':
+        return {
+          html: '/dashboard/pages/dashboard.html',
+
+          js: '/dashboard/assets/js/dashboard.js',
+
+          css: '/dashboard/assets/css/dashboard.css',
+
+          init: 'initializeDashboard',
+
+          description: "Welcome back! Here's what's happening today.",
+        };
+
+      /* ==================================================
+         ROOT HR
+      ================================================== */
+
+      // case 'root_hr':
+      //   return {
+      //     html: '/dashboard/pages/dashboard.html',
+
+      //     js: '/dashboard/assets/js/dashboard.js',
+
+      //     css: '/dashboard/assets/css/dashboard.css',
+
+      //     init: 'initializeDashboard',
+
+      //     description: "Welcome back! Here's what's happening today.",
+      //   };
+
+      /* ==================================================
+         ROOT / ADMIN
+      ================================================== */
+
+      case 'root':
+      case 'admin':
+        return {
+          html: '/dashboard/pages/dashboard.html',
+
+          js: '/dashboard/assets/js/dashboard.js',
+
+          css: '/dashboard/assets/css/dashboard.css',
+
+          init: 'initializeDashboard',
+
+          description: "Welcome back! Here's what's happening today.",
+        };
+
+      /* ==================================================
+         UNKNOWN
+      ================================================== */
+
+      default:
+        throw new Error(`Unsupported TeamoTrack role: ${role || 'unknown'}`);
+    }
+  }
+
+  /* ======================================================
        COMPONENT
-    ====================================================== */
+  ====================================================== */
 
   async function loadComponent(elementId, file) {
     const element = document.getElementById(elementId);
@@ -599,7 +978,7 @@ if (window.TeamoTrackApp) {
 
   /* ======================================================
        HEADER
-    ====================================================== */
+  ====================================================== */
 
   function updatePageHeader(title, description) {
     const titleElement = document.getElementById('pageTitle');
@@ -617,10 +996,10 @@ if (window.TeamoTrackApp) {
 
   /* ======================================================
        ACTIVE MENU
-    ====================================================== */
+  ====================================================== */
 
   function setActiveMenu(path = window.location.pathname) {
-    const currentPath = window.location.pathname.replace(/\/$/, '') || '/dashboard';
+    const currentPath = path.replace(/\/$/, '') || '/dashboard';
 
     document.querySelectorAll('.menu-item').forEach((item) => {
       item.classList.remove('active', 'open');
@@ -649,7 +1028,7 @@ if (window.TeamoTrackApp) {
 
   /* ======================================================
        RIPPLE
-    ====================================================== */
+  ====================================================== */
 
   function initializeRipple() {
     document.querySelectorAll('.ripple').forEach((button) => {
@@ -677,7 +1056,7 @@ if (window.TeamoTrackApp) {
 
   /* ======================================================
        404
-    ====================================================== */
+  ====================================================== */
 
   function load404() {
     updatePageHeader('Page Not Found', 'The requested page does not exist.');
@@ -689,32 +1068,30 @@ if (window.TeamoTrackApp) {
     }
 
     content.innerHTML = `
+      <div class="empty-state">
 
-        <div class="empty-state">
+        <h4>
+          Page not found
+        </h4>
 
-            <h4>
-                Page not found
-            </h4>
+        <p>
+          The requested page does not exist.
+        </p>
 
-            <p>
-                The requested page does not exist.
-            </p>
+        <a
+          href="/dashboard"
+          class="btn btn-primary"
+        >
+          Go to Dashboard
+        </a>
 
-            <a
-                href="/dashboard"
-                class="btn btn-primary"
-            >
-                Go to Dashboard
-            </a>
-
-        </div>
-
+      </div>
     `;
   }
 
   /* ==========================================================
        HEADER PROFILE
-    ========================================================== */
+  ========================================================== */
 
   function initializeHeaderProfile() {
     const wrapper = document.getElementById('headerProfileWrapper');
@@ -743,16 +1120,37 @@ if (window.TeamoTrackApp) {
       }
     });
 
-    logout?.addEventListener('click', async () => {
-      const result = await AppAlert.confirm('Are you sure you want to logout?');
+    logout?.addEventListener('click', async (event) => {
+      event.preventDefault();
+      event.stopPropagation();
 
-      if (!result.isConfirmed) {
-        return;
+      try {
+        const result = await AppAlert.confirm('Are you sure you want to logout?');
+
+        if (result?.isConfirmed === false) {
+          return;
+        }
+
+        if (result === false) {
+          return;
+        }
+
+        await window.logoutUser();
+
+        localStorage.removeItem('userData');
+
+        window.location.replace('/login');
+      } catch (error) {
+        console.error('Logout failed:', error);
+
+        AppAlert.error(error.message || 'Unable to logout');
       }
-
-      window.location.href = '/login';
     });
   }
+
+  /* ======================================================
+       USER PROFILE
+  ====================================================== */
 
   function initializeUserProfile() {
     const userData = JSON.parse(localStorage.getItem('userData') || '{}');
@@ -762,7 +1160,7 @@ if (window.TeamoTrackApp) {
     const role = userData.roleName || userData.role || 'Administrator';
 
     /*
-     * Generate initials
+     * Generate initials.
      */
     const initials = fullName
       .trim()
@@ -773,16 +1171,16 @@ if (window.TeamoTrackApp) {
       .toUpperCase();
 
     /*
-     * Names
+     * Names.
      */
     document.getElementById('sidebarUserName')?.replaceChildren(document.createTextNode(fullName));
 
     document.getElementById('headerUserName')?.replaceChildren(document.createTextNode(fullName));
 
-    document.getElementById('profileMenuUserRole')?.replaceChildren(document.createTextNode(fullName));
+    document.getElementById('profileMenuUserName')?.replaceChildren(document.createTextNode(fullName));
 
     /*
-     * Roles
+     * Roles.
      */
     document.getElementById('sidebarUserRole')?.replaceChildren(document.createTextNode(role));
 
@@ -791,7 +1189,7 @@ if (window.TeamoTrackApp) {
     document.getElementById('profileMenuUserRole')?.replaceChildren(document.createTextNode(role));
 
     /*
-     * Avatars
+     * Avatars.
      */
     document.getElementById('sidebarUserAvatar')?.replaceChildren(document.createTextNode(initials));
 
@@ -801,32 +1199,64 @@ if (window.TeamoTrackApp) {
   }
 
   /* ======================================================
-   PAYROLL VISIBILITY
-====================================================== */
+       PAYROLL VISIBILITY
+  ====================================================== */
 
   function initializePayrollVisibility() {
     const userData = JSON.parse(localStorage.getItem('userData') || '{}');
 
+    const myAttendance = document.querySelector('[data-menu="attendance-my"]');
     const payrollMenu = document.querySelector('[data-menu="payroll"]');
 
-    if (!payrollMenu) {
-      return;
-    }
 
-    const role = userData.role || '';
+    const role = String(userData.role || userData.roleName || '')
+      .trim()
+      .toLowerCase();
 
     /*
-     * Payroll is available only to
-     * root_manager.
+     * Payroll is available only
+     * to root_manager.
      */
-    if (role !== 'root_manager') {
+    if (payrollMenu && role !== 'root_manager') {
       payrollMenu.remove();
     }
+    if (myAttendance && role == 'root_manager') {
+      myAttendance.remove();
+    } 
+  }
+
+  function cleanupBootstrapModals() {
+    // Hide and dispose any Bootstrap modals currently in the DOM
+    document.querySelectorAll('.modal').forEach((modalElement) => {
+      const instance = bootstrap.Modal.getInstance(modalElement);
+
+      if (instance) {
+        instance.hide();
+        instance.dispose();
+      }
+    });
+
+    // Safety cleanup for any backdrop left behind
+    document.querySelectorAll('.modal-backdrop').forEach((backdrop) => {
+      backdrop.remove();
+    });
+
+    // Bootstrap adds this while a modal is open
+    document.body.classList.remove('modal-open');
+
+    // Remove Bootstrap's inline scroll-lock styles
+    document.body.style.removeProperty('padding-right');
+    document.body.style.removeProperty('overflow');
+
+    // Also clean any modal-related attributes left on body
+    document.querySelectorAll('[aria-modal="true"]').forEach((element) => {
+      element.removeAttribute('aria-modal');
+    });
   }
 
   /* ======================================================
        ESCAPE
-    ====================================================== */
+  ====================================================== */
 
   function escapeHtml(value) {
     return String(value ?? '')
@@ -839,7 +1269,7 @@ if (window.TeamoTrackApp) {
 
   /* ======================================================
        START
-    ====================================================== */
+  ====================================================== */
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => App.init(), {

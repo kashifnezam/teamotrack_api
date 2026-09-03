@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>TeamoTrack - Sign Up</title>
+
+    <link rel="stylesheet" href="assets/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="vendor/sweetalert2/sweetalert2.min.css" />
+
+    <link rel="stylesheet" href="assets/css/login.css" />
+    <link rel="stylesheet" href="assets/css/signup.css" />
+
+    <!-- Font Awesome -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css"
+      integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+  </head>
+
+  <body>
+    <main class="login-page signup-page">
+      <!-- ==========================================
+           LEFT SECTION
+      =========================================== -->
+
+      <section class="login-left">
+        <!-- Logo -->
+
+        <div class="logo">
+          <div class="logo-img"></div>
+
+          <div class="logo-text">
+            <span>Teamo</span>
+            <span class="theme-color">Track</span>
+          </div>
+        </div>
+
+        <!-- Company Overview -->
+
+        <div class="company-content">
+          <div class="company-overview">
+            <div class="fw-bold">Smart Workforce</div>
+
+            <div class="fw-bold theme-color">Management</div>
+
+            <div>Made Simple</div>
+          </div>
+
+          <p class="company-desc">
+            Track attendance, manage teams, approve leaves and tasks, and boost productivity - all in one powerful
+            platform.
+          </p>
+
+          <!-- Features -->
+
+          <div class="features">
+            <!-- Feature 1 -->
+
+            <div class="feature-item">
+              <div class="icon-box">
+                <i class="fa-solid fa-users theme-color"></i>
+              </div>
+
+              <div class="feature-content">
+                <div class="feature-title">Team Management</div>
+
+                <div class="feature-desc">Organize your teams and manage roles with ease.</div>
+              </div>
+            </div>
+
+            <!-- Feature 2 -->
+
+            <div class="feature-item">
+              <div class="icon-box">
+                <i class="fa-regular fa-calendar-check text-success"></i>
+              </div>
+
+              <div class="feature-content">
+                <div class="feature-title">Attendance Tracking</div>
+
+                <div class="feature-desc">Real-time attendance tracking from anywhere.</div>
+              </div>
+            </div>
+
+            <!-- Feature 3 -->
+
+            <div class="feature-item">
+              <div class="icon-box">
+                <i class="fa-solid fa-location-dot theme-color"></i>
+              </div>
+
+              <div class="feature-content">
+                <div class="feature-title">Live Location Tracking</div>
+
+                <div class="feature-desc">Track real-time locations and monitor field activities.</div>
+              </div>
+            </div>
+
+            <!-- Feature 4 -->
+
+            <div class="feature-item">
+              <div class="icon-box">
+                <i class="fa-solid fa-chart-simple analytics-icon"></i>
+              </div>
+
+              <div class="feature-content">
+                <div class="feature-title">Reports & Analytics</div>
+
+                <div class="feature-desc">Get insights and make data-driven decisions.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==========================================
+           RIGHT SECTION
+      =========================================== -->
+
+      <section class="login-right signup-right">
+        <!-- Dashboard Illustration -->
+
+        <div class="dash-img"></div>
+
+        <!-- Signup Card -->
+
+        <div class="login-form signup-form">
+          <h1 class="fw-bold">Create account</h1>
+
+          <p class="login-subtitle">
+            Create your
+            <span class="theme-color fw-semibold"> TeamoTrack </span>
+            account
+          </p>
+
+          <form id="signupForm">
+            <!-- ======================================
+                 FORM GRID
+            ======================================= -->
+
+            <div class="signup-fields">
+              <!-- Full Name -->
+
+              <div class="form-group">
+                <label for="name" class="form-label"> Full Name </label>
+
+                <div class="custom-input">
+                  <span class="input-icon">
+                    <i class="fa-regular fa-user"></i>
+                  </span>
+
+                  <input
+                    id="name"
+                    type="text"
+                    class="form-control"
+                    placeholder="Enter your full name"
+                    autocomplete="name"
+                    required
+                  />
+                </div>
+              </div>
+
+              <!-- Mobile -->
+
+              <div class="form-group">
+                <label for="mobile" class="form-label"> Mobile Number </label>
+
+                <div class="custom-input">
+                  <span class="input-icon">
+                    <i class="fa-solid fa-phone"></i>
+                  </span>
+
+                  <input
+                    id="mobile"
+                    type="tel"
+                    class="form-control"
+                    placeholder="Enter your mobile number"
+                    autocomplete="tel"
+                    required
+                  />
+                </div>
+              </div>
+
+              <!-- Email -->
+
+              <div class="form-group signup-full-width">
+                <label for="email" class="form-label"> Email Address </label>
+
+                <div class="custom-input">
+                  <span class="input-icon">
+                    <i class="fa-regular fa-envelope"></i>
+                  </span>
+
+                  <input
+                    id="email"
+                    type="email"
+                    class="form-control"
+                    placeholder="Enter your email address"
+                    autocomplete="email"
+                    required
+                  />
+                </div>
+              </div>
+
+              <!-- Password -->
+
+              <div class="form-group">
+                <label for="password" class="form-label"> Password </label>
+
+                <div class="custom-input">
+                  <span class="input-icon">
+                    <i class="fa-solid fa-lock"></i>
+                  </span>
+
+                  <input
+                    id="password"
+                    type="password"
+                    class="form-control"
+                    placeholder="Create a password"
+                    autocomplete="new-password"
+                    minlength="6"
+                    required
+                  />
+
+                  <button id="togglePassword" type="button" class="password-toggle" aria-label="Show password">
+                    <i class="fa-regular fa-eye-slash"></i>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Confirm Password -->
+
+              <div class="form-group">
+                <label for="confirmPassword" class="form-label"> Confirm Password </label>
+
+                <div class="custom-input">
+                  <span class="input-icon">
+                    <i class="fa-solid fa-lock"></i>
+                  </span>
+
+                  <input
+                    id="confirmPassword"
+                    type="password"
+                    class="form-control"
+                    placeholder="Confirm your password"
+                    autocomplete="new-password"
+                    minlength="6"
+                    required
+                  />
+
+                  <button id="toggleConfirmPassword" type="button" class="password-toggle" aria-label="Show password">
+                    <i class="fa-regular fa-eye-slash"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- ======================================
+                 TERMS
+            ======================================= -->
+
+            <div class="signup-terms">
+              <div class="form-check">
+                <input id="terms" class="form-check-input" type="checkbox" required />
+
+                <label for="terms" class="form-check-label">
+                  I agree to the
+                  <a href="#" class="terms-link"> Terms & Conditions </a>
+                </label>
+              </div>
+            </div>
+
+            <!-- ======================================
+                 SIGNUP BUTTON
+            ======================================= -->
+
+            <button id="signupBtn" type="submit" class="btn login-btn">Create Account</button>
+          </form>
+
+          <!-- ======================================
+               LOGIN LINK
+          ======================================= -->
+
+          <div class="signup-login-link">
+            Already have an account?
+
+            <a href="/login" class="theme-color fw-semibold"> Login </a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Scripts -->
+
+    <script src="./assets/js/bootstrap.min.js"></script>
+
+    <script src="./vendor/sweetalert2/sweetalert2.min.js"></script>
+
+    <script src="./assets/js/alert.js"></script>
+
+    <script type="module" src="./assets/js/signup.js"></script>
+  </body>
+</html>

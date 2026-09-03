@@ -1,27 +1,55 @@
+import { IsOptional, IsString } from 'class-validator';
+
 export class SettingsDto {
+  @IsOptional()
+  @IsString()
+  fullName?: string;
 
-    fullName?: string;
+  @IsOptional()
+  @IsString()
+  businessName?: string;
 
-    businessName?: string;
+  @IsOptional()
+  @IsString()
+  logo?: string;
 
-    logo?: string;
+  @IsOptional()
+  @IsString()
+  legalName?: string;
 
-    legalName?: string;
+  @IsOptional()
+  @IsString()
+  email?: string;
+  
+  @IsOptional()
+  @IsString()
+  password?: string;
 
-    email?: string;
+  @IsOptional()
+  @IsString()
+  mobile?: string;
 
-    phone?: string;
+  @IsOptional()
+  @IsString()
+  website?: string;
 
-    website?: string;
+  @IsOptional()
+  @IsString()
+  address?: string;
 
-    address?: string;
+  @IsOptional()
+  @IsString()
+  city?: string;
 
-    city?: string;
+  @IsOptional()
+  @IsString()
+  state?: string;
 
-    state?: string;
+  @IsOptional()
+  @IsString()
+  country?: string;
 
-    country?: string;
-
-    postalCode?: string;
-
+  @IsOptional()
+  @IsString()
+  postalCode?: string;
 }

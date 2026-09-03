@@ -8,11 +8,8 @@
 ========================================================== */
 
 :root {
-  /*
-     * Keep this equal to the actual desktop
-     * sidebar width used in sidebar.css.
-     */
   --tt-sidebar-width: 260px;
+  --tt-sidebar-collapsed-width: 76px;
 }
 
 /* ==========================================================
@@ -21,24 +18,26 @@
    Main content starts AFTER sidebar.
 ========================================================== */
 
+
 @media (min-width: 993px) {
   .dashboard-main {
     margin-left: var(--tt-sidebar-width);
-
     width: calc(100% - var(--tt-sidebar-width));
-
     min-width: 0;
+
+    transition:
+      margin-left 0.35s ease,
+      width 0.35s ease;
   }
 
-  .dashboard-content {
-    width: 100%;
-
-    min-width: 0;
+  body.sidebar-collapsed .dashboard-main {
+    margin-left: var(--tt-sidebar-collapsed-width);
+    width: calc(100% - var(--tt-sidebar-collapsed-width));
   }
 
+  .dashboard-content,
   .dashboard-page {
     width: 100%;
-
     min-width: 0;
   }
 }

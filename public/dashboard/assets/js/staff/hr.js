@@ -1,40 +1,81 @@
 /* ==========================================================
    TeamoTrack HR
-   HR has no hierarchy.
-   Parent: Root Manager / Manager
+   HR hierarchy:
+   Root Manager
+        ↓
+     Manager
+        ↓
+       HR
+
+   HR permissions are controlled by its parent authority.
 ========================================================== */
 
 (function () {
   'use strict';
 
+  /* ======================================================
+     STATE
+  ====================================================== */
+
   let hr = [];
+
   let managers = [];
+
   let editingId = null;
+
+  let permissionId = null;
+
   let defaultParentId = '';
+
   let shifts = [];
+
   let shiftsLoaded = false;
 
   /* ======================================================
-       HELPERS
-    ====================================================== */
+     HELPERS
+  ====================================================== */
 
   const $ = (id) => document.getElementById(id);
 
-  const value = (id) => $(id)?.value.trim() || '';
+  function value(id) {
+    return $(id)?.value?.trim() || '';
+  }
 
-  const setValue = (id, val = '') => {
-    if ($(id)) $(id).value = val;
+  function setValue(id, val = '') {
+    const element = $(id);
+
+    if (element) {
+      element.value = val ?? '';
+    }
+  }
+
+  function setText(id, val = '') {
+    const element = $(id);
+
+    if (element) {
+      element.textContent = val ?? '';
+    }
+  }
+
+  /* ======================================================
+     INIT
+  ====================================================== */
+
+  window.initializeHrPage = async function () {
+    try {
+      await Promise.all([ loadShifts(), loadHr(), loadManagers(),]);
+
+      $('hrSearch')?.addEventListener('input', renderHr);
+    } catch (error) {
+      console.error('HR page initialization failed:', error);
+
+      AppAlert.error(error.message || 'Unable to initialize HR page');
+    }
   };
 
   /* ======================================================
-       INIT
-    ====================================================== */
-
-  window.initializeHrPage = async function () {
-    await Promise.all([loadHr(), loadManagers(), loadShifts()]);
-
-    $('hrSearch')?.addEventListener('input', renderHr);
-  };
+     LOAD SHIFTS
+  ====================================================== */
 
   async function loadShifts() {
     if (shiftsLoaded) {
@@ -48,7 +89,7 @@
         return;
       }
 
-      shifts = data.shifts || data.data || [];
+      shifts = Array.isArray(data.shifts) ? data.shifts : Array.isArray(data.data) ? data.data : [];
 
       shiftsLoaded = true;
     } catch (error) {
@@ -66,9 +107,9 @@
     }
 
     select.innerHTML = `
-        <option value="">
-            Select shift
-        </option>
+      <option value="">
+        Select shift
+      </option>
     `;
 
     shifts.forEach((shift) => {
@@ -89,6 +130,7 @@
       select.value = selectedId;
     }
   }
+
   function formatShiftTime(hour, minute) {
     if (hour === undefined || hour === null) {
       return '--';
@@ -106,75 +148,122 @@
   }
 
   /* ======================================================
-       LOAD HR
-    ====================================================== */
+     LOAD HR
+  ====================================================== */
 
   async function loadHr() {
     try {
       const data = await Api.get('/hr/data');
 
-      if (!data) return;
+      if (!data) {
+        return;
+      }
 
-      hr = data.users || [];
+      hr = Array.isArray(data.users) ? data.users : [];
 
       renderHr();
     } catch (error) {
+      console.error('Unable to load HR:', error);
+
       AppAlert.error(error.message || 'Unable to load HR');
     }
   }
 
   /* ======================================================
-       LOAD MANAGERS
-    ====================================================== */
+     LOAD PARENT MANAGERS
+  ====================================================== */
+
+  /* ======================================================
+   LOAD PARENT MANAGERS
+====================================================== */
 
   async function loadManagers() {
     try {
       const data = await Api.get('/hr/parents');
 
-      if (!data) return;
+      if (!data) {
+        return;
+      }
 
-      managers = data.users || [];
-
-      defaultParentId = data.defaultParentId || '';
+      managers = Array.isArray(data.users) ? data.users : [];
 
       /*
-       * Find Root Manager if backend
-       * did not provide default parent.
+       * Backend may provide the default parent.
        */
-      if (!defaultParentId) {
-        const root = managers.find((manager) =>
-          ['root_manager', 'rootmanager'].includes(String(manager.role || '').toLowerCase())
-        );
+      defaultParentId = data.defaultParentId || data.defaultParent || '';
 
-        defaultParentId = root?.uid || root?.id || '';
+      /*
+       * Normalize manager IDs.
+       */
+      managers = managers
+        .map((manager) => ({
+          ...manager,
+          id: manager.id || manager.uid || '',
+        }))
+        .filter((manager) => manager.id);
+
+      /*
+       * --------------------------------------------------
+       * ROOT MANAGER
+       * --------------------------------------------------
+       *
+       * Root Manager must always be available as a
+       * possible HR parent.
+       *
+       * If backend already returned it, use it.
+       */
+
+      const rootManager = managers.find((manager) =>
+        ['root_manager', 'rootmanager', 'root'].includes(String(manager.role || '').toLowerCase())
+      );
+
+      /*
+       * If backend supplied a root manager,
+       * use it as the default when no default
+       * parent was explicitly supplied.
+       */
+      if (!defaultParentId && rootManager) {
+        defaultParentId = rootManager.id;
       }
 
       /*
-       * Single-parent fallback.
+       * If there is only one possible parent,
+       * use it automatically.
        */
       if (!defaultParentId && managers.length === 1) {
-        defaultParentId = managers[0].uid || managers[0].id || '';
+        defaultParentId = managers[0].id;
       }
 
+      /*
+       * Render the options immediately so that
+       * Add HR has a selected parent.
+       */
+      console.log(defaultParentId)
       renderParentOptions(defaultParentId);
     } catch (error) {
+      console.error('Unable to load HR parents:', error);
+
       AppAlert.error(error.message || 'Unable to load managers');
     }
   }
 
   /* ======================================================
-       RENDER HR
-    ====================================================== */
+     RENDER HR
+  ====================================================== */
 
   function renderHr() {
     const tbody = $('hrTable');
 
-    if (!tbody) return;
+    if (!tbody) {
+      return;
+    }
 
     const search = value('hrSearch').toLowerCase();
 
     const list = hr.filter((item) => {
-      if (!search) return true;
+      if (!search) {
+        return true;
+      }
 
       return [item.fullName, item.email, item.mobile, item.parentName].some((v) =>
         String(v || '')
@@ -183,17 +272,19 @@
       );
     });
 
-    $('hrCount').textContent = list.length;
+    setText('hrCount', list.length);
 
     if (!list.length) {
       tbody.innerHTML = `
-                <tr>
-                    <td colspan="5"
-                        class="empty-state">
-                        No HR found
-                    </td>
-                </tr>
-            `;
+        <tr>
+          <td
+            colspan="6"
+            class="empty-state"
+          >
+            No HR found
+          </td>
+        </tr>
+      `;
 
       return;
     }
@@ -202,180 +293,258 @@
       .map((item) => {
         const name = item.fullName || 'Unnamed';
 
-        const active = item.isActive;
+        const active = item.isActive !== false;
 
         return `
-                    <tr>
+          <tr>
 
-                        <td>
-                            <div class="hr-user">
+            <!-- USER -->
 
-                                <div class="hr-avatar">
-                                    ${escapeHtml(getInitials(name))}
-                                </div>
+            <td>
+              <div class="hr-user">
 
-                                <div>
+                <div class="hr-avatar">
+                  ${escapeHtml(getInitials(name))}
+                </div>
 
-                                    <div class="hr-name">
-                                        ${escapeHtml(name)}
-                                    </div>
+                <div>
 
-                                    <div class="hr-email">
-                                        ${escapeHtml(item.email || '')}
-                                    </div>
+                  <div class="hr-name">
+                    ${escapeHtml(name)}
+                  </div>
 
-                                </div>
+                  <div class="hr-email">
+                    ${escapeHtml(item.email || '')}
+                  </div>
 
-                            </div>
-                        </td>
+                </div>
 
-
-                        <td>
-                            <span class="hr-parent">
-                                ${escapeHtml(item.parentName || '—')}
-                            </span>
-                        </td>
-
-                        <td>
-                            <span class="hr-parent">
-                                ${escapeHtml(getShiftName(item.shiftId))}
-                            </span>
-                        </td>
+              </div>
+            </td>
 
 
-                        <td>
-                            ${escapeHtml(item.mobile || '--')}
-                        </td>
+            <!-- DIRECT PARENT -->
+
+            <td>
+              <span class="hr-parent">
+                ${escapeHtml(item.parentName || '—')}
+              </span>
+            </td>
 
 
-                        <td>
+            <!-- SHIFT -->
 
-                            <span class="hr-status ${active ? 'active' : 'inactive'}">
-
-                                <i class="bi ${active ? 'bi-check-circle' : 'bi-pause-circle'}"></i>
-
-                                ${active ? 'Active' : 'Inactive'}
-
-                            </span>
-
-                        </td>
+            <td>
+              <span class="hr-parent">
+                ${escapeHtml(getShiftName(item.shiftId))}
+              </span>
+            </td>
 
 
-                        <td>
+            <!-- MOBILE -->
 
-                            <div class="hr-actions">
+            <td>
+              ${escapeHtml(item.mobile || '--')}
+            </td>
 
-                                <button
-                                    type="button"
-                                    class="hr-action"
-                                    title="Edit HR"
-                                    onclick="editHr('${item.id}')"
-                                >
-                                    <i class="bi bi-pencil"></i>
-                                </button>
 
-                            </div>
+            <!-- STATUS -->
 
-                        </td>
+            <td>
 
-                    </tr>
-                `;
+              <span
+                class="hr-status ${active ? 'active' : 'inactive'}"
+              >
+
+                <i
+                  class="bi ${active ? 'bi-check-circle' : 'bi-pause-circle'}"
+                ></i>
+
+                ${active ? 'Active' : 'Inactive'}
+
+              </span>
+
+            </td>
+
+
+            <!-- ACTIONS -->
+
+            <td>
+
+              <div class="hr-actions">
+
+                <!-- EDIT -->
+
+                <button
+                  type="button"
+                  class="hr-action"
+                  title="Edit HR"
+                  onclick="editHr('${escapeHtml(item.id)}')"
+                >
+                  <i class="bi bi-pencil"></i>
+                </button>
+
+
+                <!-- PERMISSIONS -->
+
+                <button
+                  type="button"
+                  class="hr-action"
+                  title="Permissions"
+                  onclick="openHrPermissions('${escapeHtml(item.id)}')"
+                >
+                  <i class="bi bi-shield-lock"></i>
+                </button>
+
+              </div>
+
+            </td>
+
+          </tr>
+        `;
       })
       .join('');
   }
 
   /* ======================================================
-       OPEN MODAL
-    ====================================================== */
+     OPEN HR MODAL
+  ====================================================== */
 
   async function openHrModal(id = null) {
     editingId = id;
 
     const item = hr.find((x) => x.id === id);
+
     const edit = !!item;
 
     await loadShifts();
 
     renderShiftOptions(item?.shiftId || '');
 
-    text('hrModalTitle', edit ? 'Edit HR' : 'Add HR');
+    setText('hrModalTitle', edit ? 'Edit HR' : 'Add HR');
 
-    text('saveHrBtn', edit ? 'Update HR' : 'Save HR');
+    setText('saveHrBtn', edit ? 'Update HR' : 'Save HR');
 
-    setValue('hrName', item?.fullName);
+    setValue('hrName', item?.fullName || '');
 
-    setValue('hrEmail', item?.email);
+    setValue('hrEmail', item?.email || '');
 
-    setValue('hrMobile', item?.mobile);
+    setValue('hrMobile', item?.mobile || '');
 
-    setValue('hrPassword');
+    setValue('hrPassword', '');
 
-    $('hrActive').checked = item?.isActive !== false;
+    const active = $('hrActive');
 
-    $('hrEmail').disabled = edit;
+    if (active) {
+      active.checked = item?.isActive !== false;
+    }
 
-    $('hrPasswordHint').textContent = edit ? 'Leave blank to keep current password.' : 'Required when creating.';
+    const email = $('hrEmail');
+
+    if (email) {
+      email.disabled = edit;
+    }
+
+    const passwordHint = $('hrPasswordHint');
+
+    if (passwordHint) {
+      passwordHint.textContent = edit ? 'Leave blank to keep current password.' : 'Required when creating.';
+    }
 
     const parent = $('hrParentId');
 
     if (edit) {
       /*
-       * Parent cannot be changed during edit.
-       * Keep the existing option and select it.
+       * Parent cannot be changed
+       * while editing HR.
        */
-      parent.value = item?.parentId || item?.parentUid || '';
 
-      parent.disabled = true;
+      if (parent) {
+        parent.innerHTML = `
+          <option
+            value="${escapeHtml(item?.parentId || item?.parentUid || '')}"
+          >
+            ${escapeHtml(item?.parentName || 'Root')}
+          </option>
+        `;
+
+        parent.value = item?.parentId || item?.parentUid || '';
+
+        parent.disabled = true;
+      }
     } else {
       /*
-       * Populate only when creating.
+       * Parent is selectable
+       * during creation.
        */
+
       renderParentOptions(defaultParentId);
 
-      parent.disabled = false;
+      if (parent) {
+        parent.disabled = false;
+      }
     }
 
     bootstrap.Modal.getOrCreateInstance($('hrModal')).show();
   }
 
   /* ======================================================
-       PARENT OPTIONS
-    ====================================================== */
+     PARENT OPTIONS
+  ====================================================== */
 
   function renderParentOptions(selectedId = '') {
     const select = $('hrParentId');
 
-    if (!select) return;
+    if (!select) {
+      return;
+    }
 
     select.innerHTML = `
-        <option value="">
-            Select manager
-        </option>
+      <option value="">
+        Select manager
+      </option>
     `;
-
+      console.log(managers)
     managers.forEach((manager) => {
       const id = manager.uid || manager.id || '';
 
+      if (!id) {
+        return;
+      }
+
       const root = ['root_manager', 'rootmanager'].includes(String(manager.role || '').toLowerCase());
 
-      select.insertAdjacentHTML(
-        'beforeend',
-        `
-                <option
-                    value="${escapeHtml(id)}"
-                    ${id == selectedId ? 'selected' : ''}
-                >
-                    ${escapeHtml(manager.fullName || manager.name || 'Unnamed')}
-                    (${root ? 'Root Manager' : 'Manager'})
-                </option>
-            `
-      );
+      const option = document.createElement('option');
+
+      option.value = id;
+
+      option.textContent = `${manager.fullName || manager.name || 'Unnamed'} (${root ? 'Root Manager' : 'Manager'})`;
+
+      option.selected = String(id) === String(selectedId);
+
+      select.appendChild(option);
     });
+
+    if (selectedId) {
+      select.value = selectedId;
+    }
   }
 
   /* ======================================================
-       SAVE HR
-    ====================================================== */
+     EDIT
+  ====================================================== */
+
+  function editHr(id) {
+    if (!hr.some((item) => item.id === id)) {
+      return;
+    }
+
+    openHrModal(id);
+  }
+
+  /* ======================================================
+     SAVE HR
+  ====================================================== */
 
   async function saveHr() {
     const name = value('hrName');
@@ -390,9 +559,15 @@
 
     const shiftId = value('hrShiftId');
 
-    const isActive = $('hrActive').checked;
+    const isActive = $('hrActive')?.checked !== false;
 
     const button = $('saveHrBtn');
+
+    /*
+     * --------------------------------------------------
+     * VALIDATION
+     * --------------------------------------------------
+     */
 
     if (!name || !email) {
       AppAlert.warning('Name and email are required');
@@ -419,7 +594,9 @@
     }
 
     try {
-      button.disabled = true;
+      if (button) {
+        button.disabled = true;
+      }
 
       AppAlert.loading(editingId ? 'Updating HR...' : 'Creating HR...');
 
@@ -428,7 +605,7 @@
         email,
         mobile,
         isActive,
-        shiftId
+        shiftId,
       };
 
       if (!editingId) {
@@ -441,7 +618,9 @@
 
       const data = editingId ? await Api.patch(`/hr/${editingId}`, body) : await Api.post('/hr', body);
 
-      if (!data) return;
+      if (!data) {
+        return;
+      }
 
       AppAlert.close();
 
@@ -451,33 +630,43 @@
 
       await loadHr();
     } catch (error) {
+      console.error('Unable to save HR:', error);
+
       AppAlert.close();
 
       AppAlert.error(error.message || 'Unable to save HR');
     } finally {
-      button.disabled = false;
+      if (button) {
+        button.disabled = false;
+      }
     }
   }
 
   /* ======================================================
-       DELETE
-    ====================================================== */
+     DELETE
+  ====================================================== */
 
   async function deleteHr(id) {
     const item = hr.find((x) => x.id === id);
 
-    if (!item) return;
+    if (!item) {
+      return;
+    }
 
     const result = await AppAlert.confirm(`Delete "${item.fullName}"?`);
 
-    if (!result.isConfirmed) return;
+    if (!result.isConfirmed) {
+      return;
+    }
 
     try {
       AppAlert.loading('Deleting HR...');
 
       const data = await Api.delete(`/hr/${id}`);
 
-      if (!data) return;
+      if (!data) {
+        return;
+      }
 
       AppAlert.close();
 
@@ -485,6 +674,8 @@
 
       await loadHr();
     } catch (error) {
+      console.error('Unable to delete HR:', error);
+
       AppAlert.close();
 
       AppAlert.error(error.message || 'Unable to delete HR');
@@ -492,31 +683,202 @@
   }
 
   /* ======================================================
-       HELPERS
-    ====================================================== */
+     PERMISSIONS
+  ====================================================== */
+
+  async function openHrPermissions(id) {
+    const item = hr.find((entry) => entry.id === id);
+
+    if (!item) {
+      return;
+    }
+
+    permissionId = id;
+
+    try {
+      AppAlert.loading('Loading permissions...');
+
+      const data = await Api.get(`/hr/${id}/permissions`);
+
+      if (!data) {
+        return;
+      }
+
+      AppAlert.close();
+
+      renderPermissions(data.permissions || {});
+
+      bootstrap.Modal.getOrCreateInstance($('permissionModal')).show();
+    } catch (error) {
+      console.error('Unable to load HR permissions:', error);
+
+      AppAlert.close();
+
+      AppAlert.error(error.message || 'Unable to load permissions');
+    }
+  }
+
+  /* ======================================================
+     RENDER PERMISSIONS
+  ====================================================== */
+
+  function renderPermissions(permissions) {
+    const container = $('permissionList');
+
+    if (!container) {
+      return;
+    }
+
+    const groups = {
+      manager: 'Managers',
+
+      hr: 'HR',
+
+      field_executive: 'Executives',
+
+      team: 'Teams',
+
+      leave: 'Leave Approval',
+
+      attendance: 'Attendance',
+
+      task: 'Tasks',
+
+      tracking: 'Live Tracking',
+    };
+
+    container.innerHTML = Object.entries(groups)
+      .map(([group, title]) => {
+        const keys = Object.keys(permissions).filter((key) => key.startsWith(`${group}.`));
+
+        if (!keys.length) {
+          return '';
+        }
+
+        return `
+              <div class="permission-group">
+
+                <div
+                  class="permission-group-title"
+                >
+                  ${escapeHtml(title)}
+                </div>
+
+                ${keys
+                  .map((key) => {
+                    const action = key.split('.').slice(1).join(' ');
+
+                    const checked = permissions[key] === true;
+
+                    return `
+                      <div
+                        class="permission-item"
+                      >
+
+                        <span
+                          class="permission-label"
+                        >
+                          ${escapeHtml(formatPermission(action))}
+                        </span>
+
+                        <div
+                          class="form-check form-switch"
+                        >
+
+                          <input
+                            class="form-check-input permission-toggle"
+                            type="checkbox"
+                            data-key="${escapeHtml(key)}"
+                            ${checked ? 'checked' : ''}
+                          >
+
+                        </div>
+
+                      </div>
+                    `;
+                  })
+                  .join('')}
+
+              </div>
+            `;
+      })
+      .join('');
+  }
+
+  /* ======================================================
+     SAVE PERMISSIONS
+  ====================================================== */
+
+  async function saveHrPermissions() {
+    if (!permissionId) {
+      return;
+    }
+
+    const permissions = {};
+
+    document.querySelectorAll('#permissionModal .permission-toggle').forEach((input) => {
+      const key = input.dataset.key;
+
+      if (!key) {
+        return;
+      }
+
+      permissions[key] = input.checked;
+    });
+
+    const button = $('savePermissionBtn');
+
+    try {
+      if (button) {
+        button.disabled = true;
+      }
+
+      AppAlert.loading('Saving permissions...');
+
+      const data = await Api.patch(`/hr/${permissionId}/permissions`, permissions);
+
+      if (!data) {
+        return;
+      }
+
+      AppAlert.close();
+
+      AppAlert.success('Permissions updated');
+
+      bootstrap.Modal.getInstance($('permissionModal'))?.hide();
+    } catch (error) {
+      console.error('Unable to save HR permissions:', error);
+
+      AppAlert.close();
+
+      AppAlert.error(error.message || 'Unable to save permissions');
+    } finally {
+      if (button) {
+        button.disabled = false;
+      }
+    }
+  }
+
+  /* ======================================================
+     HELPERS
+  ====================================================== */
 
   function getInitials(name) {
-    return name
+    return String(name || '')
+      .trim()
       .split(/\s+/)
       .filter(Boolean)
       .slice(0, 2)
-      .map((x) => x[0])
+      .map((word) => word.charAt(0))
       .join('')
       .toUpperCase();
   }
 
-  function escapeHtml(value) {
-    return String(value ?? '')
-      .replaceAll('&', '&amp;')
-      .replaceAll('<', '&lt;')
-      .replaceAll('>', '&gt;')
-      .replaceAll('"', '&quot;')
-      .replaceAll("'", '&#039;');
+  function formatPermission(value) {
+    return String(value || '')
+      .replaceAll('_', ' ')
+      .replace(/\b\w/g, (char) => char.toUpperCase());
   }
-
-  const text = (id, val = '') => {
-    if ($(id)) $(id).textContent = val;
-  };
 
   function getShiftName(shiftId) {
     if (!shiftId) {
@@ -528,12 +890,28 @@
     return shift?.name || 'Unknown shift';
   }
 
+  function escapeHtml(value) {
+    return String(value ?? '')
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#039;');
+  }
+
   /* ======================================================
-       GLOBAL
-    ====================================================== */
+     GLOBAL
+  ====================================================== */
 
   window.openHrModal = openHrModal;
-  window.editHr = openHrModal;
+
+  window.editHr = editHr;
+
   window.saveHr = saveHr;
+
   window.deleteHr = deleteHr;
+
+  window.openHrPermissions = openHrPermissions;
+
+  window.saveHrPermissions = saveHrPermissions;
 })();

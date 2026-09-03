@@ -14,4 +14,9 @@ export class WebController {
   login(@Res() res: Response) {
     return res.sendFile(join(process.cwd(), 'public', 'login.html'));
   }
+  
+  @Get('signup')
+  signup(@Res() res: Response) {
+    return res.sendFile(join(process.cwd(), 'public', 'signup.html'));
+  }
 }

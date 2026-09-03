@@ -25,89 +25,77 @@ import { PayrollPeriodModule } from './payroll-period/payroll-period.module';
 import { PayrollCalculationModule } from './payroll-calculation/payroll-calculation.module';
 import { PaymentModule } from './payment/payment.module';
 import { PayslipModule } from './payslip/payslip.module';
-import {ScheduleModule} from '@nestjs/schedule';
+import { ScheduleModule } from '@nestjs/schedule';
+import { HrDashboardModule } from './hr-dashboard/hr-dashboard.module';
 
 @Module({
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: '.env',
+    }),
 
-    imports: [
+    // ==================================================
+    // STATIC FILES
+    // ==================================================
 
-        ConfigModule.forRoot({
-            isGlobal: true,
-            envFilePath: '.env',
-        }),
+    ServeStaticModule.forRoot({
+      rootPath: join(process.cwd(), 'public'),
 
+      serveRoot: '/',
 
-        // ==================================================
-        // STATIC FILES
-        // ==================================================
+      exclude: ['/api'],
+    }),
 
-        ServeStaticModule.forRoot({
+    // ==================================================
+    // MODULES
+    // ==================================================
 
-            rootPath: join(
-                process.cwd(),
-                'public',
-            ),
+    FirebaseModule,
 
-            serveRoot: '/',
+    AuthModule,
 
-            exclude: [
-                '/api/(.*)',
-            ],
+    WebModule,
 
-        }),
+    DashboardModule,
 
+    ExecutivesModule,
 
-        // ==================================================
-        // MODULES
-        // ==================================================
+    TeamsModule,
 
-        FirebaseModule,
+    ShiftsModule,
 
-        AuthModule,
+    TasksModule,
 
-        WebModule,
+    ScheduleModule.forRoot(),
 
-        DashboardModule,
+    AttendanceModule,
 
-        ExecutivesModule,
+    LiveTrackingModule,
 
-        TeamsModule,
+    SettingsModule,
 
-        ShiftsModule,
+    StaffModule,
 
-        TasksModule,
+    LeaveModule,
 
-        ScheduleModule.forRoot(),
+    HolidayModule,
 
-        AttendanceModule,
+    SalaryStructureModule,
 
-        LiveTrackingModule,
+    SalaryAssignmentModule,
 
-        SettingsModule,
+    PayrollPeriodModule,
 
-        StaffModule,
+    PayrollCalculationModule,
 
-        LeaveModule,
+    PaymentModule,
 
-        HolidayModule,
+    PayslipModule,
 
-        SalaryStructureModule,
+    HrDashboardModule,
+  ],
 
-        SalaryAssignmentModule,
-
-        PayrollPeriodModule,
-
-        PayrollCalculationModule,
-
-        PaymentModule,
-
-        PayslipModule,
-
-    ],
-
-    controllers: [
-        AppController,
-    ],
-
+  controllers: [AppController],
 })
-export class AppModule { }
+export class AppModule {}

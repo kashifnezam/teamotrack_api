@@ -4,310 +4,181 @@
 // Login Page
 // ==========================================================
 
-import {
-    loginUser
-} from "./auth.js";
+import { loginUser } from './auth.js';
 
-
-console.log(
-    "Login.js loaded"
-);
-
+console.log('TeamoTrack Login.js loaded');
 
 // ==========================================================
-// Login Initialization
+// INITIALIZE LOGIN
 // ==========================================================
 
 function initializeLogin() {
+  console.log('Login page initialized');
 
-    console.log(
-        "Login page initialized"
-    );
+  // ======================================================
+  // GET ELEMENTS
+  // ======================================================
 
+  const form = document.getElementById('loginForm');
+  const email = document.getElementById('email');
+  const password = document.getElementById('password');
+  const loginBtn = document.getElementById('loginBtn');
+  const togglePassword = document.getElementById('togglePassword');
 
-    const form =
-        document.getElementById(
-            "loginForm"
-        );
+  // ======================================================
+  // VALIDATE ELEMENTS
+  // ======================================================
 
+  if (!form || !email || !password || !loginBtn) {
+    console.error('Login form elements not found.', {
+      form,
+      email,
+      password,
+      loginBtn,
+    });
 
-    const email =
-        document.getElementById(
-            "email"
-        );
+    return;
+  }
 
+  console.log('Login form found');
 
-    const password =
-        document.getElementById(
-            "password"
-        );
+  // ======================================================
+  // LOGIN ALERT
+  // ======================================================
 
+  const loginAlert = sessionStorage.getItem('loginAlert');
 
-    const loginBtn =
-        document.getElementById(
-            "loginBtn"
-        );
+  if (loginAlert) {
+    AppAlert.warning(loginAlert, 'Login Required');
 
+    sessionStorage.removeItem('loginAlert');
+  }
 
-    // ======================================================
-    // Validate Elements
-    // ======================================================
+  // ======================================================
+  // LOGIN SUBMIT
+  // ======================================================
 
-    if (
-        !form ||
-        !email ||
-        !password ||
-        !loginBtn
-    ) {
+  form.addEventListener('submit', async function (e) {
+    e.preventDefault();
 
-        console.error(
-            "Login form elements not found.",
-            {
-                form,
-                email,
-                password,
-                loginBtn
-            }
-        );
+    console.log('Login form submitted');
 
-        return;
+    // --------------------------------------------------
+    // Disable button
+    // --------------------------------------------------
 
+    loginBtn.disabled = true;
+
+    loginBtn.innerHTML = `
+            <span
+                class="spinner-border spinner-border-sm me-2"
+                aria-hidden="true">
+            </span>
+            Signing in...
+        `;
+
+    try {
+      // ==================================================
+      // FIREBASE AUTHENTICATION
+      // ==================================================
+
+      const result = await loginUser(email.value.trim(), password.value);
+
+      console.log('Firebase login successful');
+
+      // ==================================================
+      // AUTHORIZE USER THROUGH NESTJS
+      // ==================================================
+
+      const response = await fetch('/auth/me', {
+        method: 'GET',
+
+        headers: {
+          Authorization: `Bearer ${result.token}`,
+        },
+      });
+
+      // ==================================================
+      // PARSE RESPONSE
+      // ==================================================
+
+      const userData = await response.json();
+
+      // ==================================================
+      // CHECK AUTHORIZATION
+      // ==================================================
+
+      if (!response.ok) {
+        throw new Error(userData?.message || 'You are not authorized to access this dashboard.');
+      }
+
+      // ==================================================
+      // STORE APPLICATION USER DATA
+      // ==================================================
+
+      localStorage.setItem('userData', JSON.stringify(userData));
+
+      console.log('Application authorization successful');
+
+      // ==================================================
+      // SUCCESS ALERT
+      // ==================================================
+
+      await AppAlert.success('Login successful. Welcome back!', 'Welcome!');
+
+      // ==================================================
+      // REDIRECT
+      // ==================================================
+
+      window.location.href = '/dashboard';
+    } catch (error) {
+      console.error('LOGIN ERROR:', error);
+
+      await AppAlert.error(error?.message || 'Unable to login. Please try again.', 'Login Failed');
+    } finally {
+      // ==================================================
+      // RESTORE BUTTON
+      // ==================================================
+
+      loginBtn.disabled = false;
+
+      loginBtn.innerHTML = 'Login';
     }
+  });
 
+  // ======================================================
+  // PASSWORD VISIBILITY
+  // ======================================================
 
-    console.log(
-        "Login form found"
-    );
+  if (togglePassword) {
+    togglePassword.addEventListener('click', function () {
+      const icon = togglePassword.querySelector('i');
 
+      if (password.type === 'password') {
+        password.type = 'text';
 
-    // ======================================================
-    // Login Alert
-    // ======================================================
+        icon.classList.remove('fa-eye-slash');
 
-    const loginAlert =
-        sessionStorage.getItem(
-            "loginAlert"
-        );
+        icon.classList.add('fa-eye');
 
+        togglePassword.setAttribute('aria-label', 'Hide password');
+      } else {
+        password.type = 'password';
 
-    if (loginAlert) {
+        icon.classList.remove('fa-eye');
 
-        AppAlert.warning(
-            loginAlert,
-            "Login Required"
-        );
+        icon.classList.add('fa-eye-slash');
 
+        togglePassword.setAttribute('aria-label', 'Show password');
+      }
+    });
+  }
 
-        sessionStorage.removeItem(
-            "loginAlert"
-        );
-
-    }
-
-
-    // ======================================================
-    // Login Submit
-    // ======================================================
-
-    form.addEventListener(
-        "submit",
-        async function (e) {
-
-            e.preventDefault();
-
-
-            console.log(
-                "Login form submitted"
-            );
-
-
-            loginBtn.disabled = true;
-
-
-            loginBtn.innerHTML = `
-                <span
-                    class="spinner-border spinner-border-sm me-2"
-                    aria-hidden="true"
-                ></span>
-                Signing in...
-            `;
-
-
-            try {
-
-                /*
-                 * Firebase Authentication
-                 */
-                const result =
-                    await loginUser(
-                        email.value.trim(),
-                        password.value
-                    );
-
-
-                console.log(
-                    "Firebase login successful"
-                );
-
-
-                /*
-                 * ==================================================
-                 * Ask NestJS to authorize this Firebase user.
-                 * ==================================================
-                 */
-
-                const response =
-                    await fetch(
-                        "/auth/me",
-                        {
-                            method: "GET",
-
-                            headers: {
-                                "Authorization":
-                                    `Bearer ${result.token}`
-                            }
-                        }
-                    );
-
-
-                const userData =
-                    await response.json();
-
-
-                if (!response.ok) {
-
-                    throw new Error(
-                        userData?.message ||
-                        "You are not authorized to access this dashboard."
-                    );
-
-                }
-
-
-                /*
-                 * Store application user data.
-                 *
-                 * This is NOT the authentication token.
-                 */
-                localStorage.setItem(
-                    "userData",
-                    JSON.stringify(
-                        userData
-                    )
-                );
-
-
-                console.log(
-                    "Application authorization successful"
-                );
-
-
-                await AppAlert.success(
-                    "Login successful. Welcome back!",
-                    "Welcome!"
-                );
-
-
-                window.location.href =
-                    "/dashboard";
-
-
-            } catch (error) {
-
-                console.error(
-                    "LOGIN ERROR:",
-                    error
-                );
-
-
-                await AppAlert.error(
-                    error?.message ||
-                    "Unable to login. Please try again.",
-                    "Login Failed"
-                );
-
-            } finally {
-
-                loginBtn.disabled =
-                    false;
-
-
-                loginBtn.innerHTML =
-                    "Login";
-
-            }
-
-        }
-    );
-
-
-    // ======================================================
-    // Password Visibility
-    // ======================================================
-
-    const togglePassword =
-        document.getElementById(
-            "togglePassword"
-        );
-
-
-    if (togglePassword) {
-
-        togglePassword.addEventListener(
-            "click",
-            () => {
-
-                const icon =
-                    togglePassword
-                        .querySelector("i");
-
-
-                if (
-                    password.type ===
-                    "password"
-                ) {
-
-                    password.type =
-                        "text";
-
-
-                    icon.classList.remove(
-                        "bi-eye-slash"
-                    );
-
-
-                    icon.classList.add(
-                        "bi-eye"
-                    );
-
-                } else {
-
-                    password.type =
-                        "password";
-
-
-                    icon.classList.remove(
-                        "bi-eye"
-                    );
-
-
-                    icon.classList.add(
-                        "bi-eye-slash"
-                    );
-
-                }
-
-            }
-        );
-
-    }
-
-
-    console.log(
-        "Login initialization completed"
-    );
-
+  console.log('Login initialization completed');
 }
 
+// ==========================================================
+// START
+// ==========================================================
 
 initializeLogin();

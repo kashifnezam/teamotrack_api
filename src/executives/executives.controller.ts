@@ -1,14 +1,4 @@
-import {
-    Body,
-    Controller,
-    Delete,
-    Get,
-    Param,
-    Patch,
-    Post,
-    Res,
-    UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Res, UseGuards } from '@nestjs/common';
 
 import type { Response } from 'express';
 
@@ -19,78 +9,46 @@ import { CurrentUser } from '../auth/current-user.decorator';
 
 @Controller('executives')
 export class ExecutivesController {
+  constructor(private readonly service: ExecutivesService) {}
 
-    constructor(
-        private readonly service: ExecutivesService,
-    ) { }
+  // SPA shell
+  @Get()
+  page(@Res() res: Response) {
+    return res.sendFile('shell.html', {
+      root: './public/dashboard',
+    });
+  }
 
+  // API
+  @Get('data')
+  @UseGuards(FirebaseAuthGuard)
+  get(@CurrentUser() user: any) {
+    return this.service.getAll(user.uid);
+  }
 
-    // SPA shell
-    @Get()
-    page(@Res() res: Response) {
+  @Post()
+  @UseGuards(FirebaseAuthGuard)
+  create(@CurrentUser() user: any, @Body() dto: ExecutiveDto) {
+    return this.service.create(user.uid, dto);
+  }
 
-        return res.sendFile(
-            'shell.html',
-            {
-                root: './public/dashboard',
-            },
-        );
-    }
+  @Patch(':id')
+  @UseGuards(FirebaseAuthGuard)
+  update(@CurrentUser() user: any, @Param('id') id: string, @Body() dto: ExecutiveDto) {
+    return this.service.update(user.uid, id, dto);
+  }
 
+  // @Delete(':id')
+  // @UseGuards(FirebaseAuthGuard)
+  // remove(
+  //     @CurrentUser() user: any,
+  //     @Param('id') id: string,
+  // ) {
 
-    // API
-    @Get('data')
-    @UseGuards(FirebaseAuthGuard)
-    get(
-        @CurrentUser() user: any,
-    ) {
+  //     return this.service.remove(
+  //         user.uid,
+  //         id,
+  //     );
 
-        return this.service.getAll(
-            user.uid,
-        );
-    }
-
-
-    @Post()
-    @UseGuards(FirebaseAuthGuard)
-    create(
-        @CurrentUser() user: any,
-        @Body() dto: ExecutiveDto,
-    ) {
-
-        return this.service.create(
-            user.uid,
-            dto,
-        );
-    }
-
-
-    @Patch(':id')
-    @UseGuards(FirebaseAuthGuard)
-    update(
-        @CurrentUser() user: any,
-        @Param('id') id: string,
-        @Body() dto: ExecutiveDto,
-    ) {
-
-        return this.service.update(
-            user.uid,
-            id,
-            dto,
-        );
-    }
-
-    // @Delete(':id')
-    // @UseGuards(FirebaseAuthGuard)
-    // remove(
-    //     @CurrentUser() user: any,
-    //     @Param('id') id: string,
-    // ) {
-
-    //     return this.service.remove(
-    //         user.uid,
-    //         id,
-    //     );
-
-    // }
+  // }
 }

@@ -1,232 +1,235 @@
 <section class="attendance-page p-3">
   <div class="container-fluid">
-    <!-- ==================================================
-         PAGE HEADER
-    ================================================== -->
-
-    <div class="attendance-page-header mb-4">
+    <!-- PAGE HEADER -->
+    <!-- <div class="attendance-page-header">
       <div>
-        <div class="attendance-eyebrow">TEAMOTRACK • ATTENDANCE</div>
+        <div class="attendance-eyebrow">ATTENDANCE MANAGEMENT</div>
 
-        <h2 class="attendance-page-title">Attendance</h2>
+        <h1 class="attendance-page-title">Attendance</h1>
 
-        <p class="attendance-page-subtitle mb-0">View attendance records for staff within your access scope.</p>
+        <p class="attendance-page-subtitle">
+          Review attendance, punctuality, working hours and daily attendance types.
+        </p>
       </div>
 
       <div class="attendance-scope">
         <i class="bi bi-shield-check"></i>
-
-        <span id="attendanceScope"> Loading scope... </span>
+        <span id="attendanceScope">Loading scope...</span>
       </div>
-    </div>
+    </div> -->
 
-    <!-- ==================================================
-         FILTER
-    ================================================== -->
-
+    <!-- FILTER -->
     <div class="attendance-filter-card">
       <div class="attendance-filter-header">
         <div>
-          <h6 class="mb-1">Attendance Filters</h6>
+          <div class="attendance-section-label">
+            <i class="bi bi-funnel"></i>
+            Filters
+          </div>
 
-          <small> Select staff and month to view records. </small>
+          <h6>Attendance records</h6>
+
+          <small> Select a team, search for an executive and choose the month. </small>
         </div>
+
+        <button type="button" class="attendance-clear-btn" id="attendanceClearBtn">
+          <i class="bi bi-arrow-counterclockwise"></i>
+          Reset
+        </button>
       </div>
 
       <div class="row g-3 align-items-end">
-        <!-- STAFF -->
+        <!-- TEAM -->
+        <!-- TEAM -->
+        <div class="col-xl-3 col-lg-4 col-md-6">
+          <label for="attendanceTeam" class="form-label"> Team </label>
 
-        <div class="col-xl-6 col-lg-5 col-md-6">
-          <label for="attendanceStaff" class="form-label"> Staff </label>
-
-          <select id="attendanceStaff" class="form-select">
-            <option value="">Select Staff</option>
+          <select id="attendanceTeam" class="form-select">
+            <option value="">All Teams</option>
           </select>
         </div>
 
-        <!-- MONTH -->
+        <!-- EXECUTIVE -->
+        <div class="col-xl-4 col-lg-5 col-md-6">
+          <label for="attendanceStaffSearch" class="form-label"> Staff </label>
 
-        <div class="col-xl-3 col-lg-3 col-md-4">
+          <div class="attendance-select" id="attendanceStaffDropdown">
+            <button type="button" class="attendance-select-trigger" id="attendanceStaffTrigger" aria-expanded="false">
+              <span id="attendanceStaffTriggerText"> Select Staff </span>
+
+              <i class="bi bi-chevron-down"></i>
+            </button>
+
+            <div class="attendance-select-menu d-none" id="attendanceStaffMenu">
+              <div class="attendance-select-search">
+                <i class="bi bi-search"></i>
+
+                <input
+                  type="search"
+                  id="attendanceStaffSearch"
+                  class="form-control"
+                  placeholder="Search staff..."
+                  autocomplete="off"
+                />
+              </div>
+
+              <div class="attendance-select-options" id="attendanceStaffOptions"></div>
+            </div>
+
+            <!-- Actual selected value -->
+            <input type="hidden" id="attendanceStaff" value="" />
+          </div>
+        </div>
+
+        <!-- MONTH -->
+        <div class="col-xl-3 col-lg-4 col-md-6">
           <label for="attendanceMonth" class="form-label"> Month </label>
 
           <input id="attendanceMonth" type="month" class="form-control" />
         </div>
 
         <!-- LOAD -->
-
-        <div class="col-xl-3 col-lg-4 col-md-2">
-          <button type="button" class="btn btn-primary w-100" id="attendanceLoadBtn">
-            <i class="bi bi-search me-1"></i>
-
-            Load Attendance
+        <div class="col-xl-2 col-lg-3 col-md-6">
+          <button type="button" class="btn btn-primary attendance-load-btn w-100" id="attendanceLoadBtn">
+            <i class="bi bi-bar-chart-line me-1"></i>
+            View Attendance
           </button>
         </div>
       </div>
     </div>
 
-    <!-- ==================================================
-         SELECTED STAFF
-    ================================================== -->
-
-    <div id="selectedStaffCard" class="selected-staff-card d-none mb-3">
+    <!-- SELECTED EXECUTIVE -->
+    <div id="selectedStaffCard" class="selected-staff-card d-none">
       <div class="selected-staff-avatar">
         <i class="bi bi-person"></i>
       </div>
 
       <div class="selected-staff-info">
-        <strong id="selectedStaffName"> -- </strong>
+        <strong id="selectedStaffName">--</strong>
 
         <div>
-          <span id="selectedStaffRole"> -- </span>
+          <span id="selectedStaffRole">--</span>
+          <span class="selected-staff-separator">•</span>
+          <span id="selectedStaffTeam">--</span>
+        </div>
+      </div>
 
-          <span class="selected-staff-separator"> • </span>
+      <div class="selected-staff-indicator">
+        <i class="bi bi-check-circle-fill"></i>
+        Selected
+      </div>
+    </div>
 
-          <span id="selectedStaffTeam"> -- </span>
+    <!-- SUMMARY -->
+    <div class="attendance-summary">
+      <div class="attendance-stat">
+        <div class="attendance-stat-icon stat-present">
+          <i class="bi bi-check2-circle"></i>
+        </div>
+
+        <div>
+          <small>Present</small>
+          <strong id="presentCount">0</strong>
+        </div>
+      </div>
+
+      <div class="attendance-stat">
+        <div class="attendance-stat-icon stat-late">
+          <i class="bi bi-clock-history"></i>
+        </div>
+
+        <div>
+          <small>Late</small>
+          <strong id="lateCount">0</strong>
+        </div>
+      </div>
+
+      <div class="attendance-stat">
+        <div class="attendance-stat-icon stat-half">
+          <i class="bi bi-hourglass-split"></i>
+        </div>
+
+        <div>
+          <small>Half Day</small>
+          <strong id="halfDayCount">0</strong>
+        </div>
+      </div>
+
+      <div class="attendance-stat">
+        <div class="attendance-stat-icon stat-off">
+          <i class="bi bi-calendar-week"></i>
+        </div>
+
+        <div>
+          <small>Weekly Off</small>
+          <strong id="weeklyOffCount">0</strong>
+        </div>
+      </div>
+
+      <div class="attendance-stat">
+        <div class="attendance-stat-icon stat-absent">
+          <i class="bi bi-x-circle"></i>
+        </div>
+
+        <div>
+          <small>Absent</small>
+          <strong id="absentCount">0</strong>
+        </div>
+      </div>
+
+      <div class="attendance-stat">
+        <div class="attendance-stat-icon stat-working">
+          <i class="bi bi-stopwatch"></i>
+        </div>
+
+        <div>
+          <small>Working Hours</small>
+          <strong id="workingTime">0h 0m</strong>
         </div>
       </div>
     </div>
 
-    <!-- ==================================================
-         SUMMARY
-    ================================================== -->
-
-    <div class="row g-3 mb-3">
-      <!-- PRESENT -->
-
-      <div class="col-xl-2 col-md-4 col-6">
-        <div class="attendance-stat">
-          <div class="attendance-stat-icon stat-present">
-            <i class="bi bi-check-circle"></i>
-          </div>
-
-          <div>
-            <small> Present </small>
-
-            <strong id="presentCount"> 0 </strong>
-          </div>
-        </div>
-      </div>
-
-      <!-- LATE -->
-
-      <div class="col-xl-2 col-md-4 col-6">
-        <div class="attendance-stat">
-          <div class="attendance-stat-icon stat-late">
-            <i class="bi bi-clock"></i>
-          </div>
-
-          <div>
-            <small> Late </small>
-
-            <strong id="lateCount"> 0 </strong>
-          </div>
-        </div>
-      </div>
-
-      <!-- HALF DAY -->
-
-      <div class="col-xl-2 col-md-4 col-6">
-        <div class="attendance-stat">
-          <div class="attendance-stat-icon stat-half">
-            <i class="bi bi-hourglass-split"></i>
-          </div>
-
-          <div>
-            <small> Half Day </small>
-
-            <strong id="halfDayCount"> 0 </strong>
-          </div>
-        </div>
-      </div>
-
-      <!-- WEEKLY OFF -->
-
-      <div class="col-xl-2 col-md-4 col-6">
-        <div class="attendance-stat">
-          <div class="attendance-stat-icon stat-off">
-            <i class="bi bi-calendar-week"></i>
-          </div>
-
-          <div>
-            <small> Weekly Off </small>
-
-            <strong id="weeklyOffCount"> 0 </strong>
-          </div>
-        </div>
-      </div>
-
-      <!-- ABSENT -->
-
-      <div class="col-xl-2 col-md-4 col-6">
-        <div class="attendance-stat">
-          <div class="attendance-stat-icon stat-absent">
-            <i class="bi bi-x-circle"></i>
-          </div>
-
-          <div>
-            <small> Absent </small>
-
-            <strong id="absentCount"> 0 </strong>
-          </div>
-        </div>
-      </div>
-
-      <!-- WORKING -->
-
-      <div class="col-xl-2 col-md-4 col-6">
-        <div class="attendance-stat">
-          <div class="attendance-stat-icon stat-working">
-            <i class="bi bi-stopwatch"></i>
-          </div>
-
-          <div>
-            <small> Working </small>
-
-            <strong id="workingTime"> 0h 0m </strong>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ==================================================
-         TABLE
-    ================================================== -->
-
+    <!-- TABLE -->
     <div class="attendance-card">
       <div class="attendance-card-header">
         <div>
-          <h6 class="mb-1">Attendance Records</h6>
+          <div class="attendance-section-label">
+            <i class="bi bi-calendar3"></i>
+            Daily Records
+          </div>
 
-          <small id="attendanceTableSubtitle"> Select staff to load attendance. </small>
+          <h6>Attendance history</h6>
+
+          <small id="attendanceTableSubtitle"> Select an executive and month to view attendance. </small>
         </div>
 
         <span id="attendanceCount" class="attendance-record-count"> 0 Records </span>
       </div>
 
       <div class="table-responsive">
-        <table class="table align-middle mb-0">
+        <table class="table attendance-table align-middle mb-0">
           <thead>
             <tr>
               <th>Date</th>
-
               <th>Check In</th>
-
               <th>Check Out</th>
-
               <th>Working Time</th>
-
+              <th>Punctuality</th>
+              <th>Attendance Type</th>
               <th>Status</th>
             </tr>
           </thead>
 
           <tbody id="attendanceTable">
             <tr>
-              <td colspan="5" class="empty-state">
+              <td colspan="7" class="empty-state">
                 <div class="empty-state-icon">
                   <i class="bi bi-calendar-check"></i>
                 </div>
 
-                <div>Select staff and month</div>
+                <strong>Select an executive and month</strong>
+
+                <span> Your attendance records will appear here. </span>
               </td>
             </tr>
           </tbody>
