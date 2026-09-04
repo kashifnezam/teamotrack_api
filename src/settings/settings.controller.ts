@@ -30,10 +30,16 @@ export class SettingsController {
   // SETTINGS DATA
   // ==================================================
 
-  @Get('data')
+  @Get('organization')
   @UseGuards(FirebaseAuthGuard)
-  getData(@CurrentUser() user: any) {
-    return this.service.getData(user.uid);
+  getOrganizationData(@CurrentUser() user: any) {
+    return this.service.getOrganizationData(user.uid);
+  }
+
+  @Get('profile')
+  @UseGuards(FirebaseAuthGuard)
+  getProfileData(@CurrentUser() user: any) {
+    return this.service.getProfileData(user.uid);
   }
 
   // ==================================================

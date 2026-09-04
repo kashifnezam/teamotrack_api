@@ -59,6 +59,8 @@
       initializeMap();
 
       await loadDashboard();
+      const organizationData = await Api.get('/settings/organization');
+      localStorage.setItem('company', JSON.stringify(organizationData));
     } catch (error) {
       console.error('Dashboard initialization failed:', error);
 
@@ -1048,23 +1050,89 @@
       }
 
       const lat = Number(loc.lat);
-
       const lng = Number(loc.lng);
 
       locations++;
 
       const marker = L.marker([lat, lng]).addTo(dashboardMap);
 
+      const battery = loc?.battery;
+      const lastUpdate = loc?.ts || 'Unknown';
+
+      const batteryValue =
+        battery !== null && battery !== undefined && Number.isFinite(Number(battery))
+          ? `${Number(battery)}%`
+          : 'Unknown';
+
+      const batteryNumber = Number(battery);
+
+      let batteryIcon = 'bi-battery';
+      if (Number.isFinite(batteryNumber)) {
+        if (batteryNumber <= 20) {
+          batteryIcon = 'bi-battery';
+        } else if (batteryNumber <= 50) {
+          batteryIcon = 'bi-battery-half';
+        } else {
+          batteryIcon = 'bi-battery-full';
+        }
+      }
+
       marker.bindPopup(`
+    <div class="dashboard-popup">
+
+      <div class="dashboard-popup-header">
+        <div class="dashboard-popup-avatar">
+          <i class="bi bi-person-fill"></i>
+        </div>
+
+        <div class="dashboard-popup-title">
           <div class="dashboard-popup-name">
             ${escapeHtml(item.fullName || 'Unknown')}
           </div>
 
           <div class="dashboard-popup-status">
-            <i class="bi bi-circle-fill"></i>
+            <span class="dashboard-popup-status-dot"></span>
             Location available
           </div>
-        `);
+        </div>
+      </div>
+
+      <div class="dashboard-popup-info">
+
+        <div class="dashboard-popup-info-item">
+          <div class="dashboard-popup-info-icon battery">
+            <i class="bi ${batteryIcon}"></i>
+          </div>
+
+          <div>
+            <div class="dashboard-popup-label">
+              Battery
+            </div>
+            <div class="dashboard-popup-value">
+              ${escapeHtml(batteryValue)}
+            </div>
+          </div>
+        </div>
+
+        <div class="dashboard-popup-info-item">
+          <div class="dashboard-popup-info-icon update">
+            <i class="bi bi-clock-history"></i>
+          </div>
+
+          <div>
+            <div class="dashboard-popup-label">
+              Last update
+            </div>
+            <div class="dashboard-popup-value">
+              ${escapeHtml(String(lastUpdate))}
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  `);
 
       dashboardMarkers.push(marker);
 

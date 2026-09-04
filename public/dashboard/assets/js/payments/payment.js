@@ -1,319 +1,147 @@
 (function () {
+  'use strict';
 
-    'use strict';
+  let payments = [];
 
+  let payable = [];
 
-    let payments = [];
+  let periods = [];
 
-    let payable = [];
+  let selectedPayrollRecord = null;
 
-    let periods = [];
+  const $ = (id) => document.getElementById(id);
 
-    let selectedPayrollRecord = null;
+  function escapeHtml(value = '') {
+    return String(value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
 
+  function money(value) {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      maximumFractionDigits: 2,
+    }).format(Number(value || 0));
+  }
 
-    const $ =
-        id =>
-            document.getElementById(id);
-
-
-    function escapeHtml(
-        value = '',
-    ) {
-
-        return String(value)
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#039;');
-
+  function formatDate(value) {
+    if (!value) {
+      return '-';
     }
 
+    const date = new Date(value);
 
-    function money(
-        value,
-    ) {
-
-        return new Intl.NumberFormat(
-            'en-IN',
-            {
-                style: 'currency',
-                currency: 'INR',
-                maximumFractionDigits: 2,
-            },
-        ).format(
-            Number(value || 0),
-        );
-
+    if (Number.isNaN(date.getTime())) {
+      return '-';
     }
 
+    return new Intl.DateTimeFormat('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    }).format(date);
+  }
 
-    function formatDate(
-        value,
-    ) {
-
-        if (!value) {
-            return '-';
-        }
-
-
-        const date =
-            new Date(value);
-
-
-        if (
-            Number.isNaN(
-                date.getTime(),
-            )
-        ) {
-
-            return '-';
-
-        }
-
-
-        return new Intl.DateTimeFormat(
-            'en-IN',
-            {
-                day: '2-digit',
-                month: 'short',
-                year: 'numeric',
-            },
-        ).format(date);
-
-    }
-
-
-    function statusBadge(
-        status,
-    ) {
-
-        if (
-            status === 'paid'
-        ) {
-
-            return `
+  function statusBadge(status) {
+    if (status === 'paid') {
+      return `
                 <span class="badge text-bg-success">
                     Paid
                 </span>
             `;
+    }
 
-        }
-
-
-        if (
-            status === 'cancelled'
-        ) {
-
-            return `
+    if (status === 'cancelled') {
+      return `
                 <span class="badge text-bg-danger">
                     Cancelled
                 </span>
             `;
+    }
 
-        }
-
-
-        if (
-            status === 'unpaid'
-        ) {
-
-            return `
+    if (status === 'unpaid') {
+      return `
                 <span class="badge text-bg-warning">
                     Pending
                 </span>
             `;
+    }
 
-        }
-
-
-        return `
+    return `
             <span class="badge text-bg-secondary">
-                ${escapeHtml(
-                    status || 'Unknown',
-                )}
+                ${escapeHtml(status || 'Unknown')}
             </span>
         `;
+  }
 
+  function methodLabel(method) {
+    const labels = {
+      cash: 'Cash',
+
+      bank_transfer: 'Bank Transfer',
+
+      upi: 'UPI',
+
+      cheque: 'Cheque',
+
+      other: 'Other',
+    };
+
+    return labels[method] || method || '-';
+  }
+
+  function periodName(payment) {
+    if (payment.periodName) {
+      return payment.periodName;
     }
 
+    const period = periods.find((item) => item.id === payment.payrollPeriodId);
 
-    function methodLabel(
-        method,
-    ) {
-
-        const labels = {
-
-            cash:
-                'Cash',
-
-            bank_transfer:
-                'Bank Transfer',
-
-            upi:
-                'UPI',
-
-            cheque:
-                'Cheque',
-
-            other:
-                'Other',
-
-        };
-
-
-        return (
-            labels[method] ||
-            method ||
-            '-'
-        );
-
+    if (period) {
+      return period.name || `${period.year}-${String(period.month).padStart(2, '0')}`;
     }
 
+    return payment.payrollPeriodId || '-';
+  }
 
-    function periodName(
-        payment,
-    ) {
+  function getNetSalary(record) {
+    return Number(record.salary?.netSalary || 0);
+  }
 
-        if (
-            payment.periodName
-        ) {
+  function renderSummary() {
+    const paid = payments.filter((item) => item.status === 'paid');
 
-            return payment.periodName;
+    const total = paid.reduce((sum, item) => sum + Number(item.amount || 0), 0);
 
-        }
+    const cancelled = payments.filter((item) => item.status === 'cancelled').length;
 
+    $('paymentEmployees').textContent = paid.length;
 
-        const period =
-            periods.find(
-                item =>
-                    item.id ===
-                    payment.payrollPeriodId,
-            );
+    $('paymentTotal').textContent = money(total);
 
+    $('paymentPending').textContent = payable.length;
 
-        if (period) {
+    $('paymentCancelled').textContent = cancelled;
 
-            return (
-                period.name ||
-                `${period.year}-${String(
-                    period.month,
-                ).padStart(
-                    2,
-                    '0',
-                )}`
-            );
+    if (payments.length || payable.length) {
+      $('paymentSummary').classList.remove('d-none');
+    } else {
+      $('paymentSummary').classList.add('d-none');
+    }
+  }
 
-        }
+  function showDetails(id) {
+    const payment = payments.find((item) => item.id === id);
 
-
-        return payment.payrollPeriodId || '-';
-
+    if (!payment) {
+      return;
     }
 
-
-    function getNetSalary(
-        record,
-    ) {
-
-        return Number(
-            record.salary?.netSalary ||
-            0,
-        );
-
-    }
-
-
-    function renderSummary() {
-
-        const paid =
-            payments.filter(
-                item =>
-                    item.status === 'paid',
-            );
-
-
-        const total =
-            paid.reduce(
-                (
-                    sum,
-                    item,
-                ) =>
-                    sum +
-                    Number(
-                        item.amount || 0,
-                    ),
-                0,
-            );
-
-
-        const cancelled =
-            payments.filter(
-                item =>
-                    item.status ===
-                    'cancelled',
-            ).length;
-
-
-        $('paymentEmployees')
-            .textContent =
-            paid.length;
-
-
-        $('paymentTotal')
-            .textContent =
-            money(total);
-
-
-        $('paymentPending')
-            .textContent =
-            payable.length;
-
-
-        $('paymentCancelled')
-            .textContent =
-            cancelled;
-
-
-        if (
-            payments.length ||
-            payable.length
-        ) {
-
-            $('paymentSummary')
-                .classList
-                .remove('d-none');
-
-        } else {
-
-            $('paymentSummary')
-                .classList
-                .add('d-none');
-
-        }
-
-    }
-
-
-    function showDetails(
-        id,
-    ) {
-
-        const payment =
-            payments.find(
-                item =>
-                    item.id === id,
-            );
-
-
-        if (!payment) {
-            return;
-        }
-
-
-        $('paymentDetailsBody')
-            .innerHTML = `
+    $('paymentDetailsBody').innerHTML = `
 
                 <div class="mb-3">
 
@@ -322,11 +150,7 @@
                     </div>
 
                     <div class="fw-semibold">
-                        ${escapeHtml(
-                            payment.employeeName ||
-                            payment.employeeId ||
-                            '-',
-                        )}
+                        ${escapeHtml(payment.employeeName || payment.employeeId || '-')}
                     </div>
 
                 </div>
@@ -341,11 +165,7 @@
                         </div>
 
                         <div class="fw-semibold">
-                            ${escapeHtml(
-                                periodName(
-                                    payment,
-                                ),
-                            )}
+                            ${escapeHtml(periodName(payment))}
                         </div>
 
                     </div>
@@ -358,9 +178,7 @@
                         </div>
 
                         <div class="fw-semibold">
-                            ${money(
-                                payment.amount,
-                            )}
+                            ${money(payment.amount)}
                         </div>
 
                     </div>
@@ -373,11 +191,7 @@
                         </div>
 
                         <div>
-                            ${escapeHtml(
-                                methodLabel(
-                                    payment.paymentMethod,
-                                ),
-                            )}
+                            ${escapeHtml(methodLabel(payment.paymentMethod))}
                         </div>
 
                     </div>
@@ -390,9 +204,7 @@
                         </div>
 
                         <div>
-                            ${formatDate(
-                                payment.paymentDate,
-                            )}
+                            ${formatDate(payment.paymentDate)}
                         </div>
 
                     </div>
@@ -405,10 +217,7 @@
                         </div>
 
                         <div>
-                            ${escapeHtml(
-                                payment.transactionId ||
-                                '-',
-                            )}
+                            ${escapeHtml(payment.transactionId || '-')}
                         </div>
 
                     </div>
@@ -421,10 +230,7 @@
                         </div>
 
                         <div>
-                            ${escapeHtml(
-                                payment.remarks ||
-                                '-',
-                            )}
+                            ${escapeHtml(payment.remarks || '-')}
                         </div>
 
                     </div>
@@ -437,9 +243,7 @@
                         </div>
 
                         <div>
-                            ${statusBadge(
-                                payment.status,
-                            )}
+                            ${statusBadge(payment.status)}
                         </div>
 
                     </div>
@@ -448,381 +252,180 @@
 
             `;
 
+    bootstrap.Modal.getOrCreateInstance($('paymentDetailsModal')).show();
+  }
 
-        bootstrap.Modal
-            .getOrCreateInstance(
-                $('paymentDetailsModal'),
-            )
-            .show();
+  function openPaymentModal(id) {
+    const record = payable.find((item) => item.payrollRecordId === id || item.id === id);
 
+    if (!record) {
+      return;
     }
 
+    selectedPayrollRecord = record;
 
-    function openPaymentModal(
-        id,
-    ) {
+    $('paymentEmployeeName').textContent = record.employeeName || record.employeeId || '-';
 
-        const record =
-            payable.find(
-                item =>
-                    item.payrollRecordId === id ||
-                    item.id === id,
-            );
+    $('paymentAmount').textContent = money(getNetSalary(record));
 
+    $('paymentMethod').value = 'bank_transfer';
 
-        if (!record) {
-            return;
-        }
+    $('paymentTransactionId').value = '';
 
+    $('paymentRemarks').value = '';
 
-        selectedPayrollRecord =
-            record;
+    bootstrap.Modal.getOrCreateInstance($('paymentModal')).show();
+  }
 
-
-        $('paymentEmployeeName')
-            .textContent =
-            record.employeeName ||
-            record.employeeId ||
-            '-';
-
-
-        $('paymentAmount')
-            .textContent =
-            money(
-                getNetSalary(
-                    record,
-                ),
-            );
-
-
-        $('paymentMethod')
-            .value =
-            'bank_transfer';
-
-
-        $('paymentTransactionId')
-            .value =
-            '';
-
-
-        $('paymentRemarks')
-            .value =
-            '';
-
-
-        bootstrap.Modal
-            .getOrCreateInstance(
-                $('paymentModal'),
-            )
-            .show();
-
+  async function confirmPayment() {
+    if (!selectedPayrollRecord) {
+      return;
     }
 
+    const payrollRecordId = selectedPayrollRecord.payrollRecordId || selectedPayrollRecord.id;
 
-    async function confirmPayment() {
+    const paymentMethod = $('paymentMethod').value;
 
-        if (
-            !selectedPayrollRecord
-        ) {
+    const transactionId = $('paymentTransactionId').value.trim();
 
-            return;
+    const remarks = $('paymentRemarks').value.trim();
 
-        }
+    try {
+      $('confirmPaymentBtn').disabled = true;
 
+      AppAlert.loading('Processing payment...');
 
-        const payrollRecordId =
-            selectedPayrollRecord
-                .payrollRecordId ||
-            selectedPayrollRecord.id;
+      await Api.post('/payments', {
+        payrollRecordId,
 
+        paymentMethod,
 
-        const paymentMethod =
-            $('paymentMethod')
-                .value;
+        transactionId,
 
+        remarks,
+      });
 
-        const transactionId =
-            $('paymentTransactionId')
-                .value
-                .trim();
+      AppAlert.close();
 
+      bootstrap.Modal.getInstance($('paymentModal'))?.hide();
 
-        const remarks =
-            $('paymentRemarks')
-                .value
-                .trim();
+      AppAlert.success('Salary paid successfully');
 
+      selectedPayrollRecord = null;
 
-        try {
+      await loadPayments();
+    } catch (error) {
+      AppAlert.close();
 
-            $('confirmPaymentBtn')
-                .disabled = true;
+      AppAlert.error(error?.message || 'Failed to process payment');
+    } finally {
+      $('confirmPaymentBtn').disabled = false;
+    }
+  }
 
+  async function cancelPayment(id) {
+    const confirmed = await AppAlert.confirm('Cancel this payment?');
 
-            AppAlert.loading(
-                'Processing payment...',
-            );
-
-
-            await Api.post(
-                '/payments',
-                {
-
-                    payrollRecordId,
-
-                    paymentMethod,
-
-                    transactionId,
-
-                    remarks,
-
-                },
-            );
-
-
-            AppAlert.close();
-
-
-            bootstrap.Modal
-                .getInstance(
-                    $('paymentModal'),
-                )
-                ?.hide();
-
-
-            AppAlert.success(
-                'Salary paid successfully',
-            );
-
-
-            selectedPayrollRecord =
-                null;
-
-
-            await loadPayments();
-
-        } catch (error) {
-
-            AppAlert.close();
-
-
-            AppAlert.error(
-                error?.message ||
-                'Failed to process payment',
-            );
-
-        } finally {
-
-            $('confirmPaymentBtn')
-                .disabled = false;
-
-        }
-
+    if (!confirmed) {
+      return;
     }
 
+    try {
+      AppAlert.loading('Cancelling payment...');
 
-    async function cancelPayment(
-        id,
-    ) {
+      await Api.patch(`/payments/${id}/cancel`, {});
 
-        const confirmed =
-            await AppAlert.confirm(
-                'Cancel this payment?',
-            );
+      AppAlert.close();
 
+      AppAlert.success('Payment cancelled successfully');
 
-        if (!confirmed) {
-            return;
-        }
+      await loadPayments();
+    } catch (error) {
+      AppAlert.close();
 
+      AppAlert.error(error?.message || 'Failed to cancel payment');
+    }
+  }
 
-        try {
+  function render() {
+    $('paymentLoading').classList.add('d-none');
 
-            AppAlert.loading(
-                'Cancelling payment...',
-            );
+    renderSummary();
 
+    const rows = [];
 
-            await Api.patch(
-                `/payments/${id}/cancel`,
-                {},
-            );
+    /*
+     * Unpaid payroll records.
+     */
+    payable.forEach((record) => {
+      rows.push({
+        type: 'payable',
 
+        record,
+      });
+    });
 
-            AppAlert.close();
+    /*
+     * Existing payment history.
+     */
+    payments.forEach((payment) => {
+      rows.push({
+        type: 'payment',
 
+        payment,
+      });
+    });
 
-            AppAlert.success(
-                'Payment cancelled successfully',
-            );
+    if (!rows.length) {
+      $('paymentEmpty').classList.remove('d-none');
 
+      $('paymentTableWrap').classList.add('d-none');
 
-            await loadPayments();
+      $('paymentMobileList').classList.add('d-none');
 
-        } catch (error) {
-
-            AppAlert.close();
-
-
-            AppAlert.error(
-                error?.message ||
-                'Failed to cancel payment',
-            );
-
-        }
-
+      return;
     }
 
+    $('paymentEmpty').classList.add('d-none');
 
-    function render() {
+    $('paymentTableWrap').classList.remove('d-none');
 
-        $('paymentLoading')
-            .classList
-            .add('d-none');
+    $('paymentMobileList').classList.remove('d-none');
 
+    $('paymentTableBody').innerHTML = rows
+      .map((item) => {
+        if (item.type === 'payable') {
+          const record = item.record;
 
-        renderSummary();
-
-
-        const rows = [];
-
-
-        /*
-         * Unpaid payroll records.
-         */
-        payable.forEach(
-            record => {
-
-                rows.push({
-
-                    type:
-                        'payable',
-
-                    record,
-
-                });
-
-            },
-        );
-
-
-        /*
-         * Existing payment history.
-         */
-        payments.forEach(
-            payment => {
-
-                rows.push({
-
-                    type:
-                        'payment',
-
-                    payment,
-
-                });
-
-            },
-        );
-
-
-        if (
-            !rows.length
-        ) {
-
-            $('paymentEmpty')
-                .classList
-                .remove('d-none');
-
-
-            $('paymentTableWrap')
-                .classList
-                .add('d-none');
-
-
-            $('paymentMobileList')
-                .classList
-                .add('d-none');
-
-
-            return;
-
-        }
-
-
-        $('paymentEmpty')
-            .classList
-            .add('d-none');
-
-
-        $('paymentTableWrap')
-            .classList
-            .remove('d-none');
-
-
-        $('paymentMobileList')
-            .classList
-            .remove('d-none');
-
-
-        $('paymentTableBody')
-            .innerHTML =
-            rows.map(
-                item => {
-
-                    if (
-                        item.type ===
-                        'payable'
-                    ) {
-
-                        const record =
-                            item.record;
-
-
-                        return `
+          return `
 
                             <tr>
 
                                 <td>
 
                                     <div class="fw-semibold">
-                                        ${escapeHtml(
-                                            record.employeeName ||
-                                            record.employeeId ||
-                                            '-',
-                                        )}
+                                        ${escapeHtml(record.employeeName || record.employeeId || '-')}
                                     </div>
 
                                     <div class="small text-muted">
-                                        ${escapeHtml(
-                                            record.role ||
-                                            '',
-                                        )}
+                                        ${escapeHtml(record.role || '')}
                                     </div>
 
                                 </td>
 
 
                                 <td>
-                                    ${Number(
-                                        record.payableDays ||
-                                        0,
-                                    )}
+                                    ${Number(record.payableDays || 0)}
                                 </td>
 
 
                                 <td class="fw-semibold">
-                                    ${money(
-                                        getNetSalary(
-                                            record,
-                                        ),
-                                    )}
+                                    ${money(getNetSalary(record))}
                                 </td>
 
 
                                 <td>
-                                    ${statusBadge(
-                                        'unpaid',
-                                    )}
+                                    ${statusBadge('unpaid')}
                                 </td>
 
 
@@ -846,10 +449,7 @@
                                     <button
                                         type="button"
                                         class="btn btn-sm btn-primary"
-                                        data-payment-pay="${escapeHtml(
-                                            record.payrollRecordId ||
-                                            record.id,
-                                        )}">
+                                        data-payment-pay="${escapeHtml(record.payrollRecordId || record.id)}">
 
                                         <i class="bi bi-cash-stack me-1"></i>
                                         Pay
@@ -861,26 +461,18 @@
                             </tr>
 
                         `;
+        }
 
-                    }
+        const payment = item.payment;
 
-
-                    const payment =
-                        item.payment;
-
-
-                    return `
+        return `
 
                         <tr>
 
                             <td>
 
                                 <div class="fw-semibold">
-                                    ${escapeHtml(
-                                        payment.employeeName ||
-                                        payment.employeeId ||
-                                        '-',
-                                    )}
+                                    ${escapeHtml(payment.employeeName || payment.employeeId || '-')}
                                 </div>
 
                             </td>
@@ -892,40 +484,27 @@
 
 
                             <td class="fw-semibold">
-                                ${money(
-                                    payment.amount,
-                                )}
+                                ${money(payment.amount)}
                             </td>
 
 
                             <td>
-                                ${statusBadge(
-                                    payment.status,
-                                )}
+                                ${statusBadge(payment.status)}
                             </td>
 
 
                             <td>
-                                ${escapeHtml(
-                                    methodLabel(
-                                        payment.paymentMethod,
-                                    ),
-                                )}
+                                ${escapeHtml(methodLabel(payment.paymentMethod))}
                             </td>
 
 
                             <td>
-                                ${formatDate(
-                                    payment.paymentDate,
-                                )}
+                                ${formatDate(payment.paymentDate)}
                             </td>
 
 
                             <td>
-                                ${escapeHtml(
-                                    payment.transactionId ||
-                                    '-',
-                                )}
+                                ${escapeHtml(payment.transactionId || '-')}
                             </td>
 
 
@@ -936,9 +515,7 @@
                                     <button
                                         type="button"
                                         class="btn btn-outline-secondary"
-                                        data-payment-view="${escapeHtml(
-                                            payment.id,
-                                        )}">
+                                        data-payment-view="${escapeHtml(payment.id)}">
 
                                         <i class="bi bi-eye"></i>
 
@@ -946,20 +523,18 @@
 
 
                                     ${
-                                        payment.status === 'paid'
-                                            ? `
+                                      payment.status === 'paid'
+                                        ? `
                                                 <button
                                                     type="button"
                                                     class="btn btn-outline-danger"
-                                                    data-payment-cancel="${escapeHtml(
-                                                        payment.id,
-                                                    )}">
+                                                    data-payment-cancel="${escapeHtml(payment.id)}">
 
                                                     <i class="bi bi-x-circle"></i>
 
                                                 </button>
                                             `
-                                            : ''
+                                        : ''
                                     }
 
                                 </div>
@@ -969,27 +544,15 @@
                         </tr>
 
                     `;
+      })
+      .join('');
 
-                },
-            )
-            .join('');
+    $('paymentMobileList').innerHTML = rows
+      .map((item) => {
+        if (item.type === 'payable') {
+          const record = item.record;
 
-
-        $('paymentMobileList')
-            .innerHTML =
-            rows.map(
-                item => {
-
-                    if (
-                        item.type ===
-                        'payable'
-                    ) {
-
-                        const record =
-                            item.record;
-
-
-                        return `
+          return `
 
                             <div class="payment-mobile-card">
 
@@ -998,25 +561,16 @@
                                     <div>
 
                                         <div class="payment-name">
-                                            ${escapeHtml(
-                                                record.employeeName ||
-                                                record.employeeId ||
-                                                '-',
-                                            )}
+                                            ${escapeHtml(record.employeeName || record.employeeId || '-')}
                                         </div>
 
                                         <div class="payment-meta text-muted">
-                                            ${escapeHtml(
-                                                record.role ||
-                                                '',
-                                            )}
+                                            ${escapeHtml(record.role || '')}
                                         </div>
 
                                     </div>
 
-                                    ${statusBadge(
-                                        'unpaid',
-                                    )}
+                                    ${statusBadge('unpaid')}
 
                                 </div>
 
@@ -1030,10 +584,7 @@
                                         </div>
 
                                         <div>
-                                            ${Number(
-                                                record.payableDays ||
-                                                0,
-                                            )}
+                                            ${Number(record.payableDays || 0)}
                                         </div>
 
                                     </div>
@@ -1046,11 +597,7 @@
                                         </div>
 
                                         <div class="payment-amount">
-                                            ${money(
-                                                getNetSalary(
-                                                    record,
-                                                ),
-                                            )}
+                                            ${money(getNetSalary(record))}
                                         </div>
 
                                     </div>
@@ -1063,10 +610,7 @@
                                     <button
                                         type="button"
                                         class="btn btn-sm btn-primary"
-                                        data-payment-pay="${escapeHtml(
-                                            record.payrollRecordId ||
-                                            record.id,
-                                        )}">
+                                        data-payment-pay="${escapeHtml(record.payrollRecordId || record.id)}">
 
                                         <i class="bi bi-cash-stack me-1"></i>
                                         Pay Salary
@@ -1078,15 +622,11 @@
                             </div>
 
                         `;
+        }
 
-                    }
+        const payment = item.payment;
 
-
-                    const payment =
-                        item.payment;
-
-
-                    return `
+        return `
 
                         <div class="payment-mobile-card">
 
@@ -1095,27 +635,17 @@
                                 <div>
 
                                     <div class="payment-name">
-                                        ${escapeHtml(
-                                            payment.employeeName ||
-                                            payment.employeeId ||
-                                            '-',
-                                        )}
+                                        ${escapeHtml(payment.employeeName || payment.employeeId || '-')}
                                     </div>
 
                                     <div class="payment-meta text-muted">
-                                        ${escapeHtml(
-                                            periodName(
-                                                payment,
-                                            ),
-                                        )}
+                                        ${escapeHtml(periodName(payment))}
                                     </div>
 
                                 </div>
 
 
-                                ${statusBadge(
-                                    payment.status,
-                                )}
+                                ${statusBadge(payment.status)}
 
                             </div>
 
@@ -1129,9 +659,7 @@
                                     </div>
 
                                     <div class="payment-amount">
-                                        ${money(
-                                            payment.amount,
-                                        )}
+                                        ${money(payment.amount)}
                                     </div>
 
                                 </div>
@@ -1144,11 +672,7 @@
                                     </div>
 
                                     <div>
-                                        ${escapeHtml(
-                                            methodLabel(
-                                                payment.paymentMethod,
-                                            ),
-                                        )}
+                                        ${escapeHtml(methodLabel(payment.paymentMethod))}
                                     </div>
 
                                 </div>
@@ -1161,9 +685,7 @@
                                     </div>
 
                                     <div>
-                                        ${formatDate(
-                                            payment.paymentDate,
-                                        )}
+                                        ${formatDate(payment.paymentDate)}
                                     </div>
 
                                 </div>
@@ -1176,10 +698,7 @@
                                     </div>
 
                                     <div class="text-truncate">
-                                        ${escapeHtml(
-                                            payment.transactionId ||
-                                            '-',
-                                        )}
+                                        ${escapeHtml(payment.transactionId || '-')}
                                     </div>
 
                                 </div>
@@ -1192,9 +711,7 @@
                                 <button
                                     type="button"
                                     class="btn btn-sm btn-outline-secondary"
-                                    data-payment-view="${escapeHtml(
-                                        payment.id,
-                                    )}">
+                                    data-payment-view="${escapeHtml(payment.id)}">
 
                                     <i class="bi bi-eye me-1"></i>
                                     Details
@@ -1203,21 +720,19 @@
 
 
                                 ${
-                                    payment.status === 'paid'
-                                        ? `
+                                  payment.status === 'paid'
+                                    ? `
                                             <button
                                                 type="button"
                                                 class="btn btn-sm btn-outline-danger"
-                                                data-payment-cancel="${escapeHtml(
-                                                    payment.id,
-                                                )}">
+                                                data-payment-cancel="${escapeHtml(payment.id)}">
 
                                                 <i class="bi bi-x-circle me-1"></i>
                                                 Cancel
 
                                             </button>
                                         `
-                                        : ''
+                                    : ''
                                 }
 
                             </div>
@@ -1225,350 +740,151 @@
                         </div>
 
                     `;
+      })
+      .join('');
+  }
 
-                },
-            )
-            .join('');
+  async function loadPayments() {
+    const periodId = $('paymentPeriod').value;
 
+    /*
+     * No period selected.
+     */
+    if (!periodId) {
+      payments = [];
+
+      payable = [];
+
+      $('paymentLoading').classList.add('d-none');
+
+      $('paymentSummary').classList.add('d-none');
+
+      $('paymentTableWrap').classList.add('d-none');
+
+      $('paymentMobileList').classList.add('d-none');
+
+      $('paymentEmpty').classList.remove('d-none');
+
+      $('paymentEmpty').querySelector('h6').textContent = 'Select a payroll period';
+
+      $('paymentEmpty').querySelector('p').textContent = 'Select a payroll period to view salary payments.';
+
+      return;
     }
 
+    $('paymentLoading').classList.remove('d-none');
 
-    async function loadPayments() {
+    $('paymentEmpty').classList.add('d-none');
 
-        const periodId =
-            $('paymentPeriod')
-                .value;
+    $('paymentTableWrap').classList.add('d-none');
 
+    $('paymentMobileList').classList.add('d-none');
 
-        /*
-         * No period selected.
-         */
-        if (!periodId) {
+    try {
+      const [paymentResponse, payableResponse] = await Promise.all([
+        Api.get(`/payments/period/${periodId}`),
 
-            payments = [];
+        Api.get(`/payments/payable/${periodId}`),
+      ]);
 
-            payable = [];
+      payments = paymentResponse?.payments || [];
 
+      payable = payableResponse?.records || [];
 
-            $('paymentLoading')
-                .classList
-                .add('d-none');
+      render();
+    } catch (error) {
+      $('paymentLoading').classList.add('d-none');
 
-
-            $('paymentSummary')
-                .classList
-                .add('d-none');
-
-
-            $('paymentTableWrap')
-                .classList
-                .add('d-none');
-
-
-            $('paymentMobileList')
-                .classList
-                .add('d-none');
-
-
-            $('paymentEmpty')
-                .classList
-                .remove('d-none');
-
-
-            $('paymentEmpty')
-                .querySelector('h6')
-                .textContent =
-                'Select a payroll period';
-
-
-            $('paymentEmpty')
-                .querySelector('p')
-                .textContent =
-                'Select a payroll period to view salary payments.';
-
-
-            return;
-
-        }
-
-
-        $('paymentLoading')
-            .classList
-            .remove('d-none');
-
-
-        $('paymentEmpty')
-            .classList
-            .add('d-none');
-
-
-        $('paymentTableWrap')
-            .classList
-            .add('d-none');
-
-
-        $('paymentMobileList')
-            .classList
-            .add('d-none');
-
-
-        try {
-
-            const [
-                paymentResponse,
-                payableResponse,
-            ] =
-                await Promise.all([
-
-                    Api.get(
-                        `/payments/period/${periodId}`,
-                    ),
-
-                    Api.get(
-                        `/payments/payable/${periodId}`,
-                    ),
-
-                ]);
-
-
-            payments =
-                paymentResponse?.payments ||
-                [];
-
-
-            payable =
-                payableResponse?.records ||
-                [];
-
-
-            render();
-
-        } catch (error) {
-
-            $('paymentLoading')
-                .classList
-                .add('d-none');
-
-
-            AppAlert.error(
-                error?.message ||
-                'Failed to load payment data',
-            );
-
-        }
-
+      AppAlert.error(error?.message || 'Failed to load payment data');
     }
+  }
 
+  async function loadPeriods() {
+    try {
+        AppAlert.loading('Loading payroll periods...');
+      const response = await Api.get('/payroll-periods/data');
 
-    async function loadPeriods() {
+      periods = Array.isArray(response) ? response : response?.periods || [];
 
-        try {
+      const select = $('paymentPeriod');
 
-            const response =
-                await Api.get(
-                    '/payroll-periods/data',
-                );
-
-
-            periods =
-                Array.isArray(response)
-                    ? response
-                    : response?.periods ||
-                      [];
-
-
-            const select =
-                $('paymentPeriod');
-
-
-            select.innerHTML = `
+      select.innerHTML = `
                 <option value="">
                     Select payroll period
                 </option>
             `;
 
+      periods.forEach((period) => {
+        const option = document.createElement('option');
 
-            periods.forEach(
-                period => {
+        option.value = period.id;
 
-                    const option =
-                        document.createElement(
-                            'option',
-                        );
+        option.textContent = period.name || `${period.year}-${String(period.month).padStart(2, '0')}`;
 
-
-                    option.value =
-                        period.id;
-
-
-                    option.textContent =
-                        period.name ||
-                        `${period.year}-${String(
-                            period.month,
-                        ).padStart(
-                            2,
-                            '0',
-                        )}`;
-
-
-                    select.appendChild(
-                        option,
-                    );
-
-                },
-            );
-
-        } catch (error) {
-
-            AppAlert.error(
-                error?.message ||
-                'Failed to load payroll periods',
-            );
-
-        }
-
+        select.appendChild(option);
+      });
+      AppAlert.close();
+    } catch (error) {
+      AppAlert.error(error?.message || 'Failed to load payroll periods');
+      AppAlert.close();
     }
+  }
 
+  function bindEvents() {
+    $('paymentPeriod').addEventListener('change', loadPayments);
 
-    function bindEvents() {
+    $('confirmPaymentBtn').addEventListener('click', confirmPayment);
 
-        $('paymentPeriod')
-            .addEventListener(
-                'change',
-                loadPayments,
-            );
+    document.addEventListener('click', (event) => {
+      const payButton = event.target.closest('[data-payment-pay]');
 
+      if (payButton) {
+        openPaymentModal(payButton.dataset.paymentPay);
 
-        $('confirmPaymentBtn')
-            .addEventListener(
-                'click',
-                confirmPayment,
-            );
+        return;
+      }
 
+      const viewButton = event.target.closest('[data-payment-view]');
 
-        document
-            .addEventListener(
-                'click',
-                event => {
+      if (viewButton) {
+        showDetails(viewButton.dataset.paymentView);
 
-                    const payButton =
-                        event.target.closest(
-                            '[data-payment-pay]',
-                        );
+        return;
+      }
 
+      const cancelButton = event.target.closest('[data-payment-cancel]');
 
-                    if (
-                        payButton
-                    ) {
+      if (cancelButton) {
+        cancelPayment(cancelButton.dataset.paymentCancel);
+      }
+    });
+  }
 
-                        openPaymentModal(
-                            payButton
-                                .dataset
-                                .paymentPay,
-                        );
+  window.initializePaymentsPage = async function () {
+    bindEvents();
 
-                        return;
+    await loadPeriods();
 
-                    }
+    /*
+     * Default state:
+     * no payroll period selected.
+     */
+    payments = [];
 
+    payable = [];
 
-                    const viewButton =
-                        event.target.closest(
-                            '[data-payment-view]',
-                        );
+    $('paymentLoading').classList.add('d-none');
 
+    $('paymentSummary').classList.add('d-none');
 
-                    if (
-                        viewButton
-                    ) {
+    $('paymentTableWrap').classList.add('d-none');
 
-                        showDetails(
-                            viewButton
-                                .dataset
-                                .paymentView,
-                        );
+    $('paymentMobileList').classList.add('d-none');
 
-                        return;
+    $('paymentEmpty').classList.remove('d-none');
 
-                    }
+    $('paymentEmpty').querySelector('h6').textContent = 'Select a payroll period';
 
-
-                    const cancelButton =
-                        event.target.closest(
-                            '[data-payment-cancel]',
-                        );
-
-
-                    if (
-                        cancelButton
-                    ) {
-
-                        cancelPayment(
-                            cancelButton
-                                .dataset
-                                .paymentCancel,
-                        );
-
-                    }
-
-                },
-            );
-
-    }
-
-
-    window.initializePaymentsPage =
-        async function () {
-
-            bindEvents();
-
-            await loadPeriods();
-
-            /*
-             * Default state:
-             * no payroll period selected.
-             */
-            payments = [];
-
-            payable = [];
-
-
-            $('paymentLoading')
-                .classList
-                .add('d-none');
-
-
-            $('paymentSummary')
-                .classList
-                .add('d-none');
-
-
-            $('paymentTableWrap')
-                .classList
-                .add('d-none');
-
-
-            $('paymentMobileList')
-                .classList
-                .add('d-none');
-
-
-            $('paymentEmpty')
-                .classList
-                .remove('d-none');
-
-
-            $('paymentEmpty')
-                .querySelector('h6')
-                .textContent =
-                'Select a payroll period';
-
-
-            $('paymentEmpty')
-                .querySelector('p')
-                .textContent =
-                'Select a payroll period to view salary payments.';
-
-        };
-
+    $('paymentEmpty').querySelector('p').textContent = 'Select a payroll period to view salary payments.';
+  };
 })();

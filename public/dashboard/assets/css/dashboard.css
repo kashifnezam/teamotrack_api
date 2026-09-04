@@ -739,6 +739,117 @@
   font-size: 7px;
 }
 
+.dashboard-popup {
+  width: 260px;
+  padding: 4px 2px;
+  font-family: inherit;
+}
+
+.dashboard-popup-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #eee;
+}
+
+.dashboard-popup-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #475569;
+  font-size: 19px;
+  flex-shrink: 0;
+}
+
+.dashboard-popup-title {
+  min-width: 0;
+}
+
+.dashboard-popup-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1e293b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 190px;
+}
+
+.dashboard-popup-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.dashboard-popup-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #22c55e;
+  display: inline-block;
+}
+
+.dashboard-popup-info {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.dashboard-popup-info-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px;
+  border-radius: 8px;
+  background: #f8fafc;
+  min-width: 0;
+}
+
+.dashboard-popup-info-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 15px;
+}
+
+.dashboard-popup-info-icon.battery {
+  background: #ecfdf5;
+  color: #16a34a;
+}
+
+.dashboard-popup-info-icon.update {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.dashboard-popup-label {
+  font-size: 10px;
+  color: #94a3b8;
+  margin-bottom: 2px;
+}
+
+.dashboard-popup-value {
+  font-size: 12px;
+  font-weight: 600;
+  color: #334155;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* ==========================================================
    STAFF LIST
 ========================================================== */
@@ -931,11 +1042,11 @@
    SEARCH
 ========================================================== */
 
-.dashboard-input-wrap .form-control[type="search"] {
+.dashboard-input-wrap .form-control[type='search'] {
   padding-left: 33px;
 }
 
-.dashboard-input-wrap .form-control[type="search"]::-webkit-search-cancel-button {
+.dashboard-input-wrap .form-control[type='search']::-webkit-search-cancel-button {
   cursor: pointer;
 }
 
@@ -963,10 +1074,6 @@
   border: 1px solid var(--border-color);
 
   border-radius: 7px;
-}
-
-.employee-map .leaflet-popup-content {
-  margin: 10px 12px;
 }
 
 .dashboard-popup-name {

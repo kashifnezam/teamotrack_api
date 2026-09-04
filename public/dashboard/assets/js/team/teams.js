@@ -28,9 +28,11 @@
 
   async function loadTeams() {
     try {
+      AppAlert.loading('Loading teams...');
       const data = await Api.get('/teams/data');
 
       if (!data) {
+        AppAlert.close();
         return;
       }
 
@@ -47,7 +49,9 @@
       populateShifts();
 
       renderTeams();
+      AppAlert.close();
     } catch (error) {
+      AppAlert.close();
       console.error(error);
 
       AppAlert.error(error.message || 'Unable to load teams');

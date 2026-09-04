@@ -52,8 +52,31 @@ export class SettingsService {
   // GET DATA
   // ==================================================
 
-  async getData(userId: string) {
-    this.logger.log(`Fetching settings | userId=${userId}`);
+  async getProfileData(userId: string) {
+    this.logger.log(`Fetching profile data | userId=${userId}`);
+
+    try {
+      const user = await this.getUser(userId);
+      return {
+        profile: {
+          fullName: user.fullName || user.name || user.email || 'Unknown',
+          email: user.email ?? '',
+          mobile: user.mobile ?? '',
+          role: user.role ?? '',
+        },
+      };
+    } catch (error) {
+      this.logger.error(
+        `Failed to fetch profile data | userId=${userId}`,
+        error instanceof Error ? error.stack : undefined
+      );
+
+      throw error;
+    }
+  }
+
+  async getOrganizationData(userId: string) {
+    this.logger.log(`Fetching organization data | userId=${userId}`);
 
     try {
       const user = await this.getUser(userId);
@@ -65,26 +88,23 @@ export class SettingsService {
       const organization = organizationSnap.exists ? organizationSnap.data() || {} : {};
 
       return {
-        profile: {
-          fullName: user.fullName || user.name || user.email || 'Unknown',
-
-          email: user.email ?? '',
-
-          mobile: user.mobile ?? '',
-
-          role: user.role ?? '',
-        },
-
         company: {
-          businessName: organization.businessName ?? 'My Company',
-
+          businessName: organization.businessName ?? '',
+          legalName: organization.legalName ?? '',
+          address: organization.address ?? '',
+          city: organization.city ?? '',
+          state: organization.state ?? '',
+          country: organization.country ?? '',
+          postalCode: organization.postalCode ?? '',
+          mobile: organization.mobile ?? '',
+          email: organization.email ?? '',
+          website: organization.website ?? '',
           logo: organization.logo ?? '',
         },
       };
     } catch (error) {
       this.logger.error(
-        `Failed to fetch settings | userId=${userId}`,
-
+        `Failed to fetch organization data | userId=${userId}`,
         error instanceof Error ? error.stack : undefined
       );
 
@@ -286,41 +306,41 @@ export class SettingsService {
 
   async updateCompany(userId: string, dto: SettingsDto) {
     if (!dto.businessName?.trim()) {
+      this.logger.log(`Business name is required | userId=${userId}`);
       throw new BadRequestException('Company name is required');
     }
 
     const user = await this.getUser(userId);
-
     const rootId = this.getRootId(user);
 
     const ref = this.db.collection('organization').doc(rootId);
-
     const snap = await ref.get();
+
+    const companyData = {
+      businessName: dto.businessName.trim(),
+      legalName: dto.legalName?.trim() ?? '',
+      address: dto.address?.trim() ?? '',
+      city: dto.city?.trim() ?? '',
+      state: dto.state?.trim() ?? '',
+      country: dto.country?.trim() ?? '',
+      postalCode: dto.postalCode?.trim() ?? '',
+      mobile: dto.mobile?.trim() ?? '',
+      email: dto.email?.trim() ?? '',
+      website: dto.website?.trim() ?? '',
+    };
 
     if (!snap.exists) {
       await ref.set({
         rootId,
-
-        businessName: dto.businessName.trim(),
-
-        logo: dto.logo ?? '',
-
+        ...companyData,
         createdAt: new Date(),
-
         updatedAt: new Date(),
       });
     } else {
-      const data: any = {
-        businessName: dto.businessName.trim(),
-
+      await ref.update({
+        ...companyData,
         updatedAt: new Date(),
-      };
-
-      if (dto.logo !== undefined) {
-        data.logo = dto.logo;
-      }
-
-      await ref.update(data);
+      });
     }
 
     return {

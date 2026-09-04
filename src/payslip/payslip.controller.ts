@@ -1,12 +1,4 @@
-import {
-    Body,
-    Controller,
-    Get,
-    Param,
-    Patch,
-    Res,
-    UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Res, UseGuards } from '@nestjs/common';
 
 import type { Response } from 'express';
 
@@ -16,117 +8,63 @@ import { PayslipService } from './payslip.service';
 import { RootManagerGuard } from 'src/auth/root-manager.guard';
 
 @Controller('payslips')
-@UseGuards(
-    FirebaseAuthGuard,
-    RootManagerGuard,
-)
 export class PayslipController {
+  constructor(private readonly service: PayslipService) {}
 
-    constructor(
-        private readonly service:
-            PayslipService,
-    ) { }
+  // ==================================================
+  // SPA SHELL
+  // ==================================================
 
+  @Get()
+  page(@Res() res: Response) {
+    return res.sendFile('shell.html', {
+      root: './public/dashboard',
+    });
+  }
 
-    // ==================================================
-    // SPA SHELL
-    // ==================================================
+  // ==================================================
+  // DATA
+  // ==================================================
 
-    @Get()
-    page(
-        @Res() res: Response,
-    ) {
+  @UseGuards(FirebaseAuthGuard, RootManagerGuard)
+  @Get('data')
+  getAll(@CurrentUser() user: any) {
+    return this.service.getAll(user.uid);
+  }
 
-        return res.sendFile(
-            'shell.html',
-            {
-                root:
-                    './public/dashboard',
-            },
-        );
+  // ==================================================
+  // TEMPLATE SETTINGS
+  // ==================================================
 
-    }
+  @UseGuards(FirebaseAuthGuard, RootManagerGuard)
+  @Get('template/settings')
+  getTemplateSettings(@CurrentUser() user: any) {
+    return this.service.getTemplateSettings(user.uid);
+  }
 
+  @UseGuards(FirebaseAuthGuard, RootManagerGuard)
+  @Patch('template')
+  setTemplate(@CurrentUser() user: any, @Body('template') template: string) {
+    return this.service.setTemplate(user.uid, template);
+  }
 
-    // ==================================================
-    // DATA
-    // ==================================================
+  // ==================================================
+  // PERIOD
+  // ==================================================
 
-    @Get('data')
-    getAll(
-        @CurrentUser() user: any,
-    ) {
+  @UseGuards(FirebaseAuthGuard, RootManagerGuard)
+  @Get('period/:periodId')
+  getPeriod(@CurrentUser() user: any, @Param('periodId') periodId: string) {
+    return this.service.getPeriod(user.uid, periodId);
+  }
 
-        return this.service.getAll(
-            user.uid,
-        );
+  // ==================================================
+  // SINGLE PAYSLIP
+  // ==================================================
 
-    }
-
-
-    // ==================================================
-    // TEMPLATE SETTINGS
-    // ==================================================
-
-    @Get('template/settings')
-    getTemplateSettings(
-        @CurrentUser() user: any,
-    ) {
-
-        return this.service.getTemplateSettings(
-            user.uid,
-        );
-
-    }
-
-
-    @Patch('template')
-    setTemplate(
-        @CurrentUser() user: any,
-        @Body('template') template: string,
-    ) {
-
-        return this.service.setTemplate(
-            user.uid,
-            template,
-        );
-
-    }
-
-
-    // ==================================================
-    // PERIOD
-    // ==================================================
-
-    @Get('period/:periodId')
-    getPeriod(
-        @CurrentUser() user: any,
-        @Param('periodId') periodId: string,
-    ) {
-
-        return this.service.getPeriod(
-            user.uid,
-            periodId,
-        );
-
-    }
-
-
-    // ==================================================
-    // SINGLE PAYSLIP
-    // ==================================================
-
-    @Get(':paymentId')
-    get(
-        @CurrentUser() user: any,
-        @Param('paymentId') paymentId: string,
-    ) {
-
-        return this.service.get(
-            user.uid,
-            paymentId,
-        );
-
-    }
-
+  @UseGuards(FirebaseAuthGuard, RootManagerGuard)
+  @Get(':paymentId')
+  get(@CurrentUser() user: any, @Param('paymentId') paymentId: string) {
+    return this.service.get(user.uid, paymentId);
+  }
 }

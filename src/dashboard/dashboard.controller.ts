@@ -1,10 +1,4 @@
-import {
-  Controller,
-  Get,
-  Query,
-  Res,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, Query, Res, UseGuards } from '@nestjs/common';
 
 import type { Response } from 'express';
 
@@ -16,9 +10,7 @@ import { CurrentUser } from '../auth/current-user.decorator';
 
 @Controller('dashboard')
 export class DashboardController {
-  constructor(
-    private readonly dashboardService: DashboardService,
-  ) {}
+  constructor(private readonly dashboardService: DashboardService) {}
 
   // ==========================================================
   // DASHBOARD SPA
@@ -40,11 +32,8 @@ export class DashboardController {
   async me(
     @CurrentUser() user: any,
 
-    @Query('date') date?: string,
+    @Query('date') date?: string
   ) {
-    return this.dashboardService.getDashboardData(
-      user,
-      date,
-    );
+    return this.dashboardService.getDashboardData(user, date);
   }
 }

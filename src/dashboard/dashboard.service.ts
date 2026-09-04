@@ -1025,7 +1025,6 @@ export class DashboardService {
   // ==========================================================
   // LOCATION
   // ==========================================================
-
   private getLocation(user: any) {
     const loc = user?.currLoc;
 
@@ -1034,7 +1033,6 @@ export class DashboardService {
     }
 
     const lat = Number(loc.lat);
-
     const lng = Number(loc.lng);
 
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
@@ -1043,9 +1041,59 @@ export class DashboardService {
 
     return {
       lat,
-
       lng,
+      battery: loc?.battery ?? undefined,
+      ts: this.formatLocationTimestamp(loc?.ts),
     };
+  }
+
+  private formatLocationTimestamp(ts: any): string | undefined {
+    if (ts == null) {
+      return undefined;
+    }
+
+    const timestamp = new Date(ts).getTime();
+
+    if (!Number.isFinite(timestamp)) {
+      return undefined;
+    }
+
+    const now = Date.now();
+    const diffMs = Math.max(0, now - timestamp);
+
+    const minute = 60 * 1000;
+    const hour = 60 * minute;
+    const day = 24 * hour;
+
+    // Less than 1 minute
+    if (diffMs < minute) {
+      return 'just now';
+    }
+
+    // Minutes
+    if (diffMs < hour) {
+      const minutes = Math.floor(diffMs / minute);
+      return `${minutes} min ago`;
+    }
+
+    // Hours
+    if (diffMs < day) {
+      const hours = Math.floor(diffMs / hour);
+      return `${hours} hour${hours !== 1 ? 's' : ''} ago`;
+    }
+
+    // Up to 7 days
+    if (diffMs <= 7 * day) {
+      const days = Math.floor(diffMs / day);
+      return `${days} day${days !== 1 ? 's' : ''} ago`;
+    }
+
+    // More than 7 days -> actual date
+    return new Date(timestamp).toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
   }
 
   // ==========================================================

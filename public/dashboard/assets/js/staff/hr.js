@@ -63,10 +63,12 @@
 
   window.initializeHrPage = async function () {
     try {
-      await Promise.all([ loadShifts(), loadHr(), loadManagers(),]);
-
+      AppAlert.loading('Initializing HR page...');
+      await Promise.all([loadShifts(), loadHr(), loadManagers()]);
+      AppAlert.close();
       $('hrSearch')?.addEventListener('input', renderHr);
     } catch (error) {
+      AppAlert.close();
       console.error('HR page initialization failed:', error);
 
       AppAlert.error(error.message || 'Unable to initialize HR page');
@@ -238,7 +240,7 @@
        * Render the options immediately so that
        * Add HR has a selected parent.
        */
-      console.log(defaultParentId)
+      console.log(defaultParentId);
       renderParentOptions(defaultParentId);
     } catch (error) {
       console.error('Unable to load HR parents:', error);
@@ -504,7 +506,7 @@
         Select manager
       </option>
     `;
-      console.log(managers)
+    console.log(managers);
     managers.forEach((manager) => {
       const id = manager.uid || manager.id || '';
 

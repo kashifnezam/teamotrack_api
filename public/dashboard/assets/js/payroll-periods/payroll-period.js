@@ -1,122 +1,88 @@
 (function () {
+  'use strict';
 
-    'use strict';
+  let periods = [];
 
+  let modal;
 
-    let periods = [];
+  const $ = (id) => document.getElementById(id);
 
-    let modal;
+  const months = [
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
+  ];
 
+  function escapeHtml(value = '') {
+    return String(value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
 
-    const $ = id =>
-        document.getElementById(id);
-
-
-    const months = [
-        'January',
-        'February',
-        'March',
-        'April',
-        'May',
-        'June',
-        'July',
-        'August',
-        'September',
-        'October',
-        'November',
-        'December',
-    ];
-
-
-    function escapeHtml(
-        value = '',
-    ) {
-
-        return String(value)
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#039;');
-
+  function formatDate(value) {
+    if (!value) {
+      return '-';
     }
 
+    const parts = String(value).split('-');
 
-    function formatDate(
-        value,
-    ) {
-
-        if (!value) {
-            return '-';
-        }
-
-
-        const parts =
-            String(value).split('-');
-
-
-        if (parts.length !== 3) {
-            return value;
-        }
-
-
-        return `${parts[2]}-${parts[1]}-${parts[0]}`;
-
+    if (parts.length !== 3) {
+      return value;
     }
 
+    return `${parts[2]}-${parts[1]}-${parts[0]}`;
+  }
 
-    function statusBadge(
-        status,
-    ) {
+  function statusBadge(status) {
+    const config = {
+      open: {
+        className: 'text-bg-primary',
+        label: 'Open',
+      },
 
-        const config = {
+      processing: {
+        className: 'text-bg-warning',
+        label: 'Processing',
+      },
 
-            open: {
-                className: 'text-bg-primary',
-                label: 'Open',
-            },
+      processed: {
+        className: 'text-bg-success',
+        label: 'Processed',
+      },
 
-            processing: {
-                className: 'text-bg-warning',
-                label: 'Processing',
-            },
+      closed: {
+        className: 'text-bg-secondary',
+        label: 'Closed',
+      },
+    };
 
-            processed: {
-                className: 'text-bg-success',
-                label: 'Processed',
-            },
+    const item = config[status] || {
+      className: 'text-bg-secondary',
+      label: status || 'Unknown',
+    };
 
-            closed: {
-                className: 'text-bg-secondary',
-                label: 'Closed',
-            },
-
-        };
-
-
-        const item =
-            config[status] || {
-                className: 'text-bg-secondary',
-                label: status || 'Unknown',
-            };
-
-
-        return `
+    return `
             <span class="badge ${item.className}">
                 ${escapeHtml(item.label)}
             </span>
         `;
+  }
 
-    }
-
-
-    function actionButtons(
-        item,
-    ) {
-
-        if (item.status === 'open') {
-
-            return `
+  function actionButtons(item) {
+    if (item.status === 'open') {
+      return `
             <button
                 type="button"
                 class="btn btn-sm btn-outline-primary"
@@ -130,13 +96,10 @@
 
             </button>
         `;
+    }
 
-        }
-
-
-        if (item.status === 'processing') {
-
-            return `
+    if (item.status === 'processing') {
+      return `
             <button
                 type="button"
                 class="btn btn-sm btn-outline-success"
@@ -150,13 +113,10 @@
 
             </button>
         `;
+    }
 
-        }
-
-
-        if (item.status === 'processed') {
-
-            return `
+    if (item.status === 'processed') {
+      return `
             <button
                 type="button"
                 class="btn btn-sm btn-outline-secondary"
@@ -170,13 +130,10 @@
 
             </button>
         `;
+    }
 
-        }
-
-
-        if (item.status === 'closed') {
-
-            return `
+    if (item.status === 'closed') {
+      return `
             <button
                 type="button"
                 class="btn btn-sm btn-outline-primary"
@@ -190,64 +147,37 @@
 
             </button>
         `;
+    }
 
-        }
-
-
-        return `
+    return `
         <span class="text-muted small">
             No action
         </span>
     `;
+  }
 
+  function render() {
+    $('payrollPeriodLoading').classList.add('d-none');
+
+    if (!periods.length) {
+      $('payrollPeriodEmpty').classList.remove('d-none');
+
+      $('payrollPeriodTableWrap').classList.add('d-none');
+
+      $('payrollPeriodMobileList').classList.add('d-none');
+
+      return;
     }
 
+    $('payrollPeriodEmpty').classList.add('d-none');
 
-    function render() {
+    $('payrollPeriodTableWrap').classList.remove('d-none');
 
-        $('payrollPeriodLoading')
-            .classList
-            .add('d-none');
+    $('payrollPeriodMobileList').classList.remove('d-none');
 
-
-        if (!periods.length) {
-
-            $('payrollPeriodEmpty')
-                .classList
-                .remove('d-none');
-
-            $('payrollPeriodTableWrap')
-                .classList
-                .add('d-none');
-
-            $('payrollPeriodMobileList')
-                .classList
-                .add('d-none');
-
-            return;
-
-        }
-
-
-        $('payrollPeriodEmpty')
-            .classList
-            .add('d-none');
-
-
-        $('payrollPeriodTableWrap')
-            .classList
-            .remove('d-none');
-
-
-        $('payrollPeriodMobileList')
-            .classList
-            .remove('d-none');
-
-
-        $('payrollPeriodTableBody')
-            .innerHTML =
-            periods.map(
-                item => `
+    $('payrollPeriodTableBody').innerHTML = periods
+      .map(
+        (item) => `
 
                     <tr>
 
@@ -255,12 +185,7 @@
 
                             <div class="payroll-period-name">
 
-                                ${escapeHtml(
-                    item.name ||
-                    `${months[
-                    Number(item.month) - 1
-                    ]} ${item.year}`,
-                )}
+                                ${escapeHtml(item.name || `${months[Number(item.month) - 1]} ${item.year}`)}
 
                             </div>
 
@@ -268,23 +193,17 @@
 
 
                         <td>
-                            ${formatDate(
-                    item.startDate,
-                )}
+                            ${formatDate(item.startDate)}
                         </td>
 
 
                         <td>
-                            ${formatDate(
-                    item.endDate,
-                )}
+                            ${formatDate(item.endDate)}
                         </td>
 
 
                         <td>
-                            ${statusBadge(
-                    item.status,
-                )}
+                            ${statusBadge(item.status)}
                         </td>
 
 
@@ -296,15 +215,13 @@
 
                     </tr>
 
-                `,
-            )
-                .join('');
+                `
+      )
+      .join('');
 
-
-        $('payrollPeriodMobileList')
-            .innerHTML =
-            periods.map(
-                item => `
+    $('payrollPeriodMobileList').innerHTML = periods
+      .map(
+        (item) => `
 
                     <div class="payroll-period-card">
 
@@ -314,26 +231,17 @@
 
                                 <div class="payroll-period-name">
 
-                                    ${escapeHtml(
-                    item.name ||
-                    `${months[
-                    Number(item.month) - 1
-                    ]} ${item.year}`,
-                )}
+                                    ${escapeHtml(item.name || `${months[Number(item.month) - 1]} ${item.year}`)}
 
                                 </div>
 
                                 <div class="payroll-period-meta text-muted mt-1">
 
-                                    ${formatDate(
-                    item.startDate,
-                )}
+                                    ${formatDate(item.startDate)}
 
                                     →
 
-                                    ${formatDate(
-                    item.endDate,
-                )}
+                                    ${formatDate(item.endDate)}
 
                                 </div>
 
@@ -342,9 +250,7 @@
 
                             <div>
 
-                                ${statusBadge(
-                    item.status,
-                )}
+                                ${statusBadge(item.status)}
 
                             </div>
 
@@ -359,549 +265,243 @@
 
                     </div>
 
-                `,
-            )
-                .join('');
+                `
+      )
+      .join('');
+  }
 
+  async function loadPeriods() {
+    $('payrollPeriodLoading').classList.remove('d-none');
+
+    $('payrollPeriodEmpty').classList.add('d-none');
+
+    $('payrollPeriodTableWrap').classList.add('d-none');
+
+    $('payrollPeriodMobileList').classList.add('d-none');
+
+    try {
+      AppAlert.loading('Loading payroll periods...');
+      const response = await Api.get('/payroll-periods/data');
+
+      periods = Array.isArray(response) ? response : response?.periods || [];
+
+      render();
+      AppAlert.close();
+    } catch (error) {
+      $('payrollPeriodLoading').classList.add('d-none');
+      AppAlert.close();
+      AppAlert.error(error?.message || 'Failed to load payroll periods');
+    }
+  }
+
+  function setDefaultDate() {
+    const now = new Date();
+
+    $('payrollYear').value = now.getFullYear();
+
+    $('payrollMonth').value = now.getMonth() + 1;
+
+    updatePreview();
+  }
+
+  function updatePreview() {
+    const year = Number($('payrollYear').value);
+
+    const month = Number($('payrollMonth').value);
+
+    if (!year || !month || month < 1 || month > 12) {
+      $('payrollPeriodPreview').classList.add('d-none');
+
+      return;
     }
 
+    const lastDay = new Date(year, month, 0).getDate();
 
-    async function loadPeriods() {
+    const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
 
-        $('payrollPeriodLoading')
-            .classList
-            .remove('d-none');
+    const endDate = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
 
+    $('payrollPeriodPreviewName').textContent = `${months[month - 1]} ${year}`;
 
-        $('payrollPeriodEmpty')
-            .classList
-            .add('d-none');
+    $('payrollPeriodPreviewDates').textContent = `${formatDate(startDate)} → ${formatDate(endDate)}`;
 
+    $('payrollPeriodPreview').classList.remove('d-none');
+  }
 
-        $('payrollPeriodTableWrap')
-            .classList
-            .add('d-none');
+  function resetForm() {
+    $('payrollPeriodForm').reset();
 
+    setDefaultDate();
+  }
 
-        $('payrollPeriodMobileList')
-            .classList
-            .add('d-none');
+  function openModal() {
+    resetForm();
 
+    modal = bootstrap.Modal.getOrCreateInstance($('payrollPeriodModal'));
 
-        try {
+    modal.show();
+  }
 
-            const response =
-                await Api.get(
-                    '/payroll-periods/data',
-                );
+  async function createPeriod(event) {
+    event.preventDefault();
 
+    const year = Number($('payrollYear').value);
 
-            periods =
-                Array.isArray(response)
-                    ? response
-                    : response?.periods || [];
+    const month = Number($('payrollMonth').value);
 
+    if (!year || year < 2000) {
+      AppAlert.error('Valid year is required');
 
-            render();
-
-        } catch (error) {
-
-            $('payrollPeriodLoading')
-                .classList
-                .add('d-none');
-
-
-            AppAlert.error(
-                error?.message ||
-                'Failed to load payroll periods',
-            );
-
-        }
-
+      return;
     }
 
+    if (!month || month < 1 || month > 12) {
+      AppAlert.error('Valid month is required');
 
-    function setDefaultDate() {
-
-        const now =
-            new Date();
-
-
-        $('payrollYear')
-            .value =
-            now.getFullYear();
-
-
-        $('payrollMonth')
-            .value =
-            now.getMonth() + 1;
-
-
-        updatePreview();
-
+      return;
     }
 
+    try {
+      $('savePayrollPeriodBtn').disabled = true;
 
-    function updatePreview() {
+      AppAlert.loading('Creating payroll period...');
 
-        const year =
-            Number(
-                $('payrollYear').value,
-            );
+      await Api.post('/payroll-periods', {
+        year,
+        month,
+      });
 
+      AppAlert.close();
 
-        const month =
-            Number(
-                $('payrollMonth').value,
-            );
+      bootstrap.Modal.getOrCreateInstance($('payrollPeriodModal')).hide();
 
+      await loadPeriods();
 
-        if (
-            !year ||
-            !month ||
-            month < 1 ||
-            month > 12
-        ) {
+      AppAlert.success('Payroll period created successfully');
+    } catch (error) {
+      AppAlert.close();
 
-            $('payrollPeriodPreview')
-                .classList
-                .add('d-none');
+      AppAlert.error(error?.message || 'Failed to create payroll period');
+    } finally {
+      $('savePayrollPeriodBtn').disabled = false;
+    }
+  }
 
-            return;
+  window.startPayrollProcessing = async function (id) {
+    const confirmed = await AppAlert.confirm('Start processing this payroll period?');
 
-        }
-
-
-        const lastDay =
-            new Date(
-                year,
-                month,
-                0,
-            ).getDate();
-
-
-        const startDate =
-            `${year}-${String(month).padStart(2, '0')}-01`;
-
-
-        const endDate =
-            `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
-
-
-        $('payrollPeriodPreviewName')
-            .textContent =
-            `${months[month - 1]} ${year}`;
-
-
-        $('payrollPeriodPreviewDates')
-            .textContent =
-            `${formatDate(startDate)} → ${formatDate(endDate)}`;
-
-
-        $('payrollPeriodPreview')
-            .classList
-            .remove('d-none');
-
+    if (!confirmed) {
+      return;
     }
 
+    try {
+      AppAlert.loading('Starting payroll processing...');
 
-    function resetForm() {
+      await Api.patch(`/payroll-periods/${id}/processing`, {});
 
-        $('payrollPeriodForm')
-            .reset();
+      AppAlert.close();
 
+      await loadPeriods();
 
-        setDefaultDate();
+      AppAlert.success('Payroll period is now processing');
+    } catch (error) {
+      AppAlert.close();
 
+      AppAlert.error(error?.message || 'Failed to start payroll processing');
+    }
+  };
+
+  window.markPayrollProcessed = async function (id) {
+    const confirmed = await AppAlert.confirm('Mark this payroll period as processed?');
+
+    if (!confirmed) {
+      return;
     }
 
+    try {
+      AppAlert.loading('Finalizing payroll period...');
 
-    function openModal() {
+      await Api.patch(`/payroll-periods/${id}/processed`, {});
 
-        resetForm();
+      AppAlert.close();
 
+      await loadPeriods();
 
-        modal =
-            bootstrap.Modal
-                .getOrCreateInstance(
-                    $('payrollPeriodModal'),
-                );
+      AppAlert.success('Payroll period marked as processed');
+    } catch (error) {
+      AppAlert.close();
 
+      AppAlert.error(error?.message || 'Failed to process payroll period');
+    }
+  };
 
-        modal.show();
+  window.closePayrollPeriod = async function (id) {
+    const confirmed = await AppAlert.confirm(
+      'Close this payroll period? You can reopen it later if payment corrections are required.'
+    );
 
+    if (!confirmed) {
+      return;
     }
 
+    try {
+      AppAlert.loading('Closing payroll period...');
 
-    async function createPeriod(
-        event,
-    ) {
+      await Api.patch(`/payroll-periods/${id}/closed`, {});
 
-        event.preventDefault();
+      AppAlert.close();
 
+      await loadPeriods();
 
-        const year =
-            Number(
-                $('payrollYear').value,
-            );
+      AppAlert.success('Payroll period closed successfully');
+    } catch (error) {
+      AppAlert.close();
 
+      AppAlert.error(error?.message || 'Failed to close payroll period');
+    }
+  };
 
-        const month =
-            Number(
-                $('payrollMonth').value,
-            );
+  window.reopenPayrollPeriod = async function (id) {
+    const confirmed = await AppAlert.confirm(
+      'Reopen this payroll period? It will become processed and can be paid again.'
+    );
 
-
-        if (
-            !year ||
-            year < 2000
-        ) {
-
-            AppAlert.error(
-                'Valid year is required',
-            );
-
-            return;
-
-        }
-
-
-        if (
-            !month ||
-            month < 1 ||
-            month > 12
-        ) {
-
-            AppAlert.error(
-                'Valid month is required',
-            );
-
-            return;
-
-        }
-
-
-        try {
-
-            $('savePayrollPeriodBtn')
-                .disabled = true;
-
-
-            AppAlert.loading(
-                'Creating payroll period...',
-            );
-
-
-            await Api.post(
-                '/payroll-periods',
-                {
-                    year,
-                    month,
-                },
-            );
-
-
-            AppAlert.close();
-
-
-            bootstrap.Modal
-                .getOrCreateInstance(
-                    $('payrollPeriodModal'),
-                )
-                .hide();
-
-
-            await loadPeriods();
-
-
-            AppAlert.success(
-                'Payroll period created successfully',
-            );
-
-        } catch (error) {
-
-            AppAlert.close();
-
-
-            AppAlert.error(
-                error?.message ||
-                'Failed to create payroll period',
-            );
-
-        } finally {
-
-            $('savePayrollPeriodBtn')
-                .disabled = false;
-
-        }
-
+    if (!confirmed) {
+      return;
     }
 
+    try {
+      AppAlert.loading('Reopening payroll period...');
 
-    window.startPayrollProcessing =
-        async function (
-            id,
-        ) {
+      await Api.patch(`/payroll-periods/${id}/reopen`, {});
 
-            const confirmed =
-                await AppAlert.confirm(
-                    'Start processing this payroll period?',
-                );
+      AppAlert.close();
 
+      await loadPeriods();
 
-            if (!confirmed) {
-                return;
-            }
+      AppAlert.success('Payroll period reopened successfully');
+    } catch (error) {
+      AppAlert.close();
 
+      AppAlert.error(error?.message || 'Failed to reopen payroll period');
+    }
+  };
 
-            try {
+  window.initializePayrollPeriodsPage = async function () {
+    modal = bootstrap.Modal.getOrCreateInstance($('payrollPeriodModal'));
 
-                AppAlert.loading(
-                    'Starting payroll processing...',
-                );
+    $('addPayrollPeriodBtn').addEventListener('click', openModal);
 
+    $('payrollPeriodForm').addEventListener('submit', createPeriod);
 
-                await Api.patch(
-                    `/payroll-periods/${id}/processing`,
-                    {},
-                );
+    $('payrollYear').addEventListener('input', updatePreview);
 
+    $('payrollMonth').addEventListener('change', updatePreview);
 
-                AppAlert.close();
+    $('payrollPeriodModal').addEventListener('hidden.bs.modal', resetForm);
 
+    setDefaultDate();
 
-                await loadPeriods();
-
-
-                AppAlert.success(
-                    'Payroll period is now processing',
-                );
-
-            } catch (error) {
-
-                AppAlert.close();
-
-
-                AppAlert.error(
-                    error?.message ||
-                    'Failed to start payroll processing',
-                );
-
-            }
-
-        };
-
-
-    window.markPayrollProcessed =
-        async function (
-            id,
-        ) {
-
-            const confirmed =
-                await AppAlert.confirm(
-                    'Mark this payroll period as processed?',
-                );
-
-
-            if (!confirmed) {
-                return;
-            }
-
-
-            try {
-
-                AppAlert.loading(
-                    'Finalizing payroll period...',
-                );
-
-
-                await Api.patch(
-                    `/payroll-periods/${id}/processed`,
-                    {},
-                );
-
-
-                AppAlert.close();
-
-
-                await loadPeriods();
-
-
-                AppAlert.success(
-                    'Payroll period marked as processed',
-                );
-
-            } catch (error) {
-
-                AppAlert.close();
-
-
-                AppAlert.error(
-                    error?.message ||
-                    'Failed to process payroll period',
-                );
-
-            }
-
-        };
-
-
-    window.closePayrollPeriod =
-        async function (
-            id,
-        ) {
-
-            const confirmed =
-                await AppAlert.confirm(
-                   'Close this payroll period? You can reopen it later if payment corrections are required.',
-                );
-
-
-            if (!confirmed) {
-                return;
-            }
-
-
-            try {
-
-                AppAlert.loading(
-                    'Closing payroll period...',
-                );
-
-
-                await Api.patch(
-                    `/payroll-periods/${id}/closed`,
-                    {},
-                );
-
-
-                AppAlert.close();
-
-
-                await loadPeriods();
-
-
-                AppAlert.success(
-                    'Payroll period closed successfully',
-                );
-
-            } catch (error) {
-
-                AppAlert.close();
-
-
-                AppAlert.error(
-                    error?.message ||
-                    'Failed to close payroll period',
-                );
-
-            }
-
-        };
-
-    window.reopenPayrollPeriod =
-        async function (
-            id,
-        ) {
-
-            const confirmed =
-                await AppAlert.confirm(
-                    'Reopen this payroll period? It will become processed and can be paid again.',
-                );
-
-
-            if (!confirmed) {
-                return;
-            }
-
-
-            try {
-
-                AppAlert.loading(
-                    'Reopening payroll period...',
-                );
-
-
-                await Api.patch(
-                    `/payroll-periods/${id}/reopen`,
-                    {},
-                );
-
-
-                AppAlert.close();
-
-
-                await loadPeriods();
-
-
-                AppAlert.success(
-                    'Payroll period reopened successfully',
-                );
-
-            } catch (error) {
-
-                AppAlert.close();
-
-
-                AppAlert.error(
-                    error?.message ||
-                    'Failed to reopen payroll period',
-                );
-
-            }
-
-        };
-
-    window.initializePayrollPeriodsPage =
-        async function () {
-
-            modal =
-                bootstrap.Modal
-                    .getOrCreateInstance(
-                        $('payrollPeriodModal'),
-                    );
-
-
-            $('addPayrollPeriodBtn')
-                .addEventListener(
-                    'click',
-                    openModal,
-                );
-
-
-            $('payrollPeriodForm')
-                .addEventListener(
-                    'submit',
-                    createPeriod,
-                );
-
-
-            $('payrollYear')
-                .addEventListener(
-                    'input',
-                    updatePreview,
-                );
-
-
-            $('payrollMonth')
-                .addEventListener(
-                    'change',
-                    updatePreview,
-                );
-
-
-            $('payrollPeriodModal')
-                .addEventListener(
-                    'hidden.bs.modal',
-                    resetForm,
-                );
-
-
-            setDefaultDate();
-
-
-            await loadPeriods();
-
-        };
-
+    await loadPeriods();
+  };
 })();

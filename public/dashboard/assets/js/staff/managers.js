@@ -19,9 +19,11 @@
     ====================================================== */
 
   window.initializeManagersPage = async function () {
-    await Promise.all([ loadShifts(), loadManagers()]);
+    AppAlert.loading('Initializing managers page...');
+    await Promise.all([ loadShifts(), loadManagers(), loadParentManagers() ]);
 
     document.getElementById('staffSearch')?.addEventListener('input', renderManagers);
+    AppAlert.close();
   };
 
   /* ======================================================

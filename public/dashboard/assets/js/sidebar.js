@@ -4,149 +4,134 @@
 ========================================================== */
 
 function initializeSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  const toggle = document.getElementById('sidebarToggle');
 
-    const sidebar = document.getElementById("sidebar"
-        );
+  if (!sidebar) return;
 
-    const toggle = document.getElementById(
-            "sidebarToggle"
-        );
+  /* ======================================================
+       Company Branding
+    ====================================================== */
 
-    if (!sidebar) return;
+  function loadCompanyBranding() {
+    try {
+      const stored = localStorage.getItem('company');
 
+      if (!stored) {
+        console.log('No company data found in localStorage');
+        return;
+      }
 
-    /* ======================================================
+      const data = JSON.parse(stored);
+
+      // Supports both:
+      // { company: { businessName, logo } }
+      // and:
+      // { businessName, logo }
+
+      const company = data?.company ?? data;
+      const orgLogo = document.getElementById('orgLogo');
+      const orgName = document.getElementById('orgName');
+
+      /* ==================================================
+           Business Name
+        ================================================== */
+
+      if (orgName && company?.businessName?.trim()) {
+        const nameElement = orgName.querySelector('h4');
+
+        if (nameElement) {
+          const businessName = company.businessName.trim();
+
+          nameElement.textContent = businessName;
+          nameElement.title = businessName;
+        }
+      }
+
+      /* ==================================================
+           Company Logo
+        ================================================== */
+
+      if (orgLogo && company?.logo?.trim()) {
+        const logoElement = orgLogo.querySelector('img');
+
+        if (logoElement) {
+          logoElement.src = company.logo.trim();
+
+          logoElement.alt = `${company.businessName || 'Company'} Logo`;
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to load company branding:', error);
+    }
+  }
+
+  // Load company name and logo
+  loadCompanyBranding();
+
+  /* ======================================================
        Toggle
     ====================================================== */
 
-    toggle?.addEventListener(
-        "click",
-        () => {
+  toggle?.addEventListener('click', () => {
+    if (window.innerWidth <= 992) {
+      document.body.classList.toggle('sidebar-open');
+    } else {
+      document.body.classList.toggle('sidebar-collapsed');
+    }
+  });
 
-            if (
-                window.innerWidth <= 992
-            ) {
-
-                document.body.classList.toggle(
-                    "sidebar-open"
-                );
-
-            } else {
-
-                document.body.classList.toggle(
-                    "sidebar-collapsed"
-                );
-
-            }
-
-        }
-    );
-
-
-    /* ======================================================
+  /* ======================================================
        Overlay
     ====================================================== */
 
-    let overlay =
-        document.querySelector(
-            ".sidebar-overlay"
-        );
+  let overlay = document.querySelector('.sidebar-overlay');
 
+  if (!overlay) {
+    overlay = document.createElement('div');
 
-    if (!overlay) {
+    overlay.className = 'sidebar-overlay';
 
-        overlay =
-            document.createElement(
-                "div"
-            );
+    document.body.appendChild(overlay);
+  }
 
-        overlay.className =
-            "sidebar-overlay";
+  overlay.onclick = () => {
+    document.body.classList.remove('sidebar-open');
+  };
 
-        document.body.appendChild(
-            overlay
-        );
-
-    }
-
-
-    overlay.onclick =
-        () => {
-
-            document.body.classList.remove(
-                "sidebar-open"
-            );
-
-        };
-
-
-    /* ======================================================
+  /* ======================================================
        Submenus
     ====================================================== */
 
-    document
-        .querySelectorAll(
-            ".has-submenu > .menu-link"
-        )
-        .forEach(link => {
+  document.querySelectorAll('.has-submenu > .menu-link').forEach((link) => {
+    link.onclick = () => {
+      const parent = link.parentElement;
 
-            link.onclick =
-                () => {
+      if (!parent) return;
 
-                    const parent =
-                        link.parentElement;
+      document.querySelectorAll('.has-submenu.open').forEach((item) => {
+        if (item !== parent) {
+          item.classList.remove('open');
+        }
+      });
 
+      parent.classList.toggle('open');
+    };
+  });
 
-                    document
-                        .querySelectorAll(
-                            ".has-submenu.open"
-                        )
-                        .forEach(item => {
-
-                            if (
-                                item !== parent
-                            ) {
-
-                                item.classList.remove(
-                                    "open"
-                                );
-
-                            }
-
-                        });
-
-
-                    parent.classList.toggle(
-                        "open"
-                    );
-
-                };
-
-        });
-
-
-    /* ======================================================
+  /* ======================================================
        Resize
     ====================================================== */
 
-    window.addEventListener(
-        "resize",
-        () => {
+  window.addEventListener('resize', () => {
+    if (window.innerWidth > 992) {
+      document.body.classList.remove('sidebar-open');
+    }
+  });
 
-            if (
-                window.innerWidth > 992
-            ) {
+  /* ======================================================
+       Active Menu
+    ====================================================== */
 
-                document.body.classList.remove(
-                    "sidebar-open"
-                );
-
-            }
-
-        }
-    );
-
-
-    setActiveMenu();
-
+  setActiveMenu();
 }

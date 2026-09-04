@@ -71,9 +71,11 @@
 
   async function loadExecutives() {
     try {
+      AppAlert.loading('Loading executives...');
       const data = await Api.get('/executives/data');
 
       if (!data) {
+        AppAlert.close();
         return;
       }
 
@@ -84,9 +86,11 @@
       populateTeams();
 
       renderExecutives();
+      AppAlert.close();
     } catch (error) {
       console.error(error);
 
+      AppAlert.close();
       AppAlert.error(error.message || 'Unable to load executives');
     }
   }

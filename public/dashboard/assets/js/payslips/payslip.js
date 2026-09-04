@@ -1,288 +1,149 @@
 (function () {
+  'use strict';
 
-    'use strict';
+  let payslips = [];
 
+  let periods = [];
 
-    let payslips = [];
+  let selectedPayslip = null;
 
-    let periods = [];
+  let currentTemplate = 'professional';
 
-    let selectedPayslip = null;
+  let selectedTemplate = 'professional';
 
-    let currentTemplate =
-        'professional';
+  const $ = (id) => document.getElementById(id);
 
-    let selectedTemplate =
-        'professional';
+  const templates = {
+    professional: {
+      title: 'Professional',
+      description: 'Formal HR-friendly layout.',
+    },
 
+    modern: {
+      title: 'Modern',
+      description: 'Clean digital-first design.',
+    },
 
-    const $ =
-        id =>
-            document.getElementById(id);
+    classic: {
+      title: 'Classic',
+      description: 'Traditional detailed payslip.',
+    },
 
+    compact: {
+      title: 'Compact',
+      description: 'Minimal one-page layout.',
+    },
+  };
 
-    const templates = {
+  function escapeHtml(value = '') {
+    return String(value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
 
-        professional: {
-            title: 'Professional',
-            description:
-                'Formal HR-friendly layout.',
-        },
+  function money(value) {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      maximumFractionDigits: 2,
+    }).format(Number(value || 0));
+  }
 
-        modern: {
-            title: 'Modern',
-            description:
-                'Clean digital-first design.',
-        },
+  function formatDate(value) {
+    if (!value) {
+      return '-';
+    }
 
-        classic: {
-            title: 'Classic',
-            description:
-                'Traditional detailed payslip.',
-        },
+    if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+      const [year, month, day] = value.split('-');
 
-        compact: {
-            title: 'Compact',
-            description:
-                'Minimal one-page layout.',
-        },
+      return `${day}-${month}-${year}`;
+    }
 
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
+      return '-';
+    }
+
+    return new Intl.DateTimeFormat('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    }).format(date);
+  }
+
+  function methodLabel(value) {
+    const labels = {
+      cash: 'Cash',
+
+      bank_transfer: 'Bank Transfer',
+
+      upi: 'UPI',
+
+      cheque: 'Cheque',
     };
 
+    return labels[value] || value || '-';
+  }
 
-    function escapeHtml(
-        value = '',
-    ) {
+  // ==================================================
+  // SUMMARY
+  // ==================================================
 
-        return String(value)
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#039;');
+  function renderSummary() {
+    if (!payslips.length) {
+      $('payslipSummary').classList.add('d-none');
 
+      return;
     }
 
+    const total = payslips.reduce((sum, item) => sum + Number(item.salary?.netSalary || item.amount || 0), 0);
 
-    function money(
-        value,
-    ) {
+    $('payslipCount').textContent = payslips.length;
 
-        return new Intl.NumberFormat(
-            'en-IN',
-            {
-                style: 'currency',
-                currency: 'INR',
-                maximumFractionDigits: 2,
-            },
-        ).format(
-            Number(value || 0),
-        );
+    $('payslipTotal').textContent = money(total);
 
+    $('payslipSummary').classList.remove('d-none');
+  }
+
+  // ==================================================
+  // LIST
+  // ==================================================
+
+  function render() {
+    $('payslipLoading').classList.add('d-none');
+
+    renderSummary();
+
+    if (!payslips.length) {
+      $('payslipEmpty').classList.remove('d-none');
+
+      $('payslipTableWrap').classList.add('d-none');
+
+      $('payslipMobileList').classList.add('d-none');
+
+      return;
     }
 
+    $('payslipEmpty').classList.add('d-none');
 
-    function formatDate(
-        value,
-    ) {
+    $('payslipTableWrap').classList.remove('d-none');
 
-        if (!value) {
-            return '-';
-        }
+    $('payslipMobileList').classList.remove('d-none');
 
+    $('payslipTableBody').innerHTML = payslips
+      .map((item) => {
+        const salary = item.salary || {};
 
-        if (
-            typeof value === 'string' &&
-            /^\d{4}-\d{2}-\d{2}$/.test(value)
-        ) {
+        const payment = item.payment || {};
 
-            const [
-                year,
-                month,
-                day,
-            ] =
-                value.split('-');
+        const attendance = item.attendance || {};
 
-
-            return `${day}-${month}-${year}`;
-
-        }
-
-
-        const date =
-            new Date(value);
-
-
-        if (
-            Number.isNaN(
-                date.getTime(),
-            )
-        ) {
-
-            return '-';
-
-        }
-
-
-        return new Intl.DateTimeFormat(
-            'en-IN',
-            {
-                day: '2-digit',
-                month: 'short',
-                year: 'numeric',
-            },
-        ).format(date);
-
-    }
-
-
-    function methodLabel(
-        value,
-    ) {
-
-        const labels = {
-
-            cash:
-                'Cash',
-
-            bank_transfer:
-                'Bank Transfer',
-
-            upi:
-                'UPI',
-
-            cheque:
-                'Cheque',
-
-        };
-
-
-        return (
-            labels[value] ||
-            value ||
-            '-'
-        );
-
-    }
-
-
-    // ==================================================
-    // SUMMARY
-    // ==================================================
-
-    function renderSummary() {
-
-        if (!payslips.length) {
-
-            $('payslipSummary')
-                .classList
-                .add('d-none');
-
-            return;
-
-        }
-
-
-        const total =
-            payslips.reduce(
-                (
-                    sum,
-                    item,
-                ) =>
-                    sum +
-                    Number(
-                        item.salary?.netSalary ||
-                        item.amount ||
-                        0,
-                    ),
-                0,
-            );
-
-
-        $('payslipCount')
-            .textContent =
-            payslips.length;
-
-
-        $('payslipTotal')
-            .textContent =
-            money(total);
-
-
-        $('payslipSummary')
-            .classList
-            .remove('d-none');
-
-    }
-
-
-    // ==================================================
-    // LIST
-    // ==================================================
-
-    function render() {
-
-        $('payslipLoading')
-            .classList
-            .add('d-none');
-
-
-        renderSummary();
-
-
-        if (!payslips.length) {
-
-            $('payslipEmpty')
-                .classList
-                .remove('d-none');
-
-            $('payslipTableWrap')
-                .classList
-                .add('d-none');
-
-            $('payslipMobileList')
-                .classList
-                .add('d-none');
-
-            return;
-
-        }
-
-
-        $('payslipEmpty')
-            .classList
-            .add('d-none');
-
-
-        $('payslipTableWrap')
-            .classList
-            .remove('d-none');
-
-
-        $('payslipMobileList')
-            .classList
-            .remove('d-none');
-
-
-        $('payslipTableBody')
-            .innerHTML =
-            payslips.map(
-                item => {
-
-                    const salary =
-                        item.salary ||
-                        {};
-
-                    const payment =
-                        item.payment ||
-                        {};
-
-                    const attendance =
-                        item.attendance ||
-                        {};
-
-
-                    return `
+        return `
 
                         <tr>
 
@@ -290,20 +151,13 @@
 
                                 <div class="fw-semibold">
 
-                                    ${escapeHtml(
-                        item.employee?.name ||
-                        item.employeeName ||
-                        '-',
-                    )}
+                                    ${escapeHtml(item.employee?.name || item.employeeName || '-')}
 
                                 </div>
 
                                 <div class="small text-muted">
 
-                                    ${escapeHtml(
-                        item.employee?.role ||
-                        '',
-                    )}
+                                    ${escapeHtml(item.employee?.role || '')}
 
                                 </div>
 
@@ -312,66 +166,42 @@
 
                             <td>
 
-                                ${Number(
-                        attendance.payableDays ||
-                        item.payableDays ||
-                        0,
-                    )}
+                                ${Number(attendance.payableDays || item.payableDays || 0)}
 
                             </td>
 
 
                             <td>
 
-                                ${money(
-                        salary.payableGross ??
-                        salary.grossSalary ??
-                        0,
-                    )}
+                                ${money(salary.payableGross ?? salary.grossSalary ?? 0)}
 
                             </td>
 
 
                             <td>
 
-                                ${money(
-                        salary.payableDeduction ??
-                        salary.totalDeduction ??
-                        0,
-                    )}
+                                ${money(salary.payableDeduction ?? salary.totalDeduction ?? 0)}
 
                             </td>
 
 
                             <td class="fw-semibold">
 
-                                ${money(
-                        salary.netSalary ??
-                        item.amount ??
-                        0,
-                    )}
+                                ${money(salary.netSalary ?? item.amount ?? 0)}
 
                             </td>
 
 
                             <td>
 
-                                ${formatDate(
-                        payment.paymentDate ||
-                        item.paymentDate,
-                    )}
+                                ${formatDate(payment.paymentDate || item.paymentDate)}
 
                             </td>
 
 
                             <td>
 
-                                ${escapeHtml(
-                        methodLabel(
-                            payment.paymentMethod ||
-                            item.paymentMethod,
-                        ),
-                    )}
+                                ${escapeHtml(methodLabel(payment.paymentMethod || item.paymentMethod))}
 
                             </td>
 
@@ -380,10 +210,7 @@
 
                                 <button
                                     class="btn btn-sm btn-outline-primary"
-                                    data-payslip-view="${escapeHtml(
-                        item.paymentId ||
-                        item.id,
-                    )}">
+                                    data-payslip-view="${escapeHtml(item.paymentId || item.id)}">
 
                                     <i class="bi bi-eye me-1"></i>
                                     View
@@ -395,31 +222,18 @@
                         </tr>
 
                     `;
+      })
+      .join('');
 
-                },
-            )
-                .join('');
+    $('payslipMobileList').innerHTML = payslips
+      .map((item) => {
+        const salary = item.salary || {};
 
+        const payment = item.payment || {};
 
-        $('payslipMobileList')
-            .innerHTML =
-            payslips.map(
-                item => {
+        const attendance = item.attendance || {};
 
-                    const salary =
-                        item.salary ||
-                        {};
-
-                    const payment =
-                        item.payment ||
-                        {};
-
-                    const attendance =
-                        item.attendance ||
-                        {};
-
-
-                    return `
+        return `
 
                         <div class="p-3 border-bottom">
 
@@ -429,20 +243,13 @@
 
                                     <div class="fw-semibold">
 
-                                        ${escapeHtml(
-                        item.employee?.name ||
-                        item.employeeName ||
-                        '-',
-                    )}
+                                        ${escapeHtml(item.employee?.name || item.employeeName || '-')}
 
                                     </div>
 
                                     <div class="small text-muted">
 
-                                        ${escapeHtml(
-                        item.employee?.role ||
-                        '',
-                    )}
+                                        ${escapeHtml(item.employee?.role || '')}
 
                                     </div>
 
@@ -465,10 +272,7 @@
 
                                     <div class="fw-semibold">
 
-                                        ${Number(
-                        attendance.payableDays ||
-                        0,
-                    )}
+                                        ${Number(attendance.payableDays || 0)}
 
                                     </div>
 
@@ -483,11 +287,7 @@
 
                                     <div class="fw-semibold">
 
-                                        ${money(
-                        salary.netSalary ||
-                        item.amount ||
-                        0,
-                    )}
+                                        ${money(salary.netSalary || item.amount || 0)}
 
                                     </div>
 
@@ -498,10 +298,7 @@
 
                             <button
                                 class="btn btn-sm btn-outline-primary w-100 mt-3"
-                                data-payslip-view="${escapeHtml(
-                        item.paymentId ||
-                        item.id,
-                    )}">
+                                data-payslip-view="${escapeHtml(item.paymentId || item.id)}">
 
                                 View Payslip
 
@@ -510,92 +307,65 @@
                         </div>
 
                     `;
+      })
+      .join('');
+  }
 
-                },
-            )
-                .join('');
+  // ==================================================
+  // TEMPLATE PREVIEW
+  // ==================================================
 
-    }
+  function templatePreview(template) {
+    const data = {
+      company: {
+        name: 'Your Company',
+      },
 
+      employee: {
+        name: 'Employee Name',
+      },
 
-    // ==================================================
-    // TEMPLATE PREVIEW
-    // ==================================================
+      period: {
+        name: 'August 2026',
+      },
 
-    function templatePreview(
-        template,
-    ) {
+      salary: {
+        grossSalary: 50000,
+        totalDeduction: 5000,
+        netSalary: 45000,
+      },
+    };
 
-        const data = {
+    return renderTemplate(template, data, true);
+  }
 
-            company: {
-                name: 'Your Company',
-            },
+  function renderTemplateCards() {
+    $('payslipTemplates').innerHTML = Object.keys(templates)
+      .map((key) => {
+        const item = templates[key];
 
-            employee: {
-                name: 'Employee Name',
-            },
+        const isSelected = selectedTemplate === key;
 
-            period: {
-                name: 'August 2026',
-            },
-
-            salary: {
-                grossSalary: 50000,
-                totalDeduction: 5000,
-                netSalary: 45000,
-            },
-
-        };
-
-
-        return renderTemplate(
-            template,
-            data,
-            true,
-        );
-
-    }
-
-
-    function renderTemplateCards() {
-
-        $('payslipTemplates')
-            .innerHTML =
-            Object.keys(templates)
-                .map(
-                    key => {
-
-                        const item =
-                            templates[key];
-
-
-                        const isSelected =
-                            selectedTemplate === key;
-
-
-                        return `
+        return `
 
                         <div class="col-12 col-md-6 col-xl-3">
 
                             <div
-                                class="payslip-template-card ${isSelected
-                                ? 'active'
-                                : ''
-                            }"
+                                class="payslip-template-card ${isSelected ? 'active' : ''}"
                                 data-template="${key}">
 
 
-                                ${isSelected
-                                ? `
+                                ${
+                                  isSelected
+                                    ? `
                                             <div class="payslip-template-selected">
 
                                                 <i class="bi bi-check2"></i>
 
                                             </div>
                                         `
-                                : ''
-                            }
+                                    : ''
+                                }
 
 
                                 <div class="d-flex align-items-start gap-2 pe-4">
@@ -606,8 +376,9 @@
 
                                             ${item.title}
 
-                                            ${key === 'professional'
-                                ? `
+                                            ${
+                                              key === 'professional'
+                                                ? `
                                                         <span class="payslip-template-recommended">
 
                                                             <i class="bi bi-star-fill"></i>
@@ -616,8 +387,8 @@
 
                                                         </span>
                                                     `
-                                : ''
-                            }
+                                                : ''
+                                            }
 
                                         </div>
 
@@ -644,21 +415,23 @@
 
                                     <div class="small text-muted">
 
-                                        ${isSelected
-                                ? `
+                                        ${
+                                          isSelected
+                                            ? `
                                                     <i class="bi bi-check-circle-fill text-primary me-1"></i>
                                                     Selected
                                                 `
-                                : `
+                                            : `
                                                     Click to select
                                                 `
-                            }
+                                        }
 
                                     </div>
 
 
-                                    ${!isSelected
-                                ? `
+                                    ${
+                                      !isSelected
+                                        ? `
                                                 <button
                                                     type="button"
                                                     class="btn btn-sm btn-outline-primary"
@@ -668,14 +441,14 @@
 
                                                 </button>
                                             `
-                                : `
+                                        : `
                                                 <span class="small fw-semibold text-primary">
 
                                                     Current Template
 
                                                 </span>
                                             `
-                            }
+                                    }
 
                                 </div>
 
@@ -684,42 +457,24 @@
                         </div>
 
                     `;
+      })
+      .join('');
+  }
 
-                    },
-                )
-                .join('');
+  // ==================================================
+  // TEMPLATE RENDERER
+  // ==================================================
 
-    }
+  function renderTemplate(template, data, preview = false) {
+    const company = data.company || {};
 
+    const employee = data.employee || {};
 
-    // ==================================================
-    // TEMPLATE RENDERER
-    // ==================================================
+    const period = data.period || {};
 
-    function renderTemplate(
-        template,
-        data,
-        preview = false,
-    ) {
+    const salary = data.salary || {};
 
-        const company =
-            data.company ||
-            {};
-
-        const employee =
-            data.employee ||
-            {};
-
-        const period =
-            data.period ||
-            {};
-
-        const salary =
-            data.salary ||
-            {};
-
-
-        const header = `
+    const header = `
 
             <div class="d-flex justify-content-between gap-3 mb-3">
 
@@ -727,24 +482,19 @@
 
                     <div class="payslip-company">
 
-                        ${escapeHtml(
-            company.name ||
-            'Company Name',
-        )}
+                        ${escapeHtml(company.name || 'Company Name')}
 
                     </div>
 
-                    ${preview
-                ? ''
-                : `
+                    ${
+                      preview
+                        ? ''
+                        : `
                                 <div class="payslip-muted">
-                                    ${escapeHtml(
-                    company.address ||
-                    '',
-                )}
+                                    ${escapeHtml(company.address || '')}
                                 </div>
                             `
-            }
+                    }
 
                 </div>
 
@@ -757,10 +507,7 @@
 
                     <div class="payslip-muted">
 
-                        ${escapeHtml(
-                period.name ||
-                '',
-            )}
+                        ${escapeHtml(period.name || '')}
 
                     </div>
 
@@ -770,8 +517,7 @@
 
         `;
 
-
-        const employeeInfo = `
+    const employeeInfo = `
 
             <div class="row g-3">
 
@@ -783,10 +529,7 @@
 
                     <div class="fw-semibold">
 
-                        ${escapeHtml(
-            employee.name ||
-            'Employee',
-        )}
+                        ${escapeHtml(employee.name || 'Employee')}
 
                     </div>
 
@@ -801,10 +544,7 @@
 
                     <div class="fw-semibold">
 
-                        ${escapeHtml(
-            period.name ||
-            '-',
-        )}
+                        ${escapeHtml(period.name || '-')}
 
                     </div>
 
@@ -814,8 +554,7 @@
 
         `;
 
-
-        const salaryRows = `
+    const salaryRows = `
 
             <div class="payslip-row">
 
@@ -824,9 +563,7 @@
                 </span>
 
                 <strong>
-                    ${money(
-            salary.grossSalary,
-        )}
+                    ${money(salary.grossSalary)}
                 </strong>
 
             </div>
@@ -839,9 +576,7 @@
                 </span>
 
                 <strong>
-                    ${money(
-            salary.totalDeduction,
-        )}
+                    ${money(salary.totalDeduction)}
                 </strong>
 
             </div>
@@ -855,9 +590,7 @@
 
                 <strong class="payslip-net">
 
-                    ${money(
-            salary.netSalary,
-        )}
+                    ${money(salary.netSalary)}
 
                 </strong>
 
@@ -865,12 +598,8 @@
 
         `;
 
-
-        if (
-            template === 'modern'
-        ) {
-
-            return `
+    if (template === 'modern') {
+      return `
 
                 <div class="payslip-sheet payslip-modern">
 
@@ -889,9 +618,7 @@
 
                             <div class="fs-3 fw-bold">
 
-                                ${money(
-                salary.netSalary,
-            )}
+                                ${money(salary.netSalary)}
 
                             </div>
 
@@ -909,15 +636,10 @@
                 </div>
 
             `;
+    }
 
-        }
-
-
-        if (
-            template === 'classic'
-        ) {
-
-            return `
+    if (template === 'classic') {
+      return `
 
                 <div class="payslip-sheet payslip-classic">
 
@@ -950,9 +672,7 @@
                                 </td>
 
                                 <td>
-                                    ${money(
-                salary.grossSalary,
-            )}
+                                    ${money(salary.grossSalary)}
                                 </td>
 
                             </tr>
@@ -965,9 +685,7 @@
                                 </td>
 
                                 <td>
-                                    ${money(
-                salary.totalDeduction,
-            )}
+                                    ${money(salary.totalDeduction)}
                                 </td>
 
                             </tr>
@@ -980,9 +698,7 @@
                                 </th>
 
                                 <th>
-                                    ${money(
-                salary.netSalary,
-            )}
+                                    ${money(salary.netSalary)}
                                 </th>
 
                             </tr>
@@ -994,15 +710,10 @@
                 </div>
 
             `;
+    }
 
-        }
-
-
-        if (
-            template === 'compact'
-        ) {
-
-            return `
+    if (template === 'compact') {
+      return `
 
                 <div class="payslip-sheet payslip-compact">
 
@@ -1020,11 +731,9 @@
                 </div>
 
             `;
+    }
 
-        }
-
-
-        return `
+    return `
 
             <div class="payslip-sheet">
 
@@ -1046,284 +755,132 @@
             </div>
 
         `;
+  }
 
+  // ==================================================
+  // LOAD TEMPLATE
+  // ==================================================
+
+  async function loadTemplateSettings() {
+    try {
+      const response = await Api.get('/payslips/template/settings');
+
+      currentTemplate = response?.payslipTemplate || 'professional';
+
+      selectedTemplate = currentTemplate;
+    } catch (error) {
+      currentTemplate = 'professional';
+
+      selectedTemplate = currentTemplate;
+    }
+  }
+
+  // ==================================================
+  // TEMPLATE MODAL
+  // ==================================================
+
+  async function openTemplateModal() {
+    selectedTemplate = currentTemplate;
+
+    renderTemplateCards();
+
+    bootstrap.Modal.getOrCreateInstance($('payslipTemplateModal')).show();
+  }
+
+  async function saveTemplate() {
+    if (selectedTemplate === currentTemplate) {
+      bootstrap.Modal.getInstance($('payslipTemplateModal'))?.hide();
+
+      return;
     }
 
+    try {
+      $('savePayslipTemplateBtn').disabled = true;
 
-    // ==================================================
-    // LOAD TEMPLATE
-    // ==================================================
+      AppAlert.loading('Saving payslip template...');
 
-    async function loadTemplateSettings() {
+      await Api.patch('/payslips/template', {
+        template: selectedTemplate,
+      });
 
+      AppAlert.close();
+
+      currentTemplate = selectedTemplate;
+
+      bootstrap.Modal.getInstance($('payslipTemplateModal'))?.hide();
+
+      AppAlert.success('Payslip template updated');
+    } catch (error) {
+      AppAlert.close();
+
+      AppAlert.error(error?.message || 'Failed to save payslip template');
+    } finally {
+      $('savePayslipTemplateBtn').disabled = false;
+    }
+  }
+
+  // ==================================================
+  // VIEW PAYSLIP
+  // ==================================================
+
+  async function viewPayslip(paymentId) {
+    try {
+      AppAlert.loading('Loading payslip...');
+
+      const response = await Api.get(`/payslips/${paymentId}`);
+
+      AppAlert.close();
+
+      selectedPayslip = response;
+
+      renderPayslip(response);
+    } catch (error) {
+      AppAlert.close();
+
+      AppAlert.error(error?.message || 'Failed to load payslip');
+    }
+  }
+
+  function renderPayslip(data) {
+    const template = data.template || currentTemplate || 'professional';
+
+    $('payslipModalPeriod').textContent = data.period?.name || '';
+
+    $('payslipModalBody').innerHTML = renderTemplate(template, data);
+
+    bootstrap.Modal.getOrCreateInstance($('payslipModal')).show();
+  }
+
+  // ==================================================
+  // PRINT
+  // ==================================================
+
+  function printPayslip() {
+    const element = $('payslipModalBody')?.firstElementChild;
+
+    if (!element) {
+      return;
+    }
+
+    const printWindow = window.open('', '_blank', 'width=900,height=700');
+
+    if (!printWindow) {
+      AppAlert.error('Please allow pop-ups to print the payslip');
+
+      return;
+    }
+
+    const styles = [...document.styleSheets]
+      .map((sheet) => {
         try {
-
-            const response =
-                await Api.get(
-                    '/payslips/template/settings',
-                );
-
-
-            currentTemplate =
-                response?.payslipTemplate ||
-                'professional';
-
-
-            selectedTemplate =
-                currentTemplate;
-
-        } catch (error) {
-
-            currentTemplate =
-                'professional';
-
-            selectedTemplate =
-                currentTemplate;
-
+          return [...sheet.cssRules].map((rule) => rule.cssText).join('');
+        } catch {
+          return '';
         }
+      })
+      .join('');
 
-    }
-
-
-    // ==================================================
-    // TEMPLATE MODAL
-    // ==================================================
-
-    async function openTemplateModal() {
-
-        selectedTemplate =
-            currentTemplate;
-
-
-        renderTemplateCards();
-
-
-        bootstrap.Modal
-            .getOrCreateInstance(
-                $('payslipTemplateModal'),
-            )
-            .show();
-
-    }
-
-
-    async function saveTemplate() {
-
-        if (
-            selectedTemplate ===
-            currentTemplate
-        ) {
-
-            bootstrap.Modal
-                .getInstance(
-                    $('payslipTemplateModal'),
-                )
-                ?.hide();
-
-            return;
-
-        }
-
-
-        try {
-
-            $('savePayslipTemplateBtn')
-                .disabled = true;
-
-
-            AppAlert.loading(
-                'Saving payslip template...',
-            );
-
-
-            await Api.patch(
-                '/payslips/template',
-                {
-                    template:
-                        selectedTemplate,
-                },
-            );
-
-
-            AppAlert.close();
-
-
-            currentTemplate =
-                selectedTemplate;
-
-
-            bootstrap.Modal
-                .getInstance(
-                    $('payslipTemplateModal'),
-                )
-                ?.hide();
-
-
-            AppAlert.success(
-                'Payslip template updated',
-            );
-
-        } catch (error) {
-
-            AppAlert.close();
-
-
-            AppAlert.error(
-                error?.message ||
-                'Failed to save payslip template',
-            );
-
-        } finally {
-
-            $('savePayslipTemplateBtn')
-                .disabled = false;
-
-        }
-
-    }
-
-
-    // ==================================================
-    // VIEW PAYSLIP
-    // ==================================================
-
-    async function viewPayslip(
-        paymentId,
-    ) {
-
-        try {
-
-            AppAlert.loading(
-                'Loading payslip...',
-            );
-
-
-            const response =
-                await Api.get(
-                    `/payslips/${paymentId}`,
-                );
-
-
-            AppAlert.close();
-
-
-            selectedPayslip =
-                response;
-
-
-            renderPayslip(
-                response,
-            );
-
-        } catch (error) {
-
-            AppAlert.close();
-
-
-            AppAlert.error(
-                error?.message ||
-                'Failed to load payslip',
-            );
-
-        }
-
-    }
-
-
-    function renderPayslip(
-        data,
-    ) {
-
-        const template =
-            data.template ||
-            currentTemplate ||
-            'professional';
-
-
-        $('payslipModalPeriod')
-            .textContent =
-            data.period?.name ||
-            '';
-
-
-        $('payslipModalBody')
-            .innerHTML =
-            renderTemplate(
-                template,
-                data,
-            );
-
-
-        bootstrap.Modal
-            .getOrCreateInstance(
-                $('payslipModal'),
-            )
-            .show();
-
-    }
-
-
-    // ==================================================
-    // PRINT
-    // ==================================================
-
-    function printPayslip() {
-
-        const element =
-            $('payslipModalBody')
-                ?.firstElementChild;
-
-
-        if (!element) {
-            return;
-        }
-
-
-        const printWindow =
-            window.open(
-                '',
-                '_blank',
-                'width=900,height=700',
-            );
-
-
-        if (!printWindow) {
-
-            AppAlert.error(
-                'Please allow pop-ups to print the payslip',
-            );
-
-            return;
-
-        }
-
-
-        const styles =
-            [...document.styleSheets]
-                .map(
-                    sheet => {
-
-                        try {
-
-                            return [...sheet.cssRules]
-                                .map(
-                                    rule =>
-                                        rule.cssText,
-                                )
-                                .join('');
-
-                        } catch {
-
-                            return '';
-
-                        }
-
-                    },
-                )
-                .join('');
-
-
-        printWindow.document.write(`
+    printWindow.document.write(`
 
             <!DOCTYPE html>
 
@@ -1372,53 +929,30 @@
 
         `);
 
+    printWindow.document.close();
 
-        printWindow.document.close();
+    printWindow.focus();
 
+    setTimeout(() => {
+      printWindow.print();
 
-        printWindow.focus();
+      printWindow.close();
+    }, 300);
+  }
 
+  // ==================================================
+  // PERIODS
+  // ==================================================
 
-        setTimeout(
-            () => {
+  async function loadPeriods() {
+    try {
+      const response = await Api.get('/payroll-periods/data');
 
-                printWindow.print();
+      periods = Array.isArray(response) ? response : response?.periods || [];
 
-                printWindow.close();
+      const select = $('payslipPeriod');
 
-            },
-            300,
-        );
-
-    }
-
-
-    // ==================================================
-    // PERIODS
-    // ==================================================
-
-    async function loadPeriods() {
-
-        try {
-
-            const response =
-                await Api.get(
-                    '/payroll-periods/data',
-                );
-
-
-            periods =
-                Array.isArray(response)
-                    ? response
-                    : response?.periods ||
-                    [];
-
-
-            const select =
-                $('payslipPeriod');
-
-
-            select.innerHTML = `
+      select.innerHTML = `
 
                 <option value="">
                     Select payroll period
@@ -1426,291 +960,126 @@
 
             `;
 
+      periods.forEach((period) => {
+        const option = document.createElement('option');
 
-            periods.forEach(
-                period => {
+        option.value = period.id;
 
-                    const option =
-                        document.createElement(
-                            'option',
-                        );
+        option.textContent = period.name || `${period.year}-${String(period.month).padStart(2, '0')}`;
 
+        select.appendChild(option);
+      });
+    } catch (error) {
+      AppAlert.error(error?.message || 'Failed to load payroll periods');
+    }
+  }
 
-                    option.value =
-                        period.id;
+  // ==================================================
+  // LOAD PAYSLIPS
+  // ==================================================
 
+  async function loadPayslips() {
+    const periodId = $('payslipPeriod').value;
 
-                    option.textContent =
-                        period.name ||
-                        `${period.year}-${String(
-                            period.month,
-                        ).padStart(
-                            2,
-                            '0',
-                        )}`;
+    if (!periodId) {
+      payslips = [];
 
+      $('payslipLoading').classList.add('d-none');
 
-                    select.appendChild(
-                        option,
-                    );
+      $('payslipSummary').classList.add('d-none');
 
-                },
-            );
+      $('payslipTableWrap').classList.add('d-none');
 
-        } catch (error) {
+      $('payslipMobileList').classList.add('d-none');
 
-            AppAlert.error(
-                error?.message ||
-                'Failed to load payroll periods',
-            );
+      $('payslipEmpty').classList.remove('d-none');
 
-        }
+      $('payslipEmptyTitle').textContent = 'Select a payroll period';
 
+      $('payslipEmptyText').textContent = 'Select a payroll period to view payslips.';
+
+      return;
     }
 
+    $('payslipLoading').classList.remove('d-none');
 
-    // ==================================================
-    // LOAD PAYSLIPS
-    // ==================================================
+    $('payslipLoadingText').textContent = 'Loading payslips...';
 
-    async function loadPayslips() {
+    $('payslipEmpty').classList.add('d-none');
 
-        const periodId =
-            $('payslipPeriod')
-                .value;
+    $('payslipTableWrap').classList.add('d-none');
 
+    $('payslipMobileList').classList.add('d-none');
 
-        if (!periodId) {
+    try {
+      const response = await Api.get(`/payslips/period/${periodId}`);
 
-            payslips = [];
+      payslips = response?.payslips || [];
 
+      render();
+    } catch (error) {
+      $('payslipLoading').classList.add('d-none');
 
-            $('payslipLoading')
-                .classList
-                .add('d-none');
-
-
-            $('payslipSummary')
-                .classList
-                .add('d-none');
-
-
-            $('payslipTableWrap')
-                .classList
-                .add('d-none');
-
-
-            $('payslipMobileList')
-                .classList
-                .add('d-none');
-
-
-            $('payslipEmpty')
-                .classList
-                .remove('d-none');
-
-
-            $('payslipEmptyTitle')
-                .textContent =
-                'Select a payroll period';
-
-
-            $('payslipEmptyText')
-                .textContent =
-                'Select a payroll period to view payslips.';
-
-
-            return;
-
-        }
-
-
-        $('payslipLoading')
-            .classList
-            .remove('d-none');
-
-
-        $('payslipLoadingText')
-            .textContent =
-            'Loading payslips...';
-
-
-        $('payslipEmpty')
-            .classList
-            .add('d-none');
-
-
-        $('payslipTableWrap')
-            .classList
-            .add('d-none');
-
-
-        $('payslipMobileList')
-            .classList
-            .add('d-none');
-
-
-        try {
-
-            const response =
-                await Api.get(
-                    `/payslips/period/${periodId}`,
-                );
-
-
-            payslips =
-                response?.payslips ||
-                [];
-
-
-            render();
-
-        } catch (error) {
-
-            $('payslipLoading')
-                .classList
-                .add('d-none');
-
-
-            AppAlert.error(
-                error?.message ||
-                'Failed to load payslips',
-            );
-
-        }
-
+      AppAlert.error(error?.message || 'Failed to load payslips');
     }
+  }
 
+  // ==================================================
+  // EVENTS
+  // ==================================================
 
-    // ==================================================
-    // EVENTS
-    // ==================================================
+  function bindEvents() {
+    $('payslipPeriod').addEventListener('change', loadPayslips);
 
-    function bindEvents() {
+    $('payslipTemplateInfoBtn').addEventListener('click', openTemplateModal);
 
-        $('payslipPeriod')
-            .addEventListener(
-                'change',
-                loadPayslips,
-            );
+    $('payslipTemplateBtn').addEventListener('click', openTemplateModal);
 
-        $('payslipTemplateInfoBtn')
-            .addEventListener(
-                'click',
-                openTemplateModal,
-            );
+    $('savePayslipTemplateBtn').addEventListener('click', saveTemplate);
 
-        $('payslipTemplateBtn')
-            .addEventListener(
-                'click',
-                openTemplateModal,
-            );
+    $('printPayslipBtn').addEventListener('click', printPayslip);
 
+    $('payslipTemplates').addEventListener('click', (event) => {
+      const card = event.target.closest('[data-template]');
 
-        $('savePayslipTemplateBtn')
-            .addEventListener(
-                'click',
-                saveTemplate,
-            );
+      if (!card) {
+        return;
+      }
 
+      selectedTemplate = card.dataset.template;
 
-        $('printPayslipBtn')
-            .addEventListener(
-                'click',
-                printPayslip,
-            );
+      renderTemplateCards();
+    });
 
+    document.addEventListener('click', (event) => {
+      const button = event.target.closest('[data-payslip-view]');
 
-        $('payslipTemplates')
-            .addEventListener(
-                'click',
-                event => {
+      if (!button) {
+        return;
+      }
 
-                    const card =
-                        event.target.closest(
-                            '[data-template]',
-                        );
+      viewPayslip(button.dataset.payslipView);
+    });
+  }
 
+  // ==================================================
+  // INITIALIZE
+  // ==================================================
 
-                    if (!card) {
-                        return;
-                    }
+  window.initializePayslipsPage = async function () {
+    bindEvents();
 
+    AppAlert.loading('Loading payslips...');
+    await Promise.all([loadPeriods(), loadTemplateSettings()]);
+    AppAlert.close();
+    payslips = [];
 
-                    selectedTemplate =
-                        card.dataset.template;
+    $('payslipLoading').classList.add('d-none');
 
+    $('payslipEmpty').classList.remove('d-none');
 
-                    renderTemplateCards();
+    $('payslipEmptyTitle').textContent = 'Select a payroll period';
 
-                },
-            );
-
-
-        document.addEventListener(
-            'click',
-            event => {
-
-                const button =
-                    event.target.closest(
-                        '[data-payslip-view]',
-                    );
-
-
-                if (!button) {
-                    return;
-                }
-
-
-                viewPayslip(
-                    button.dataset.payslipView,
-                );
-
-            },
-        );
-
-    }
-
-
-    // ==================================================
-    // INITIALIZE
-    // ==================================================
-
-    window.initializePayslipsPage =
-        async function () {
-
-            bindEvents();
-
-
-            await Promise.all([
-                loadPeriods(),
-                loadTemplateSettings(),
-            ]);
-
-
-            payslips = [];
-
-
-            $('payslipLoading')
-                .classList
-                .add('d-none');
-
-
-            $('payslipEmpty')
-                .classList
-                .remove('d-none');
-
-
-            $('payslipEmptyTitle')
-                .textContent =
-                'Select a payroll period';
-
-
-            $('payslipEmptyText')
-                .textContent =
-                'Select a payroll period to view payslips.';
-
-        };
-
-
+    $('payslipEmptyText').textContent = 'Select a payroll period to view payslips.';
+  };
 })();

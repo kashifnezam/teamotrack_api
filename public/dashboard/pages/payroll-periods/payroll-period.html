@@ -1,309 +1,140 @@
-<div class="container-fluid py-3">
-
+<section class="p-3">
+  <div class="container-fluid py-3">
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+      <div>
+        <h4 class="mb-1">Payroll Periods</h4>
 
-        <div>
-            <h4 class="mb-1">
-                Payroll Periods
-            </h4>
+        <p class="text-muted mb-0">Create and manage monthly payroll periods.</p>
+      </div>
 
-            <p class="text-muted mb-0">
-                Create and manage monthly payroll periods.
-            </p>
-        </div>
-
-        <button
-            id="addPayrollPeriodBtn"
-            type="button"
-            class="btn btn-primary">
-
-            <i class="bi bi-plus-lg me-1"></i>
-            Create Period
-
-        </button>
-
+      <button id="addPayrollPeriodBtn" type="button" class="btn btn-primary">
+        <i class="bi bi-plus-lg me-1"></i>
+        Create Period
+      </button>
     </div>
-
 
     <div class="card border-0 shadow-sm">
+      <div class="card-body p-0">
+        <div id="payrollPeriodLoading" class="text-center py-5">
+          <div class="spinner-border text-primary" role="status"></div>
 
-        <div class="card-body p-0">
-
-            <div
-                id="payrollPeriodLoading"
-                class="text-center py-5">
-
-                <div
-                    class="spinner-border text-primary"
-                    role="status">
-                </div>
-
-                <div class="small text-muted mt-2">
-                    Loading payroll periods...
-                </div>
-
-            </div>
-
-
-            <div
-                id="payrollPeriodEmpty"
-                class="text-center py-5 d-none">
-
-                <i class="bi bi-calendar3 fs-1 text-muted"></i>
-
-                <h6 class="mt-3">
-                    No payroll periods
-                </h6>
-
-                <p class="text-muted small mb-0">
-                    Create a payroll period to start payroll processing.
-                </p>
-
-            </div>
-
-
-            <!-- DESKTOP -->
-
-            <div
-                id="payrollPeriodTableWrap"
-                class="table-responsive d-none">
-
-                <table class="table table-hover align-middle mb-0">
-
-                    <thead class="table-light">
-
-                        <tr>
-
-                            <th>
-                                Period
-                            </th>
-
-                            <th>
-                                Start Date
-                            </th>
-
-                            <th>
-                                End Date
-                            </th>
-
-                            <th>
-                                Status
-                            </th>
-
-                            <th class="text-end">
-                                Action
-                            </th>
-
-                        </tr>
-
-                    </thead>
-
-
-                    <tbody
-                        id="payrollPeriodTableBody">
-                    </tbody>
-
-                </table>
-
-            </div>
-
-
-            <!-- MOBILE -->
-
-            <div
-                id="payrollPeriodMobileList"
-                class="d-none">
-            </div>
-
+          <div class="small text-muted mt-2">Loading payroll periods...</div>
         </div>
 
+        <div id="payrollPeriodEmpty" class="text-center py-5 d-none">
+          <i class="bi bi-calendar3 fs-1 text-muted"></i>
+
+          <h6 class="mt-3">No payroll periods</h6>
+
+          <p class="text-muted small mb-0">Create a payroll period to start payroll processing.</p>
+        </div>
+
+        <!-- DESKTOP -->
+
+        <div id="payrollPeriodTableWrap" class="table-responsive d-none">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Period</th>
+
+                <th>Start Date</th>
+
+                <th>End Date</th>
+
+                <th>Status</th>
+
+                <th class="text-end">Action</th>
+              </tr>
+            </thead>
+
+            <tbody id="payrollPeriodTableBody"></tbody>
+          </table>
+        </div>
+
+        <!-- MOBILE -->
+
+        <div id="payrollPeriodMobileList" class="d-none"></div>
+      </div>
     </div>
-
-</div>
-
+  </div>
+</section>
 
 <!-- ==================================================
      CREATE PAYROLL PERIOD MODAL
 ================================================== -->
 
-<div
-    class="modal fade"
-    id="payrollPeriodModal"
-    tabindex="-1"
-    aria-hidden="true">
+<div class="modal fade" id="payrollPeriodModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header">
+        <h5 class="modal-title">Create Payroll Period</h5>
 
-    <div
-        class="modal-dialog modal-dialog-centered">
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
 
-        <div class="modal-content border-0 shadow">
+      <form id="payrollPeriodForm">
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-12 col-md-6">
+              <label for="payrollYear" class="form-label">
+                Year
+                <span class="text-danger">*</span>
+              </label>
 
-            <div class="modal-header">
-
-                <h5 class="modal-title">
-                    Create Payroll Period
-                </h5>
-
-                <button
-                    type="button"
-                    class="btn-close"
-                    data-bs-dismiss="modal">
-                </button>
-
+              <input id="payrollYear" type="number" class="form-control" min="2000" max="2100" required />
             </div>
 
+            <div class="col-12 col-md-6">
+              <label for="payrollMonth" class="form-label">
+                Month
+                <span class="text-danger">*</span>
+              </label>
 
-            <form id="payrollPeriodForm">
+              <select id="payrollMonth" class="form-select" required>
+                <option value="">Select month</option>
 
-                <div class="modal-body">
+                <option value="1">January</option>
 
-                    <div class="row g-3">
+                <option value="2">February</option>
 
-                        <div class="col-12 col-md-6">
+                <option value="3">March</option>
 
-                            <label
-                                for="payrollYear"
-                                class="form-label">
+                <option value="4">April</option>
 
-                                Year
-                                <span class="text-danger">*</span>
+                <option value="5">May</option>
 
-                            </label>
+                <option value="6">June</option>
 
-                            <input
-                                id="payrollYear"
-                                type="number"
-                                class="form-control"
-                                min="2000"
-                                max="2100"
-                                required>
+                <option value="7">July</option>
 
-                        </div>
+                <option value="8">August</option>
 
+                <option value="9">September</option>
 
-                        <div class="col-12 col-md-6">
+                <option value="10">October</option>
 
-                            <label
-                                for="payrollMonth"
-                                class="form-label">
+                <option value="11">November</option>
 
-                                Month
-                                <span class="text-danger">*</span>
+                <option value="12">December</option>
+              </select>
+            </div>
+          </div>
 
-                            </label>
+          <div id="payrollPeriodPreview" class="alert alert-light border mt-3 mb-0 d-none">
+            <div class="small text-muted">Period</div>
 
-                            <select
-                                id="payrollMonth"
-                                class="form-select"
-                                required>
+            <div id="payrollPeriodPreviewName" class="fw-semibold"></div>
 
-                                <option value="">
-                                    Select month
-                                </option>
-
-                                <option value="1">
-                                    January
-                                </option>
-
-                                <option value="2">
-                                    February
-                                </option>
-
-                                <option value="3">
-                                    March
-                                </option>
-
-                                <option value="4">
-                                    April
-                                </option>
-
-                                <option value="5">
-                                    May
-                                </option>
-
-                                <option value="6">
-                                    June
-                                </option>
-
-                                <option value="7">
-                                    July
-                                </option>
-
-                                <option value="8">
-                                    August
-                                </option>
-
-                                <option value="9">
-                                    September
-                                </option>
-
-                                <option value="10">
-                                    October
-                                </option>
-
-                                <option value="11">
-                                    November
-                                </option>
-
-                                <option value="12">
-                                    December
-                                </option>
-
-                            </select>
-
-                        </div>
-
-                    </div>
-
-
-                    <div
-                        id="payrollPeriodPreview"
-                        class="alert alert-light border mt-3 mb-0 d-none">
-
-                        <div class="small text-muted">
-                            Period
-                        </div>
-
-                        <div
-                            id="payrollPeriodPreviewName"
-                            class="fw-semibold">
-                        </div>
-
-                        <div
-                            id="payrollPeriodPreviewDates"
-                            class="small text-muted mt-1">
-                        </div>
-
-                    </div>
-
-                </div>
-
-
-                <div class="modal-footer">
-
-                    <button
-                        type="button"
-                        class="btn btn-light"
-                        data-bs-dismiss="modal">
-
-                        Cancel
-
-                    </button>
-
-                    <button
-                        id="savePayrollPeriodBtn"
-                        type="submit"
-                        class="btn btn-primary">
-
-                        Create Period
-
-                    </button>
-
-                </div>
-
-            </form>
-
+            <div id="payrollPeriodPreviewDates" class="small text-muted mt-1"></div>
+          </div>
         </div>
 
-    </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
 
+          <button id="savePayrollPeriodBtn" type="submit" class="btn btn-primary">Create Period</button>
+        </div>
+      </form>
+    </div>
+  </div>
 </div>

@@ -11,19 +11,55 @@
   const WEEK_DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
   /* ==========================================================
-       Initialize
-    ========================================================== */
+     Initialize
+  ========================================================== */
 
   window.initializeShiftsPage = async function () {
-    AppAlert.loading("Loading shifts...")
+    AppAlert.loading('Loading shifts...');
+
     await loadShifts();
+
     AppAlert.close();
+
     document.getElementById('searchInput')?.addEventListener('input', renderShifts);
+
+    initializeTooltips();
+    initializeDurationListeners();
   };
 
   /* ==========================================================
-       Load
-    ========================================================== */
+     Tooltips
+  ========================================================== */
+
+  function initializeTooltips() {
+    if (typeof bootstrap === 'undefined') {
+      return;
+    }
+
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach((element) => {
+      bootstrap.Tooltip.getOrCreateInstance(element);
+    });
+  }
+
+  /* ==========================================================
+     Duration Listeners
+  ========================================================== */
+
+  function initializeDurationListeners() {
+    const fields = ['graceHours', 'graceMinutes', 'halfDayHours', 'halfDayMinutes', 'fullDayHours', 'fullDayMinutes'];
+
+    fields.forEach((id) => {
+      document.getElementById(id)?.addEventListener('input', updateAttendancePreview);
+    });
+
+    document.getElementById('startTime')?.addEventListener('change', updateAttendancePreview);
+
+    document.getElementById('endTime')?.addEventListener('change', updateAttendancePreview);
+  }
+
+  /* ==========================================================
+     Load
+  ========================================================== */
 
   async function loadShifts() {
     try {
@@ -44,8 +80,8 @@
   }
 
   /* ==========================================================
-       Render
-    ========================================================== */
+     Render Shifts
+  ========================================================== */
 
   function renderShifts() {
     const searchInput = document.getElementById('searchInput');
@@ -68,15 +104,20 @@
 
     if (!list.length) {
       tbody.innerHTML = `
-                <tr>
-                    <td
-                        colspan="7"
-                        class="empty-state"
-                    >
-                        No shifts found
-                    </td>
-                </tr>
-            `;
+        <tr>
+          <td colspan="7" class="empty-state">
+
+            <div class="empty-icon">
+              <i class="bi bi-calendar3"></i>
+            </div>
+
+            <div class="empty-title">
+              ${search ? 'No shifts match your search' : 'No shifts configured yet'}
+            </div>
+
+          </td>
+        </tr>
+      `;
 
       return;
     }
@@ -90,97 +131,132 @@
           .filter(Boolean)
           .join(', ');
 
+        const shiftDuration = getShiftDurationMinutes(
+          Number(shift.startHour) || 0,
+          Number(shift.startMinute) || 0,
+          Number(shift.endHour) || 0,
+          Number(shift.endMinute) || 0
+        );
+
         return `
-                    <tr>
+          <tr>
 
-                        <td>
-                            <div class="shift-name">
-                                ${escapeHtml(shift.name || 'Unnamed')}
-                            </div>
-                        </td>
+            <!-- SHIFT -->
 
-                        <td>
+            <td>
+              <div class="shift-name">
+                ${escapeHtml(shift.name || 'Unnamed')}
+              </div>
+            </td>
 
-                            <span class="shift-time">
+            <!-- WORKING HOURS -->
 
-                                ${formatTime(shift.startHour, shift.startMinute)}
+            <td>
+              <div class="shift-time">
+                <span>
+                  ${formatTime(shift.startHour, shift.startMinute)}
+                </span>
 
-                                -
+                <i class="bi bi-arrow-right-short"></i>
 
-                                ${formatTime(shift.endHour, shift.endMinute)}
+                <span>
+                  ${formatTime(shift.endHour, shift.endMinute)}
+                </span>
 
-                            </span>
+                <span class="text-muted">
+                  (${formatDuration(shiftDuration)})
+                </span>
+              </div>
+            </td>
 
-                        </td>
+            <!-- GRACE -->
 
-                        <td>
-                            ${shift.graceMinutes || 0} min
-                        </td>
+            <td>
+              <span class="duration-badge grace">
+                ${formatDuration(shift.graceMinutes)}
+              </span>
+            </td>
 
-                        <td>
-                            ${shift.halfDayMinutes || 0} min
-                        </td>
+            <!-- HALF DAY -->
 
-                        <td>
-                            ${shift.fullDayMinutes || 0} min
-                        </td>
+            <td>
+              <span class="duration-badge">
+                ${formatDuration(shift.halfDayMinutes)}
+              </span>
+            </td>
 
-                        <td>
+            <!-- FULL DAY -->
 
-                            ${
-                              off
-                                ? `
-                                        <span class="weekly-badge">
-                                            ${escapeHtml(off)}
-                                        </span>
-                                    `
-                                : `
-                                        <span class="no-off">
-                                            None
-                                        </span>
-                                    `
-                            }
+            <td>
+              <span class="duration-badge">
+                ${formatDuration(shift.fullDayMinutes)}
+              </span>
+            </td>
 
-                        </td>
+            <!-- WEEKLY OFF -->
 
-                        <td class="text-end">
+            <td>
+              ${
+                off
+                  ? `
+                    <span class="weekly-badge">
+                      ${escapeHtml(off)}
+                    </span>
+                  `
+                  : `
+                    <span class="no-off">
+                      None
+                    </span>
+                  `
+              }
+            </td>
 
-                            <button
-                                type="button"
-                                class="action-btn"
-                                title="Edit"
-                                onclick="editShift('${shift.id}')"
-                            >
-                                <i class="bi bi-pencil"></i>
-                            </button>
+            <!-- ACTION -->
 
-                            <button
-                                type="button"
-                                class="action-btn"
-                                title="Delete"
-                                onclick="deleteShift('${shift.id}')"
-                            >
-                                <i class="bi bi-trash"></i>
-                            </button>
+            <td class="text-end">
 
-                        </td>
+              <button
+                type="button"
+                class="action-btn"
+                title="Edit"
+                onclick="editShift('${shift.id}')"
+              >
+                <i class="bi bi-pencil"></i>
+              </button>
 
-                    </tr>
-                `;
+              <button
+                type="button"
+                class="action-btn"
+                title="Delete"
+                onclick="deleteShift('${shift.id}')"
+              >
+                <i class="bi bi-trash"></i>
+              </button>
+
+            </td>
+
+          </tr>
+        `;
       })
       .join('');
   }
 
   /* ==========================================================
-       Modal
-    ========================================================== */
+     Open Modal
+  ========================================================== */
 
   function openShiftModal(id = null) {
     editingId = id;
 
-    document.getElementById('modalTitle').textContent = id ? 'Edit Shift' : 'Add Shift';
+    const modalTitle = document.getElementById('modalTitle');
 
-    document.getElementById('saveShiftBtn').textContent = id ? 'Update Shift' : 'Save Shift';
+    const saveButton = document.getElementById('saveShiftBtn');
+
+    modalTitle.textContent = id ? 'Edit Shift' : 'Add Shift';
+
+    saveButton.innerHTML = id
+      ? '<i class="bi bi-check2 me-1"></i> Update Shift'
+      : '<i class="bi bi-check2 me-1"></i> Save Shift';
 
     if (!id) {
       document.getElementById('shiftId').value = '';
@@ -191,23 +267,27 @@
 
       document.getElementById('endTime').value = '';
 
-      document.getElementById('graceMinutes').value = 0;
+      setDurationMinutes('graceHours', 'graceMinutes', 0);
 
-      document.getElementById('halfDayMinutes').value = 240;
+      setDurationMinutes('halfDayHours', 'halfDayMinutes', 240);
 
-      document.getElementById('fullDayMinutes').value = 480;
+      setDurationMinutes('fullDayHours', 'fullDayMinutes', 480);
 
       document.querySelectorAll('#shiftModal .weekly-off input').forEach((input) => {
         input.checked = false;
       });
     }
 
+    updateAttendancePreview();
+
     bootstrap.Modal.getOrCreateInstance(document.getElementById('shiftModal')).show();
+
+    initializeTooltips();
   }
 
   /* ==========================================================
-       Edit
-    ========================================================== */
+     Edit Shift
+  ========================================================== */
 
   function editShift(id) {
     const shift = shifts.find((s) => s.id === id);
@@ -224,11 +304,20 @@
 
     document.getElementById('endTime').value = formatTime(shift.endHour, shift.endMinute);
 
-    document.getElementById('graceMinutes').value = shift.graceMinutes || 0;
+    /*
+     * Backend -> UI
+     *
+     * Example:
+     * 270 minutes
+     * becomes
+     * 4 hours + 30 minutes
+     */
 
-    document.getElementById('halfDayMinutes').value = shift.halfDayMinutes || 0;
+    setDurationMinutes('graceHours', 'graceMinutes', shift.graceMinutes);
 
-    document.getElementById('fullDayMinutes').value = shift.fullDayMinutes || 0;
+    setDurationMinutes('halfDayHours', 'halfDayMinutes', shift.halfDayMinutes);
+
+    setDurationMinutes('fullDayHours', 'fullDayMinutes', shift.fullDayMinutes);
 
     const weeklyOff = shift.weeklyOff || [];
 
@@ -242,8 +331,8 @@
   }
 
   /* ==========================================================
-       Save
-    ========================================================== */
+     Save Shift
+  ========================================================== */
 
   async function saveShift() {
     const name = document.getElementById('shiftName').value.trim();
@@ -254,8 +343,18 @@
 
     const button = document.getElementById('saveShiftBtn');
 
-    if (!name || !start || !end) {
-      AppAlert.warning('Shift name and time are required');
+    /* --------------------------------------------------------
+       Basic validation
+    -------------------------------------------------------- */
+
+    if (!name) {
+      AppAlert.warning('Please enter a shift name.');
+
+      return;
+    }
+
+    if (!start || !end) {
+      AppAlert.warning('Start time and end time are required.');
 
       return;
     }
@@ -263,6 +362,107 @@
     const [startHour, startMinute] = start.split(':').map(Number);
 
     const [endHour, endMinute] = end.split(':').map(Number);
+
+    /* --------------------------------------------------------
+       Shift duration
+    -------------------------------------------------------- */
+
+    const shiftDurationMinutes = getShiftDurationMinutes(startHour, startMinute, endHour, endMinute);
+
+    /* --------------------------------------------------------
+       UI -> minutes
+    -------------------------------------------------------- */
+
+    const graceMinutes = getDurationMinutes('graceHours', 'graceMinutes');
+
+    const halfDayMinutes = getDurationMinutes('halfDayHours', 'halfDayMinutes');
+
+    const fullDayMinutes = getDurationMinutes('fullDayHours', 'fullDayMinutes');
+
+    /* --------------------------------------------------------
+       Minute validation
+    -------------------------------------------------------- */
+
+    if (
+      !validateMinuteField('graceMinutes') ||
+      !validateMinuteField('halfDayMinutes') ||
+      !validateMinuteField('fullDayMinutes')
+    ) {
+      return;
+    }
+
+    /* --------------------------------------------------------
+       Attendance rules validation
+    -------------------------------------------------------- */
+
+    /*
+     * Grace must be smaller than the shift.
+     */
+
+    if (graceMinutes >= shiftDurationMinutes) {
+      AppAlert.warning(`Grace must be less than the shift duration (${formatDuration(shiftDurationMinutes)}).`);
+
+      return;
+    }
+
+    /*
+     * Half Day cannot be equal to or greater
+     * than Full Day.
+     */
+
+    if (halfDayMinutes >= fullDayMinutes) {
+      AppAlert.warning('Half Day duration must be less than Full Day duration.');
+
+      return;
+    }
+
+    /*
+     * Half Day cannot exceed shift duration.
+     */
+
+    if (halfDayMinutes > shiftDurationMinutes) {
+      AppAlert.warning(
+        `Half Day duration cannot be more than the shift duration (${formatDuration(shiftDurationMinutes)}).`
+      );
+
+      return;
+    }
+
+    /*
+     * Full Day cannot exceed shift duration.
+     */
+
+    if (fullDayMinutes > shiftDurationMinutes) {
+      AppAlert.warning(
+        `Full Day duration cannot be more than the shift duration (${formatDuration(shiftDurationMinutes)}).`
+      );
+
+      return;
+    }
+
+    /*
+     * Grace must be smaller than Half Day.
+     */
+
+    if (graceMinutes >= halfDayMinutes) {
+      AppAlert.warning('Grace must be less than Half Day duration.');
+
+      return;
+    }
+
+    /*
+     * Grace must be smaller than Full Day.
+     */
+
+    if (graceMinutes >= fullDayMinutes) {
+      AppAlert.warning('Grace must be less than Full Day duration.');
+
+      return;
+    }
+
+    /* --------------------------------------------------------
+       DTO
+    -------------------------------------------------------- */
 
     const body = {
       name,
@@ -273,11 +473,16 @@
       endHour,
       endMinute,
 
-      graceMinutes: Number(document.getElementById('graceMinutes').value) || 0,
+      /*
+       * IMPORTANT:
+       * DTO remains minute based.
+       */
 
-      halfDayMinutes: Number(document.getElementById('halfDayMinutes').value) || 0,
+      graceMinutes,
 
-      fullDayMinutes: Number(document.getElementById('fullDayMinutes').value) || 0,
+      halfDayMinutes,
+
+      fullDayMinutes,
 
       weeklyOff: [...document.querySelectorAll('#shiftModal .weekly-off input:checked')].map(
         (input) => WEEK_DAYS[Number(input.value)]
@@ -316,8 +521,8 @@
   }
 
   /* ==========================================================
-       Delete
-    ========================================================== */
+     Delete Shift
+  ========================================================== */
 
   async function deleteShift(id) {
     const shift = shifts.find((s) => s.id === id);
@@ -361,12 +566,212 @@
   }
 
   /* ==========================================================
-       Helpers
-    ========================================================== */
+     Attendance Preview
+  ========================================================== */
+
+  function updateAttendancePreview() {
+    const start = document.getElementById('startTime')?.value;
+
+    const end = document.getElementById('endTime')?.value;
+
+    let shiftDuration = 0;
+
+    if (start && end) {
+      const [startHour, startMinute] = start.split(':').map(Number);
+
+      const [endHour, endMinute] = end.split(':').map(Number);
+
+      shiftDuration = getShiftDurationMinutes(startHour, startMinute, endHour, endMinute);
+    }
+
+    const grace = getDurationMinutes('graceHours', 'graceMinutes');
+
+    const half = getDurationMinutes('halfDayHours', 'halfDayMinutes');
+
+    const full = getDurationMinutes('fullDayHours', 'fullDayMinutes');
+
+    /* --------------------------------------------------------
+       Shift duration
+    -------------------------------------------------------- */
+
+    const shiftDurationText = document.getElementById('shiftDurationText');
+
+    if (shiftDurationText) {
+      shiftDurationText.textContent = shiftDuration ? formatDuration(shiftDuration) : 'Set start and end time';
+    }
+
+    /* --------------------------------------------------------
+       Rule hints
+    -------------------------------------------------------- */
+
+    const graceHint = document.getElementById('graceRuleHint');
+
+    if (graceHint) {
+      graceHint.textContent = grace === 0 ? 'No grace time' : `${formatDuration(grace)} allowed difference`;
+    }
+
+    const halfHint = document.getElementById('halfDayRuleHint');
+
+    if (halfHint) {
+      halfHint.textContent = formatDuration(half);
+    }
+
+    const fullHint = document.getElementById('fullDayRuleHint');
+
+    if (fullHint) {
+      fullHint.textContent = formatDuration(full);
+    }
+
+    /* --------------------------------------------------------
+       Summary
+    -------------------------------------------------------- */
+
+    const summaryGrace = document.getElementById('summaryGrace');
+
+    const summaryHalf = document.getElementById('summaryHalf');
+
+    const summaryFull = document.getElementById('summaryFull');
+
+    if (summaryGrace) {
+      summaryGrace.textContent = `Grace: ${formatDuration(grace)}`;
+    }
+
+    if (summaryHalf) {
+      summaryHalf.textContent = `Half Day: ${formatDuration(half)}`;
+    }
+
+    if (summaryFull) {
+      summaryFull.textContent = `Full Day: ${formatDuration(full)}`;
+    }
+  }
+
+  /* ==========================================================
+     Duration Helpers
+  ========================================================== */
+
+  function getDurationMinutes(hoursId, minutesId) {
+    const hoursInput = document.getElementById(hoursId);
+
+    const minutesInput = document.getElementById(minutesId);
+
+    const hours = Number(hoursInput?.value) || 0;
+
+    const minutes = Number(minutesInput?.value) || 0;
+
+    return Math.max(0, hours) * 60 + Math.max(0, minutes);
+  }
+
+  function setDurationMinutes(hoursId, minutesId, totalMinutes) {
+    const total = Math.max(0, Number(totalMinutes) || 0);
+
+    const hours = Math.floor(total / 60);
+
+    const minutes = total % 60;
+
+    const hoursInput = document.getElementById(hoursId);
+
+    const minutesInput = document.getElementById(minutesId);
+
+    if (hoursInput) {
+      hoursInput.value = hours;
+    }
+
+    if (minutesInput) {
+      minutesInput.value = minutes;
+    }
+  }
+
+  /* ==========================================================
+     Shift Duration
+  ========================================================== */
+
+  function getShiftDurationMinutes(startHour, startMinute, endHour, endMinute) {
+    const startTotal = startHour * 60 + startMinute;
+
+    const endTotal = endHour * 60 + endMinute;
+
+    let duration = endTotal - startTotal;
+
+    /*
+     * If end time is earlier than start time,
+     * treat it as an overnight shift.
+     *
+     * Example:
+     * 22:00 -> 06:00
+     * = 8 hours
+     */
+
+    if (duration <= 0) {
+      duration += 24 * 60;
+    }
+
+    return duration;
+  }
+
+  /* ==========================================================
+     Format Duration
+  ========================================================== */
+
+  function formatDuration(totalMinutes) {
+    const total = Math.max(0, Number(totalMinutes) || 0);
+
+    const hours = Math.floor(total / 60);
+
+    const minutes = total % 60;
+
+    if (hours && minutes) {
+      return `${hours} hr ${minutes} min`;
+    }
+
+    if (hours) {
+      return `${hours} hr`;
+    }
+
+    return `${minutes} min`;
+  }
+
+  /* ==========================================================
+     Minute Validation
+  ========================================================== */
+
+  function validateMinuteField(id) {
+    const input = document.getElementById(id);
+
+    if (!input) {
+      return true;
+    }
+
+    let value = Number(input.value) || 0;
+
+    if (value < 0) {
+      input.value = 0;
+      value = 0;
+    }
+
+    if (value > 59) {
+      input.value = 59;
+
+      AppAlert.warning('Minutes must be between 0 and 59.');
+
+      input.focus();
+
+      return false;
+    }
+
+    return true;
+  }
+
+  /* ==========================================================
+     Format Time
+  ========================================================== */
 
   function formatTime(hour, minute) {
     return `${String(hour || 0).padStart(2, '0')}:${String(minute || 0).padStart(2, '0')}`;
   }
+
+  /* ==========================================================
+     Escape HTML
+  ========================================================== */
 
   function escapeHtml(value) {
     return String(value ?? '')
@@ -378,8 +783,8 @@
   }
 
   /* ==========================================================
-       GLOBAL HTML HANDLERS
-    ========================================================== */
+     Global HTML Handlers
+  ========================================================== */
 
   window.editShift = editShift;
 

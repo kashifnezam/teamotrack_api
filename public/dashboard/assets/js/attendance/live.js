@@ -154,6 +154,7 @@
 
   async function loadExecutives() {
     try {
+      AppAlert.loading('Loading executives...');
       const select = document.getElementById('liveExecutive');
 
       if (!select) {
@@ -169,10 +170,12 @@
       populateTeams();
 
       renderExecutiveOptions('', '');
+      AppAlert.close();
+
     } catch (error) {
       console.error('loadExecutives failed:', error);
-
       AppAlert.error(error.message || 'Unable to load executives');
+      AppAlert.close();
     }
   }
 

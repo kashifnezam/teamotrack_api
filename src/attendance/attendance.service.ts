@@ -1756,7 +1756,7 @@ export class AttendanceService {
 
       totalOnTime: records.filter((x) => x.punctuality === 'on_time').length,
 
-      totalHalfDay: records.filter((x) => x.attendanceType === 'half_day').length,
+      totalHalfDay: records.filter((x) => x.attendanceType === 'half_day' || x.status === 'half_day').length,
 
       totalFullDay: records.filter((x) => x.attendanceType === 'full_day').length,
 

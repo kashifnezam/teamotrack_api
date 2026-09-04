@@ -25,12 +25,7 @@ if (window.TeamoTrackApp) {
       if (this.initialized) {
         return;
       }
-
-      console.log('=== TeamoTrack Auth Check ===');
-
       const userDataRaw = localStorage.getItem('userData');
-
-      console.log('userData from localStorage:', userDataRaw);
 
       if (!userDataRaw) {
         console.log('User is NOT logged in.');
@@ -48,7 +43,6 @@ if (window.TeamoTrackApp) {
       try {
         userData = JSON.parse(userDataRaw);
 
-        console.log('Parsed userData:', userData);
       } catch (error) {
         console.error('Invalid userData in localStorage:', error);
 
@@ -67,8 +61,6 @@ if (window.TeamoTrackApp) {
         .trim()
         .toLowerCase();
 
-      console.log('Logged-in user:', userData.fullName || userData.name);
-      console.log('User role:', role);
 
       if (!role) {
         console.error('User is logged in, but role is missing.');
@@ -80,7 +72,6 @@ if (window.TeamoTrackApp) {
       this.initialized = true;
 
       console.log('Authentication successful.');
-      console.log('Loading TeamoTrack shell...');
 
       try {
         await this.loadShell();
@@ -110,6 +101,8 @@ if (window.TeamoTrackApp) {
 
       initializeHeaderProfile();
 
+      initializeNotifications();
+      
       initializePayrollVisibility();
 
       initializeSidebar();
@@ -207,10 +200,6 @@ if (window.TeamoTrackApp) {
         default:
           throw new Error(`Unsupported TeamoTrack role: ${role || 'unknown'}`);
       }
-
-      console.log('TeamoTrack role:', role);
-
-      console.log('Loading sidebar:', sidebarFile);
 
       await loadComponent('sidebar-container', sidebarFile);
     },
@@ -766,7 +755,7 @@ if (window.TeamoTrackApp) {
         '/profile': {
           html: '/dashboard/pages/settings/profile.html',
 
-          js: '/dashboard/assets/js/settings/settings.js',
+          js: '/dashboard/assets/js/settings/profile.js',
 
           css: '/dashboard/assets/css/settings/settings.css',
 
@@ -784,7 +773,7 @@ if (window.TeamoTrackApp) {
         '/settings/company': {
           html: '/dashboard/pages/settings/company.html',
 
-          js: '/dashboard/assets/js/settings/settings.js',
+          js: '/dashboard/assets/js/settings/organization.js',
 
           css: '/dashboard/assets/css/settings/settings.css',
 
@@ -1208,7 +1197,6 @@ if (window.TeamoTrackApp) {
     const myAttendance = document.querySelector('[data-menu="attendance-my"]');
     const payrollMenu = document.querySelector('[data-menu="payroll"]');
 
-
     const role = String(userData.role || userData.roleName || '')
       .trim()
       .toLowerCase();
@@ -1222,7 +1210,7 @@ if (window.TeamoTrackApp) {
     }
     if (myAttendance && role == 'root_manager') {
       myAttendance.remove();
-    } 
+    }
   }
 
   function cleanupBootstrapModals() {

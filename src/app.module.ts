@@ -27,6 +27,7 @@ import { PaymentModule } from './payment/payment.module';
 import { PayslipModule } from './payslip/payslip.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { HrDashboardModule } from './hr-dashboard/hr-dashboard.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -94,6 +95,8 @@ import { HrDashboardModule } from './hr-dashboard/hr-dashboard.module';
     PayslipModule,
 
     HrDashboardModule,
+
+    NotificationsModule,
   ],
 
   controllers: [AppController],

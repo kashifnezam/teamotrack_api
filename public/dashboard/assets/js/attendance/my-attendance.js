@@ -76,6 +76,7 @@
     const month = parts[1];
 
     try {
+      AppAlert.loading('Loading attendance...');
       isLoading = true;
 
       setLoadingState(true);
@@ -83,6 +84,7 @@
       const data = await Api.get(`/attendance/my-data?month=${month}&year=${year}`);
 
       if (!data) {
+        AppAlert.close();
         return;
       }
 
@@ -93,6 +95,7 @@
       renderSummary(summary);
 
       renderRecords();
+      AppAlert.close();
 
       /*
        * Only update TODAY when the selected
@@ -119,7 +122,7 @@
       console.error('My attendance load failed:', error);
 
       AppAlert.error(getApiErrorMessage(error, 'Unable to load attendance'));
-
+      AppAlert.close();
       return null;
     } finally {
       isLoading = false;
