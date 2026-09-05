@@ -59,8 +59,8 @@ export class LeaveService {
     }));
 
     /*
-     * Root sees organization
-     * leave history.
+     * Root manager sees
+     * organization-wide leave history.
      */
     if (this.isRoot(user)) {
       return {
@@ -69,17 +69,58 @@ export class LeaveService {
     }
 
     /*
-     * HR sees organization history
-     * only with permission.
+     * HR.
+     *
+     * HR does not become a hierarchy node.
+     *
+     * If HR has leave.view.all,
+     * they can see organization-wide leaves.
+     *
+     * Otherwise, HR acts on behalf of
+     * their parent manager and sees that
+     * manager's descendant leaves.
      */
     if (user.role === 'hr') {
       const permissions = await this.getPermissions(user.uid);
 
-      if (permissions['leave.view.all'] !== true) {
+      /*
+       * Organization-wide HR access.
+       */
+      if (permissions['leave.view.all'] === true) {
+        return {
+          leaves,
+        };
+      }
+
+      /*
+       * HR must have a parent manager
+       * to act on their behalf.
+       */
+      if (!user.parentId) {
         return {
           leaves: [],
         };
       }
+
+      /*
+       * Load the parent manager.
+       */
+      const parentManager = await this.getUser(user.parentId);
+
+      /*
+       * Get the parent manager's
+       * actual hierarchy descendants.
+       *
+       * HR itself is NOT added to the hierarchy.
+       */
+      const descendantIds = await this.getDescendantIds(parentManager);
+
+      /*
+       * Team Leave means descendants only.
+       * Parent manager's own leave is intentionally
+       * excluded.
+       */
+      leaves = leaves.filter((leave) => descendantIds.has(leave.userId));
 
       return {
         leaves,
@@ -87,7 +128,7 @@ export class LeaveService {
     }
 
     /*
-     * Executive has no team.
+     * Field executive has no team.
      */
     if (user.role === 'field_executive') {
       return {
@@ -106,11 +147,16 @@ export class LeaveService {
       };
     }
 
+    /*
+     * Get all actual descendants.
+     *
+     * HR does not create another hierarchy level.
+     */
     const descendantIds = await this.getDescendantIds(user);
 
     /*
      * Do NOT include own leave.
-     * This is Team Leave.
+     * This endpoint represents Team Leave.
      */
     leaves = leaves.filter((leave) => descendantIds.has(leave.userId));
 
@@ -417,10 +463,6 @@ export class LeaveService {
       const permissions = await this.getPermissions(userId);
 
       if (approver.role === 'hr') {
-        if (permissions['leave.approve.all'] !== true) {
-          throw new BadRequestException('Permission denied');
-        }
-      } else {
         if (permissions['leave.approve'] !== true) {
           throw new BadRequestException('Permission denied');
         }
@@ -450,18 +492,22 @@ export class LeaveService {
 
     const steps = data.approval ?? [];
 
-    const level = data.currentLevel ?? 0;
+    const level = Number(data.currentLevel ?? 0);
 
     const step = steps[level];
 
     /*
-     * The logged-in user must be
-     * the actual current approver.
+     * Direct approver OR
+     * HR acting on behalf of parent manager.
      */
-    if (!step || step.userId !== userId) {
-      throw new BadRequestException('You are not the current approver');
+    if (!this.isLeaveApprover(approver, step)) {
+      throw new BadRequestException('You are not authorized to approve this leave');
     }
 
+    /*
+     * Record the actual person
+     * who performed the approval.
+     */
     step.status = 'approved';
 
     step.approvedBy = userId;
@@ -478,9 +524,7 @@ export class LeaveService {
 
       await ref.update({
         approval: steps,
-
         currentLevel: nextLevel,
-
         updatedAt: new Date(),
       });
 
@@ -495,13 +539,9 @@ export class LeaveService {
      */
     await ref.update({
       approval: steps,
-
       currentLevel: null,
-
       status: 'approved',
-
       approvedAt: new Date(),
-
       updatedAt: new Date(),
     });
 
@@ -522,7 +562,6 @@ export class LeaveService {
   // ==================================================
   // REJECT
   // ==================================================
-
   async reject(userId: string, id: string, reason?: string) {
     const approver = await this.getUser(userId);
 
@@ -534,7 +573,7 @@ export class LeaveService {
     if (!this.isRoot(approver)) {
       const permissions = await this.getPermissions(userId);
 
-      const permission = approver.role === 'hr' ? 'leave.approve.all' : 'leave.approve';
+      const permission = 'leave.approve';
 
       if (permissions[permission] !== true) {
         throw new BadRequestException('Permission denied');
@@ -556,19 +595,22 @@ export class LeaveService {
     }
 
     /*
-     * Self rejection is also
-     * not allowed.
+     * Never allow self rejection.
      */
     if (data.userId === userId) {
       throw new BadRequestException('You cannot reject your own leave');
     }
 
-    const level = data.currentLevel ?? 0;
+    const level = Number(data.currentLevel ?? 0);
 
     const step = data.approval?.[level];
 
-    if (!step || step.userId !== userId) {
-      throw new BadRequestException('You are not the current approver');
+    /*
+     * Direct approver OR
+     * HR acting on behalf of parent manager.
+     */
+    if (!this.isLeaveApprover(approver, step)) {
+      throw new BadRequestException('You are not authorized to reject this leave');
     }
 
     step.status = 'rejected';
@@ -579,13 +621,9 @@ export class LeaveService {
 
     await ref.update({
       approval: data.approval,
-
       currentLevel: null,
-
       status: 'rejected',
-
       rejectionReason: reason ?? '',
-
       updatedAt: new Date(),
     });
 
@@ -595,6 +633,29 @@ export class LeaveService {
       success: true,
       status: 'rejected',
     };
+  }
+
+  private isLeaveApprover(user: any, step: any): boolean {
+    if (!step || step.status !== 'pending') {
+      return false;
+    }
+
+    /*
+     * Direct approver.
+     */
+    if (step.userId === user.uid) {
+      return true;
+    }
+
+    /*
+     * HR can act on behalf of
+     * their parent manager.
+     */
+    if (user.role === 'hr' && user.parentId && user.parentId === step.userId) {
+      return true;
+    }
+
+    return false;
   }
 
   // ==================================================

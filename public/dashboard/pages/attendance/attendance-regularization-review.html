@@ -1,0 +1,310 @@
+<section class="regularization-review-page">
+  <!-- ==========================================================
+       PAGE HEADER
+       ========================================================== -->
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Attendance Regularization</h1>
+
+      <p class="page-description">View and manage attendance regularization requests.</p>
+    </div>
+
+    <button type="button" class="btn btn-primary" id="refreshRequestsBtn">
+      <span class="btn-icon">↻</span>
+      Refresh
+    </button>
+  </div>
+
+  <!-- ==========================================================
+       SUMMARY
+       ========================================================== -->
+  <div class="summary-grid">
+    <div class="summary-card">
+      <div class="summary-card-icon pending">⏳</div>
+
+      <div>
+        <span class="summary-label">Pending</span>
+        <strong id="pendingCount">0</strong>
+      </div>
+    </div>
+
+    <div class="summary-card">
+      <div class="summary-card-icon today">📅</div>
+
+      <div>
+        <span class="summary-label">Requests</span>
+        <strong id="totalCount">0</strong>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================================
+       FILTERS
+       ========================================================== -->
+  <div class="filter-card">
+    <div class="filter-group search-group">
+      <label for="requestSearch"> Search </label>
+
+      <div class="search-wrapper">
+        <span class="search-icon"> 🔍 </span>
+
+        <input
+          type="search"
+          id="requestSearch"
+          class="form-control"
+          placeholder="Search employee, reason or date..."
+          autocomplete="off"
+        />
+      </div>
+    </div>
+
+    <div class="filter-group">
+      <label for="requestTypeFilter"> Type </label>
+
+      <select id="requestTypeFilter" class="form-control">
+        <option value="">All types</option>
+        <option value="missed_check_in">Missed Check-in</option>
+        <option value="missed_check_out">Missed Check-out</option>
+        <option value="missed_both">Missed Both</option>
+        <option value="wrong_check_in">Wrong Check-in</option>
+        <option value="wrong_check_out">Wrong Check-out</option>
+        <option value="wrong_both">Wrong Both</option>
+        <option value="system_error">System Error</option>
+        <option value="location_error">Location Error</option>
+        <option value="other">Other</option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label for="requestDateFilter"> Date </label>
+
+      <input type="date" id="requestDateFilter" class="form-control" />
+    </div>
+
+    <button type="button" class="btn btn-secondary clear-filter-btn" id="clearFiltersBtn">Clear</button>
+  </div>
+
+  <!-- ==========================================================
+       REQUEST LIST
+       ========================================================== -->
+  <div class="request-card">
+    <div class="request-card-header">
+      <div>
+        <h2>Pending Requests</h2>
+
+        <p id="requestListDescription">Attendance requests waiting for your action.</p>
+      </div>
+
+      <span class="request-count-badge" id="visibleRequestCount"> 0 </span>
+    </div>
+
+    <!-- Loading -->
+    <div id="requestLoading" class="request-loading" hidden>
+      <div class="loading-spinner"></div>
+
+      <span> Loading requests... </span>
+    </div>
+
+    <!-- Empty -->
+    <div id="requestEmpty" class="request-empty" hidden>
+      <div class="empty-icon">✓</div>
+
+      <h3>No pending requests</h3>
+
+      <p>There are currently no attendance regularization requests requiring your approval.</p>
+    </div>
+
+    <!-- Error -->
+    <div id="requestError" class="request-error" hidden>
+      <strong>Unable to load requests.</strong>
+
+      <span id="requestErrorMessage"> Please try again. </span>
+
+      <button type="button" class="btn btn-secondary" id="retryRequestsBtn">Try Again</button>
+    </div>
+
+    <!-- Desktop table -->
+    <div class="table-wrapper" id="requestTableWrapper" hidden>
+      <table class="request-table">
+        <thead>
+          <tr>
+            <th>Employee</th>
+            <th>Date</th>
+            <th>Request Type</th>
+            <th>Requested Time</th>
+            <th>Reason</th>
+            <th>Submitted</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+
+        <tbody id="requestTableBody"></tbody>
+      </table>
+    </div>
+
+    <!-- Mobile cards -->
+    <div class="mobile-request-list" id="mobileRequestList" hidden></div>
+  </div>
+</section>
+
+<!-- ==========================================================
+     DETAIL MODAL
+     ========================================================== -->
+<div class="request-modal-backdrop" id="requestDetailModal" hidden>
+  <div class="request-modal" role="dialog" aria-modal="true" aria-labelledby="requestDetailTitle">
+    <div class="modal-header">
+      <div>
+        <span class="modal-eyebrow"> Attendance Regularization </span>
+
+        <h2 id="requestDetailTitle">Request Details</h2>
+      </div>
+
+      <button type="button" class="modal-close-btn" id="closeDetailModalBtn" aria-label="Close">×</button>
+    </div>
+
+    <div class="modal-loading" id="detailLoading" hidden>
+      <div class="loading-spinner"></div>
+      <span>Loading request...</span>
+    </div>
+
+    <div id="detailContent" class="detail-content" hidden>
+      <!-- Employee -->
+      <div class="detail-section">
+        <div class="detail-section-title">Employee</div>
+
+        <div class="employee-detail">
+          <div class="employee-avatar" id="detailEmployeeAvatar">E</div>
+
+          <div>
+            <strong id="detailEmployeeName"> - </strong>
+
+            <span id="detailEmployeeRole"> - </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Status -->
+      <div class="detail-section">
+        <div class="detail-section-title">Status</div>
+
+        <div id="detailStatus">-</div>
+      </div>
+
+      <!-- Request -->
+      <div class="detail-section">
+        <div class="detail-section-title">Request</div>
+
+        <div class="detail-grid">
+          <div class="detail-item">
+            <span>Date</span>
+            <strong id="detailDate">-</strong>
+          </div>
+
+          <div class="detail-item">
+            <span>Type</span>
+            <strong id="detailType">-</strong>
+          </div>
+
+          <div class="detail-item">
+            <span>Check-in</span>
+            <strong id="detailCheckIn">-</strong>
+          </div>
+
+          <div class="detail-item">
+            <span>Check-out</span>
+            <strong id="detailCheckOut">-</strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- Existing attendance -->
+      <div class="detail-section">
+        <div class="detail-section-title">Previous Attendance</div>
+
+        <div class="previous-attendance" id="previousAttendance">-</div>
+      </div>
+
+      <!-- Reason -->
+      <div class="detail-section">
+        <div class="detail-section-title">Reason</div>
+
+        <div class="reason-box" id="detailReason">-</div>
+      </div>
+
+      <!-- Attachment -->
+      <div class="detail-section" id="attachmentSection" hidden>
+        <div class="detail-section-title">Attachment</div>
+
+        <a id="detailAttachment" href="#" target="_blank" rel="noopener noreferrer" class="attachment-link">
+          View attachment
+        </a>
+      </div>
+
+      <!-- Approval -->
+      <div class="detail-section">
+        <div class="detail-section-title">Approval History</div>
+
+        <div id="approvalTimeline" class="approval-timeline"></div>
+      </div>
+    </div>
+
+    <!-- Modal error -->
+    <div class="modal-error" id="detailError" hidden>
+      <strong>Unable to load request.</strong>
+
+      <p id="detailErrorMessage">Please try again.</p>
+    </div>
+
+    <!-- Actions -->
+    <div class="modal-actions" id="detailActions" hidden>
+      <button type="button" class="btn btn-danger" id="rejectRequestBtn">Reject</button>
+
+      <button type="button" class="btn btn-success" id="approveRequestBtn">Approve</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==========================================================
+     REQUEST ROW TEMPLATE
+     ========================================================== -->
+<template id="requestRowTemplate">
+  <tr>
+    <td>
+      <div class="employee-cell">
+        <div class="employee-avatar employee-avatar-small">E</div>
+
+        <div>
+          <strong class="employee-name"></strong>
+          <span class="employee-role"></span>
+        </div>
+      </div>
+    </td>
+
+    <td>
+      <strong class="request-date"></strong>
+    </td>
+
+    <td>
+      <span class="type-badge request-type"></span>
+    </td>
+
+    <td>
+      <div class="time-cell">
+        <span class="request-check-in"></span>
+        <span class="request-check-out"></span>
+      </div>
+    </td>
+
+    <td>
+      <div class="reason-preview"></div>
+    </td>
+
+    <td>
+      <span class="submitted-date"></span>
+    </td>
+
+    <td>
+      <button type="button" class="btn btn-view view-request-btn">View</button>
+    </td>
+  </tr>
+</template>

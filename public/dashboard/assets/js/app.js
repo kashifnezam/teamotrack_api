@@ -42,7 +42,6 @@ if (window.TeamoTrackApp) {
 
       try {
         userData = JSON.parse(userDataRaw);
-
       } catch (error) {
         console.error('Invalid userData in localStorage:', error);
 
@@ -60,7 +59,6 @@ if (window.TeamoTrackApp) {
       const role = String(userData.role || userData.roleName || '')
         .trim()
         .toLowerCase();
-
 
       if (!role) {
         console.error('User is logged in, but role is missing.');
@@ -102,7 +100,7 @@ if (window.TeamoTrackApp) {
       initializeHeaderProfile();
 
       initializeNotifications();
-      
+
       initializePayrollVisibility();
 
       initializeSidebar();
@@ -281,7 +279,6 @@ if (window.TeamoTrackApp) {
 
       if (!page) {
         load404();
-
         return;
       }
 
@@ -291,16 +288,10 @@ if (window.TeamoTrackApp) {
 
       this.currentPath = path;
 
-      /* ==================================================
-         HEADER
-      ================================================== */
-
+      /*
+       * Update header and sidebar immediately.
+       */
       updatePageHeader(page.title, page.description);
-
-      /* ==================================================
-         SIDEBAR
-      ================================================== */
-
       setActiveMenu(path);
 
       const content = document.getElementById('page-content');
@@ -308,38 +299,48 @@ if (window.TeamoTrackApp) {
       if (!content) {
         return;
       }
+
       cleanupBootstrapModals();
+
+      /*
+       * Show a stable loader while the new page is prepared.
+       */
       content.innerHTML = `<div class="page-loader"></div>`;
 
       try {
-        /* ==============================================
-           HTML
-        ============================================== */
+        /*
+         * Load HTML and CSS in parallel.
+         *
+         * IMPORTANT:
+         * The HTML is NOT inserted into the DOM until
+         * its CSS has finished loading.
+         */
+        const htmlPromise = fetch(page.html).then(async (response) => {
+          if (!response.ok) {
+            throw new Error(`Unable to load ${page.html}`);
+          }
 
-        const response = await fetch(page.html);
+          return response.text();
+        });
 
-        if (!response.ok) {
-          throw new Error(`Unable to load ${page.html}`);
-        }
+        const cssPromise = this.loadPageCss(page.css);
 
-        content.innerHTML = await response.text();
+        const [html] = await Promise.all([htmlPromise, cssPromise]);
 
-        /* ==============================================
-           CSS
-        ============================================== */
+        /*
+         * CSS is ready now.
+         * Only now put the HTML into the DOM.
+         */
+        content.innerHTML = html;
 
-        await this.loadPageCss(page.css);
-
-        /* ==============================================
-           JS
-        ============================================== */
-
+        /*
+         * Load page JavaScript.
+         */
         await this.loadPageScript(page.js);
 
-        /* ==============================================
-           INITIALIZE PAGE
-        ============================================== */
-
+        /*
+         * Initialize page.
+         */
         const initializer = window[page.init];
 
         if (typeof initializer !== 'function') {
@@ -348,25 +349,24 @@ if (window.TeamoTrackApp) {
 
         await initializer();
 
-        /* ==============================================
-           RIPPLE
-        ============================================== */
-
+        /*
+         * Reinitialize UI effects.
+         */
         initializeRipple();
       } catch (error) {
         console.error('Page loading failed:', error);
 
         content.innerHTML = `
-          <div class="empty-state">
-            <h5>
-              Unable to load page
-            </h5>
+      <div class="empty-state">
+        <h5>
+          Unable to load page
+        </h5>
 
-            <p>
-              ${escapeHtml(error.message)}
-            </p>
-          </div>
-        `;
+        <p>
+          ${escapeHtml(error.message)}
+        </p>
+      </div>
+    `;
       }
     },
 
@@ -553,6 +553,20 @@ if (window.TeamoTrackApp) {
 
           description: "View and manage your team's attendance.",
         },
+        
+        '/attendance-regularization': {
+          html: '/dashboard/pages/attendance/attendance-regularization-review.html',
+
+          js: '/dashboard/assets/js/attendance/attendance-regularization-review.js',
+
+          css: '/dashboard/assets/css/attendance/attendance-regularization-review.css',
+
+          init: 'initializeAttendanceRegularizationReviewPage',
+
+          title: 'Attendance Regularization',
+
+          description: "View and manage attendance regularization requests.",
+        },
 
         '/attendance/live': {
           html: '/dashboard/pages/attendance/live.html',
@@ -601,17 +615,17 @@ if (window.TeamoTrackApp) {
         },
 
         '/leave/requests': {
-          html: '/dashboard/pages/leave/requests.html',
+          html: '/dashboard/pages/leave/leave.html',
 
-          js: '/dashboard/assets/js/leave/requests.js',
+          js: '/dashboard/assets/js/leave/leave.js',
 
-          css: '/dashboard/assets/css/leave/requests.css',
+          css: '/dashboard/assets/css/leave/leave.css',
 
-          init: 'initializeLeaveRequestsPage',
+          init: 'initializeLeavePage',
 
-          title: 'Leave Requests',
+          title: 'Leave',
 
-          description: 'Review and manage leave requests.',
+          description: 'Manage leave requests, approvals and leave policies.',
         },
 
         '/leave/my': {
@@ -855,11 +869,11 @@ if (window.TeamoTrackApp) {
 
       case 'hr':
         return {
-          html: '/dashboard/pages/hr/dashboard-hr.html',
+          html: '/dashboard/pages/HR/dashboard-hr.html',
 
-          js: '/dashboard/assets/js/hr/dashboard-hr.js',
+          js: '/dashboard/assets/js/HR/dashboard-hr.js',
 
-          css: '/dashboard/assets/css/hr/dashboard-hr.css',
+          css: '/dashboard/assets/css/HR/dashboard-hr.css',
 
           init: 'initializeHrDashboard',
 

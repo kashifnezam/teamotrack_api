@@ -109,35 +109,51 @@ export class ShiftsService {
   // ==================================================
 
   async remove(userId: string, id: string) {
-    const user = await this.getUser(userId);
+    const totalStart = performance.now();
 
+    console.log(`[SHIFT DELETE] START id=${id}`);
+
+    const userStart = performance.now();
+    const user = await this.getUser(userId);
+    console.log(`[SHIFT DELETE] getUser: ${(performance.now() - userStart).toFixed(0)}ms`);
+
+    const authStart = performance.now();
     await this.authorize(user, 'shift.delete');
+    console.log(`[SHIFT DELETE] authorize: ${(performance.now() - authStart).toFixed(0)}ms`);
 
     const rootId = this.getRootId(user);
 
     const ref = this.db.collection('shifts').doc(id);
 
+    const shiftStart = performance.now();
     const doc = await ref.get();
+    console.log(`[SHIFT DELETE] shift.get: ${(performance.now() - shiftStart).toFixed(0)}ms`);
 
     if (!doc.exists || doc.data()?.rootId !== rootId) {
       throw new NotFoundException('Shift not found');
     }
 
-    /*
-     * Prevent deleting an assigned shift.
-     */
-    const teams = await this.db
-      .collection('teams')
-      .where('rootId', '==', rootId)
-      .where('shiftId', '==', id)
-      .limit(1)
-      .get();
+    const assignmentStart = performance.now();
 
-    if (!teams.empty) {
-      throw new BadRequestException('Shift is assigned to a team');
+    const [teams, users] = await Promise.all([
+      this.db.collection('teams').where('rootId', '==', rootId).where('shiftId', '==', id).limit(1).get(),
+
+      this.db.collection('user').where('rootId', '==', rootId).where('shiftId', '==', id).limit(1).get(),
+    ]);
+
+    console.log(`[SHIFT DELETE] team + user queries: ${(performance.now() - assignmentStart).toFixed(0)}ms`);
+
+    if (!teams.empty || !users.empty) {
+      throw new BadRequestException('Shift is assigned to a team or user');
     }
 
+    const deleteStart = performance.now();
+
     await ref.delete();
+
+    console.log(`[SHIFT DELETE] delete: ${(performance.now() - deleteStart).toFixed(0)}ms`);
+
+    console.log(`[SHIFT DELETE] TOTAL: ${(performance.now() - totalStart).toFixed(0)}ms`);
 
     this.logger.log(`Shift deleted | id=${id} | user=${userId}`);
 
@@ -146,7 +162,6 @@ export class ShiftsService {
       id,
     };
   }
-
   // ==================================================
   // AUTHORIZATION
   // ==================================================

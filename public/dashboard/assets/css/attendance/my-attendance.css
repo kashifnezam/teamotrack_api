@@ -781,3 +781,506 @@
     min-width: 760px;
   }
 }
+
+/* ==========================================================
+   ATTENDANCE REGULARIZATION
+========================================================== */
+
+.attendance-history-table th:last-child,
+.attendance-history-table td:last-child {
+  min-width: 145px;
+}
+
+/* ==========================================================
+   REGULARIZATION BUTTON
+========================================================== */
+
+.attendance-regularize-btn {
+  height: 32px;
+
+  padding: 0 10px;
+
+  border: 1px solid rgba(37, 99, 235, 0.2);
+
+  border-radius: 7px;
+
+  background: rgba(37, 99, 235, 0.06);
+
+  color: #2563eb;
+
+  display: inline-flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 6px;
+
+  font-size: 11px;
+
+  font-weight: 700;
+
+  transition: all 0.2s ease;
+}
+
+.attendance-regularize-btn:hover {
+  background: rgba(37, 99, 235, 0.11);
+
+  border-color: rgba(37, 99, 235, 0.35);
+
+  transform: translateY(-1px);
+}
+
+/* ==========================================================
+   REGULARIZATION STATUS
+========================================================== */
+
+.attendance-regularization-status {
+  display: inline-flex;
+
+  align-items: center;
+
+  gap: 5px;
+
+  padding: 5px 9px;
+
+  border-radius: 999px;
+
+  font-size: 10px;
+
+  font-weight: 750;
+
+  white-space: nowrap;
+}
+
+.attendance-regularization-status.pending {
+  background: #fff7ed;
+
+  color: #c2410c;
+}
+
+.attendance-regularization-status.approved {
+  background: #dcfce7;
+
+  color: #15803d;
+}
+
+.attendance-regularization-status.rejected {
+  background: #fee2e2;
+
+  color: #b91c1c;
+}
+
+.attendance-regularization-status.cancelled {
+  background: #f3f4f6;
+
+  color: #6b7280;
+}
+
+/* ==========================================================
+   MODAL
+========================================================== */
+
+.attendance-regularization-modal {
+  border: 0;
+
+  border-radius: 16px;
+
+  overflow: hidden;
+
+  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.18);
+}
+
+.attendance-regularization-modal .modal-header {
+  padding: 20px 22px;
+
+  border-bottom: 1px solid #edf0f4;
+}
+
+.attendance-regularization-modal .modal-body {
+  padding: 22px;
+}
+
+.attendance-regularization-modal .modal-footer {
+  padding: 15px 22px;
+
+  border-top: 1px solid #edf0f4;
+}
+
+.attendance-modal-eyebrow {
+  margin-bottom: 4px;
+
+  color: #2563eb;
+
+  font-size: 10px;
+
+  font-weight: 800;
+
+  letter-spacing: 0.12em;
+}
+
+.attendance-regularization-modal .modal-title {
+  margin: 0;
+
+  color: #111827;
+
+  font-size: 20px;
+
+  font-weight: 750;
+}
+
+.attendance-modal-subtitle {
+  max-width: 620px;
+
+  margin: 5px 0 0;
+
+  color: #6b7280;
+
+  font-size: 12px;
+
+  line-height: 1.5;
+}
+
+/* ==========================================================
+   SELECTED DATE
+========================================================== */
+
+.regularization-selected-date {
+  display: flex;
+
+  align-items: center;
+
+  gap: 12px;
+
+  padding: 13px 14px;
+
+  margin-bottom: 15px;
+
+  border: 1px solid #e5e7eb;
+
+  border-radius: 10px;
+
+  background: #fafbfc;
+}
+
+.regularization-selected-icon {
+  width: 38px;
+
+  height: 38px;
+
+  flex: 0 0 38px;
+
+  border-radius: 9px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  background: #eff6ff;
+
+  color: #2563eb;
+}
+
+.regularization-selected-date span {
+  display: block;
+
+  margin-bottom: 2px;
+
+  color: #6b7280;
+
+  font-size: 10px;
+}
+
+.regularization-selected-date strong {
+  display: block;
+
+  color: #111827;
+
+  font-size: 14px;
+
+  font-weight: 700;
+}
+
+/* ==========================================================
+   CURRENT ATTENDANCE
+========================================================== */
+
+.regularization-current-card {
+  margin-bottom: 18px;
+
+  padding: 14px;
+
+  border-radius: 10px;
+
+  background: #f8fafc;
+
+  border: 1px solid #e8edf3;
+}
+
+.regularization-current-title {
+  margin-bottom: 11px;
+
+  color: #374151;
+
+  font-size: 11px;
+
+  font-weight: 800;
+
+  text-transform: uppercase;
+
+  letter-spacing: 0.05em;
+}
+
+.regularization-current-grid {
+  display: grid;
+
+  grid-template-columns: repeat(4, 1fr);
+
+  gap: 12px;
+}
+
+.regularization-current-grid span {
+  display: block;
+
+  margin-bottom: 3px;
+
+  color: #94a3b8;
+
+  font-size: 10px;
+}
+
+.regularization-current-grid strong {
+  display: block;
+
+  color: #374151;
+
+  font-size: 12px;
+
+  font-weight: 700;
+}
+
+/* ==========================================================
+   FORM
+========================================================== */
+
+.regularization-form-group {
+  position: relative;
+
+  margin-bottom: 17px;
+}
+
+.regularization-form-group label {
+  display: block;
+
+  margin-bottom: 7px;
+
+  color: #374151;
+
+  font-size: 12px;
+
+  font-weight: 700;
+}
+
+.regularization-form-group label span {
+  color: #dc2626;
+}
+
+.regularization-form-group .form-control,
+.regularization-form-group .form-select {
+  min-height: 42px;
+
+  border-radius: 8px;
+
+  border-color: #dfe4ea;
+
+  font-size: 13px;
+}
+
+.regularization-form-group textarea.form-control {
+  min-height: 100px;
+
+  resize: vertical;
+}
+
+.regularization-form-group small {
+  display: block;
+
+  margin-top: 5px;
+
+  color: #94a3b8;
+
+  font-size: 10px;
+}
+
+/* ==========================================================
+   TIME
+========================================================== */
+
+.regularization-time-section {
+  margin-bottom: 2px;
+}
+
+.regularization-time-grid {
+  display: grid;
+
+  grid-template-columns: repeat(2, 1fr);
+
+  gap: 14px;
+}
+
+/* ==========================================================
+   CHARACTER COUNT
+========================================================== */
+
+.regularization-character-count {
+  position: absolute;
+
+  right: 2px;
+
+  bottom: -17px;
+
+  color: #94a3b8;
+
+  font-size: 10px;
+}
+
+/* ==========================================================
+   INFO
+========================================================== */
+
+.regularization-info-box {
+  display: flex;
+
+  align-items: flex-start;
+
+  gap: 10px;
+
+  padding: 12px 13px;
+
+  border-radius: 9px;
+
+  background: #eff6ff;
+
+  color: #475569;
+}
+
+.regularization-info-box > i {
+  flex: 0 0 auto;
+
+  margin-top: 2px;
+
+  color: #2563eb;
+}
+
+.regularization-info-box strong {
+  display: block;
+
+  margin-bottom: 2px;
+
+  color: #1e3a8a;
+
+  font-size: 11px;
+}
+
+.regularization-info-box p {
+  margin: 0;
+
+  color: #64748b;
+
+  font-size: 11px;
+
+  line-height: 1.45;
+}
+
+/* ==========================================================
+   SUBMIT
+========================================================== */
+
+.attendance-regularization-submit {
+  height: 40px;
+
+  padding: 0 16px;
+
+  border: 0;
+
+  border-radius: 8px;
+
+  background: #2563eb;
+
+  color: #fff;
+
+  display: inline-flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 7px;
+
+  font-size: 12px;
+
+  font-weight: 700;
+
+  transition: all 0.2s ease;
+}
+
+.attendance-regularization-submit:hover:not(:disabled) {
+  background: #1d4ed8;
+
+  transform: translateY(-1px);
+}
+
+.attendance-regularization-submit:disabled {
+  opacity: 0.6;
+
+  cursor: not-allowed;
+}
+
+/* ==========================================================
+   ROW INDICATOR
+========================================================== */
+
+.attendance-regularization-row-indicator {
+  display: inline-flex;
+
+  align-items: center;
+
+  gap: 5px;
+
+  color: #64748b;
+
+  font-size: 10px;
+}
+
+/* ==========================================================
+   RESPONSIVE
+========================================================== */
+
+@media (max-width: 768px) {
+  .regularization-current-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .regularization-time-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .attendance-regularization-modal .modal-header,
+  .attendance-regularization-modal .modal-body,
+  .attendance-regularization-modal .modal-footer {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}
+
+@media (max-width: 576px) {
+  .regularization-current-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .attendance-regularization-submit {
+    flex: 1;
+  }
+}

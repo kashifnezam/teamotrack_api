@@ -40,7 +40,7 @@
             <div class="attendance-shift-info">
               <i class="bi bi-clock"></i>
 
-              <span> Shift </span>
+              <span>Shift</span>
 
               <strong id="attendanceShiftTime"> -- </strong>
             </div>
@@ -48,6 +48,7 @@
 
           <div class="attendance-status-pill status-not-marked" id="myAttendanceStatus">
             <span class="status-dot"></span>
+
             <span id="myAttendanceStatusText"> NOT MARKED </span>
           </div>
         </div>
@@ -120,18 +121,20 @@
           <div class="attendance-action-buttons">
             <button type="button" class="attendance-action-btn check-in" id="attendanceCheckInBtn">
               <i class="bi bi-box-arrow-in-right"></i>
-              <span>Check In</span>
+
+              <span> Check In </span>
             </button>
 
             <button type="button" class="attendance-action-btn check-out" id="attendanceCheckOutBtn" disabled>
               <i class="bi bi-box-arrow-right"></i>
-              <span>Check Out</span>
+
+              <span> Check Out </span>
             </button>
 
             <button type="button" class="attendance-action-btn undo-checkout" id="attendanceUndoCheckoutBtn" hidden>
               <i class="bi bi-arrow-counterclockwise"></i>
 
-              <span>Undo Checkout</span>
+              <span> Undo Checkout </span>
 
               <small id="attendanceUndoCountdown"></small>
             </button>
@@ -283,12 +286,13 @@
               <th>Working</th>
               <th>Attendance</th>
               <th>Punctuality</th>
+              <th>Regularization</th>
             </tr>
           </thead>
 
           <tbody id="myAttendanceTable">
             <tr>
-              <td colspan="6" class="attendance-empty-state">
+              <td colspan="7" class="attendance-empty-state">
                 <i class="bi bi-calendar2-week"></i>
 
                 <span> Loading attendance... </span>
@@ -300,3 +304,204 @@
     </div>
   </div>
 </section>
+
+<!-- ==========================================================
+     ATTENDANCE REGULARIZATION MODAL
+========================================================== -->
+
+<div class="modal fade" id="attendanceRegularizationModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content attendance-regularization-modal">
+      <!-- ====================================================
+           HEADER
+      ===================================================== -->
+
+      <div class="modal-header">
+        <div>
+          <div class="attendance-modal-eyebrow">ATTENDANCE CORRECTION</div>
+
+          <h5 class="modal-title">Request Regularization</h5>
+
+          <p class="attendance-modal-subtitle">
+            Submit a correction request for this attendance record. Your request will be reviewed by your parent manager
+            or authorized HR.
+          </p>
+        </div>
+
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <!-- ====================================================
+           BODY
+      ===================================================== -->
+
+      <div class="modal-body">
+        <!-- ==================================================
+             SELECTED ATTENDANCE DATE
+        =================================================== -->
+
+        <div class="regularization-selected-date">
+          <div class="regularization-selected-icon">
+            <i class="bi bi-calendar-event"></i>
+          </div>
+
+          <div>
+            <span> Attendance Date </span>
+
+            <strong id="regularizationDateLabel"> -- </strong>
+          </div>
+        </div>
+
+        <!-- ==================================================
+             CURRENT ATTENDANCE
+        =================================================== -->
+
+        <div class="regularization-current-card">
+          <div class="regularization-current-title">Current Attendance</div>
+
+          <div class="regularization-current-grid">
+            <div>
+              <span>Check In</span>
+
+              <strong id="regularizationCurrentCheckIn"> -- </strong>
+            </div>
+
+            <div>
+              <span>Check Out</span>
+
+              <strong id="regularizationCurrentCheckOut"> -- </strong>
+            </div>
+
+            <div>
+              <span>Working</span>
+
+              <strong id="regularizationCurrentWorking"> -- </strong>
+            </div>
+
+            <div>
+              <span>Status</span>
+
+              <strong id="regularizationCurrentStatus"> -- </strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==================================================
+             ISSUE TYPE
+        =================================================== -->
+
+        <div class="regularization-form-group">
+          <label for="regularizationType">
+            What went wrong?
+
+            <span>*</span>
+          </label>
+
+          <select id="regularizationType" class="form-select" required>
+            <option value="">Select correction type</option>
+
+            <option value="MISSED_CHECK_IN">Forgot to Check In</option>
+
+            <option value="MISSED_CHECK_OUT">Forgot to Check Out</option>
+
+            <option value="MISSED_BOTH">Forgot to Check In &amp; Check Out</option>
+
+            <option value="WRONG_CHECK_IN">Wrong Check In Time</option>
+
+            <option value="WRONG_CHECK_OUT">Wrong Check Out Time</option>
+
+            <option value="WRONG_BOTH">Wrong Check In &amp; Check Out</option>
+
+            <option value="SYSTEM_ERROR">System / Attendance System Issue</option>
+
+            <option value="LOCATION_ERROR">Location Issue</option>
+
+            <option value="OTHER">Other</option>
+          </select>
+        </div>
+
+        <!-- ==================================================
+             REQUESTED TIMES
+        =================================================== -->
+
+        <div class="regularization-time-section" id="regularizationTimeSection">
+          <div class="regularization-time-grid">
+            <div class="regularization-form-group">
+              <label for="regularizationCheckIn"> Requested Check In </label>
+
+              <input type="time" id="regularizationCheckIn" class="form-control" />
+
+              <small> Enter the actual check-in time. </small>
+            </div>
+
+            <div class="regularization-form-group">
+              <label for="regularizationCheckOut"> Requested Check Out </label>
+
+              <input type="time" id="regularizationCheckOut" class="form-control" />
+
+              <small> Enter the actual check-out time. </small>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==================================================
+             REASON
+        =================================================== -->
+
+        <div class="regularization-form-group">
+          <label for="regularizationReason">
+            Reason
+
+            <span>*</span>
+          </label>
+
+          <textarea
+            id="regularizationReason"
+            class="form-control"
+            rows="4"
+            maxlength="500"
+            required
+            placeholder="Explain what happened and why your attendance needs correction..."
+          ></textarea>
+
+          <div class="regularization-character-count">
+            <span id="regularizationReasonCount"> 0 </span>
+
+            / 500
+          </div>
+        </div>
+
+        <!-- ==================================================
+             INFO
+        =================================================== -->
+
+        <div class="regularization-info-box">
+          <i class="bi bi-info-circle"></i>
+
+          <div>
+            <strong> Important </strong>
+
+            <p>
+              Submitting this request does not immediately change your attendance. Your parent manager or authorized HR
+              must approve the request first.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ====================================================
+           FOOTER
+      ===================================================== -->
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+
+        <button type="button" class="attendance-regularization-submit" id="submitAttendanceRegularizationBtn">
+          <i class="bi bi-send"></i>
+
+          <span> Submit Request </span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

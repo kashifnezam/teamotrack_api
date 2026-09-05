@@ -226,7 +226,7 @@ export class SettingsService {
         error instanceof Error ? error.stack : String(error)
       );
 
-      throw new BadRequestException('Failed to update email');
+      throw new BadRequestException('Failed to update email, Email may already be in use');
     }
 
     // Update Firestore email
