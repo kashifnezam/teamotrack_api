@@ -1,12 +1,15 @@
 import { Body, Controller, Get, Param, Res, Post, Query, UseGuards } from '@nestjs/common';
 
 import { FirebaseAuthGuard } from '../auth/firebase-auth.guard';
+
 import { CurrentUser } from '../auth/current-user.decorator';
 
 import { AttendanceRegularizationService } from './attendance-regularization.service';
 
 import { CreateAttendanceRegularizationDto } from './dto/create-attendance-regularization.dto';
+
 import { RejectAttendanceRegularizationDto } from './dto/reject-attendance-regularization.dto';
+
 import type { Response } from 'express';
 
 @Controller('attendance-regularization')
@@ -23,6 +26,7 @@ export class AttendanceRegularizationController {
       root: './public/dashboard',
     });
   }
+
   // ============================================================
   // CREATE
   // ============================================================
@@ -44,13 +48,33 @@ export class AttendanceRegularizationController {
   }
 
   // ============================================================
-  // APPROVALS
+  // PENDING APPROVALS
   // ============================================================
 
   @Get('approvals')
   @UseGuards(FirebaseAuthGuard)
   getApprovals(@CurrentUser() user: any) {
     return this.service.getApprovals(user.uid);
+  }
+
+  // ============================================================
+  // PROCESSING HISTORY
+  // ============================================================
+
+  @Get('history')
+  @UseGuards(FirebaseAuthGuard)
+  getHistory(
+    @CurrentUser() user: any,
+    @Query('month') month?: string,
+    @Query('year') year?: string,
+    @Query('status') status?: string
+  ) {
+    return this.service.getHistory(
+      user.uid,
+      month ? Number(month) : undefined,
+      year ? Number(year) : undefined,
+      status
+    );
   }
 
   // ============================================================

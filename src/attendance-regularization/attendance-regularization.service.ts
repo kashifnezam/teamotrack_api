@@ -3,7 +3,6 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
-  InternalServerErrorException,
   Logger,
   NotFoundException,
 } from '@nestjs/common';
@@ -34,7 +33,7 @@ export class AttendanceRegularizationService {
   }
 
   // ============================================================
-  // CREATE REGULARIZATION
+  // CREATE
   // ============================================================
 
   async create(requesterId: string, dto: CreateAttendanceRegularizationDto) {
@@ -42,67 +41,42 @@ export class AttendanceRegularizationService {
 
     this.assertCanRaise(requester);
 
+    if (this.isRoot(requester)) {
+      throw new BadRequestException('Root manager attendance does not use regularization approval');
+    }
+
     const rootId = this.getRootId(requester);
 
     if (!rootId) {
       throw new BadRequestException('Invalid hierarchy: rootId missing');
     }
 
-    /*
-     * Root does not use the normal
-     * parent-manager approval flow.
-     */
-    if (this.isRoot(requester)) {
-      throw new BadRequestException('Root manager attendance does not use regularization approval');
-    }
-
-    /*
-     * HR / Manager / Executive must
-     * have a parent manager.
-     */
     if (!requester.parentId) {
       throw new BadRequestException('No parent manager is assigned to this account');
     }
 
-    /*
-     * Validate attendance date.
-     */
     const date = this.normalizeDate(dto.date);
 
     this.assertNotFutureDate(date);
 
-    /*
-     * Validate requested times.
-     */
     const checkInTime = dto.checkInTime ? this.parseDate(dto.checkInTime) : null;
 
     const checkOutTime = dto.checkOutTime ? this.parseDate(dto.checkOutTime) : null;
 
     this.validateRequestedTimes(dto.type, date, checkInTime, checkOutTime);
 
-    /*
-     * Make sure parent manager exists
-     * and belongs to the same organization.
-     */
     const parent = await this.getUser(requester.parentId);
 
     if (this.getRootId(parent) !== rootId) {
       throw new ForbiddenException('Invalid parent manager hierarchy');
     }
 
-    /*
-     * Attendance record.
-     */
     const attendanceRef = this.attendanceRecordRef(requester.uid, date);
 
     const attendanceSnapshot = await attendanceRef.get();
 
     const existingAttendance = attendanceSnapshot.exists ? (attendanceSnapshot.data() ?? {}) : null;
 
-    /*
-     * Do not create duplicate
-     * pending requests.
-     */
     const duplicateSnapshot = await this.db
       .collection('attendanceRegularizations')
       .where('rootId', '==', rootId)
@@ -116,45 +90,18 @@ export class AttendanceRegularizationService {
       throw new ConflictException('A pending attendance regularization already exists for this date');
     }
 
-    /*
-     * Snapshot the current attendance
-     * BEFORE any modification.
-     *
-     * This is important for audit/history.
-     */
-    const previousAttendance = existingAttendance ? this.serializeForHistory(existingAttendance) : null;
-
-    /*
-     * Approval owner is always
-     * the employee's direct parent.
-     */
-    const approval = [
-      {
-        level: 0,
-
-        userId: parent.uid,
-
-        status: 'pending',
-
-        createdAt: Timestamp.fromDate(new Date()),
-      },
-    ];
+    const now = Timestamp.fromDate(new Date());
 
     const ref = this.db.collection('attendanceRegularizations').doc();
-
-    const now = new Date();
 
     const data = {
       rootId,
 
       userId: requester.uid,
-
       userName: requester.fullName ?? '',
-
       userRole: requester.role ?? '',
 
       parentId: parent.uid,
-
       parentName: parent.fullName ?? '',
 
       date,
@@ -169,24 +116,23 @@ export class AttendanceRegularizationService {
 
       attachmentUrl: dto.attachmentUrl?.trim() || null,
 
-      /*
-       * Exact attendance state at
-       * request creation time.
-       */
-      previousAttendance,
+      previousAttendance: existingAttendance ? this.serializeForHistory(existingAttendance) : null,
 
-      /*
-       * Approval workflow.
-       */
-      approval,
+      approval: [
+        {
+          level: 0,
+          userId: parent.uid,
+          status: 'pending',
+          createdAt: now,
+        },
+      ],
 
       currentLevel: 0,
 
       status: 'pending',
 
-      createdAt: Timestamp.fromDate(now),
-
-      updatedAt: Timestamp.fromDate(now),
+      createdAt: now,
+      updatedAt: now,
     };
 
     await ref.set(data);
@@ -197,18 +143,13 @@ export class AttendanceRegularizationService {
 
     return {
       success: true,
-
       id: ref.id,
-
       status: 'pending',
-
       date,
-
       type: dto.type,
 
       approver: {
         id: parent.uid,
-
         name: parent.fullName ?? '',
       },
 
@@ -229,42 +170,25 @@ export class AttendanceRegularizationService {
       throw new BadRequestException('Invalid hierarchy: rootId missing');
     }
 
+    this.validateOptionalMonthYear(month, year);
+
     let query = this.db
       .collection('attendanceRegularizations')
       .where('rootId', '==', rootId)
       .where('userId', '==', userId);
 
-    if (month != null || year != null) {
-      if (month == null || year == null) {
-        throw new BadRequestException('Both month and year are required');
-      }
-
-      this.validateMonthYear(month, year);
-
-      const start = `${year}-${String(month).padStart(2, '0')}-01`;
-
-      const nextMonth = month === 12 ? 1 : month + 1;
-
-      const nextYear = month === 12 ? year + 1 : year;
-
-      const end = `${nextYear}-${String(nextMonth).padStart(2, '0')}-01`;
-
-      query = query.where('date', '>=', start).where('date', '<', end);
-    }
+    query = this.applyMonthFilter(query, month, year);
 
     const snapshot = await query.get();
 
     const requests = snapshot.docs
       .map((doc) => ({
         id: doc.id,
-
         ...doc.data(),
       }))
       .sort((a: any, b: any) => String(b.date).localeCompare(String(a.date)));
 
-    return {
-      requests,
-    };
+    return { requests };
   }
 
   // ============================================================
@@ -280,37 +204,7 @@ export class AttendanceRegularizationService {
       throw new BadRequestException('Invalid hierarchy: rootId missing');
     }
 
-    /*
-     * Verify approval permission.
-     */
-    if (!this.isRoot(requester)) {
-      const permissions = await this.getPermissions(requester.uid);
-
-      if (requester.role === 'hr') {
-        /*
-         * HR can have either:
-         *
-         * attendance.regularization.approve
-         * OR
-         * attendance.regularization.approve.all
-         */
-        const canApprove =
-          permissions['attendance.regularization.approve'] === true ||
-          permissions['attendance.regularization.approve.all'] === true;
-
-        if (!canApprove) {
-          return {
-            requests: [],
-          };
-        }
-      } else {
-        if (permissions['attendance.regularization.approve'] !== true) {
-          return {
-            requests: [],
-          };
-        }
-      }
-    }
+    await this.assertCanApprove(requester);
 
     const snapshot = await this.db
       .collection('attendanceRegularizations')
@@ -321,21 +215,68 @@ export class AttendanceRegularizationService {
     const requests = snapshot.docs
       .map((doc) => ({
         id: doc.id,
-
         ...doc.data(),
       }))
       .filter((request: any) => {
+        if (requester.role === 'hr' && (request.userRole === 'manager' || request.userRole === 'hr')) {
+          return false; // HR cannot approve requests from managers or other HRs
+        }
         const level = Number(request.currentLevel ?? 0);
 
-        const step = request.approval?.find((item: any) => Number(item.level) === level);
+        const step = Array.isArray(request.approval)
+          ? request.approval.find((item: any) => Number(item.level) === level)
+          : undefined;
 
         return this.isApprover(requester, step);
       })
       .sort((a: any, b: any) => this.timestampValue(b.createdAt) - this.timestampValue(a.createdAt));
 
-    return {
-      requests,
-    };
+    return { requests };
+  }
+
+  // ============================================================
+  // PROCESSING HISTORY
+  // ============================================================
+
+  async getHistory(userId: string, month?: number, year?: number, status?: string) {
+    const requester = await this.getUser(userId);
+
+    const rootId = this.getRootId(requester);
+
+    if (!rootId) {
+      throw new BadRequestException('Invalid hierarchy: rootId missing');
+    }
+
+    /*
+     * attendance.manage is the only processing permission.
+     */
+    await this.assertCanApprove(requester);
+
+    this.validateOptionalMonthYear(month, year);
+
+    const normalizedStatus = this.normalizeHistoryStatus(status);
+
+    let query = this.db.collection('attendanceRegularizations').where('rootId', '==', rootId);
+
+    if (normalizedStatus) {
+      query = query.where('status', '==', normalizedStatus);
+    } else {
+      query = query.where('status', 'in', ['approved', 'rejected']);
+    }
+
+    query = this.applyMonthFilter(query, month, year);
+
+    const snapshot = await query.get();
+
+    const requests = snapshot.docs
+      .map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }))
+      .filter((request: any) => this.canViewHistory(requester, request))
+      .sort((a: any, b: any) => this.getHistoryActionTimestamp(b) - this.getHistoryActionTimestamp(a));
+
+    return { requests };
   }
 
   // ============================================================
@@ -360,25 +301,61 @@ export class AttendanceRegularizationService {
     }
 
     /*
-     * Request owner can see
-     * their own request.
+     * Owner can always view own request.
      */
     if (data.userId === requester.uid) {
       return {
         id,
-
         ...data,
       };
     }
 
     /*
-     * Check approval access.
+     * Root can view everything.
+     */
+    if (this.isRoot(requester)) {
+      return {
+        id,
+        ...data,
+      };
+    }
+
+    /*
+     * HR acts on behalf of parent manager.
+     *
+     * Therefore HR can view the complete
+     * parent-manager history.
+     */
+    if (
+      requester.role === 'hr' &&
+      requester.parentId &&
+      this.hasAttendanceManagePermission(await this.getPermissions(requester.uid)) &&
+      this.belongsToManagerScope(data, requester.parentId)
+    ) {
+      return {
+        id,
+        ...data,
+      };
+    }
+
+    /*
+     * A manager/HR who actually processed
+     * the request can view its history.
+     */
+    if (this.hasProcessedRequest(requester, data)) {
+      return {
+        id,
+        ...data,
+      };
+    }
+
+    /*
+     * Finally allow current pending approver.
      */
     await this.assertApprovalAccess(requester, data);
 
     return {
       id,
-
       ...data,
     };
   }
@@ -390,70 +367,15 @@ export class AttendanceRegularizationService {
   async approve(userId: string, id: string) {
     const approver = await this.getUser(userId);
 
-    const rootId = this.getRootId(approver);
+    const { ref, data, steps, step } = await this.getPendingRequest(approver, id);
 
-    /*
-     * Permission.
-     */
-    await this.assertCanApprove(approver);
+    const now = Timestamp.fromDate(new Date());
 
-    const ref = this.db.collection('attendanceRegularizations').doc(id);
-
-    const doc = await ref.get();
-
-    if (!doc.exists || doc.data()?.rootId !== rootId) {
-      throw new NotFoundException('Attendance regularization not found');
-    }
-
-    const data = doc.data()!;
-
-    if (data.status !== 'pending') {
-      throw new BadRequestException('Attendance regularization is not pending');
-    }
-
-    /*
-     * Never self approve.
-     */
-    if (data.userId === approver.uid) {
-      throw new BadRequestException('You cannot approve your own attendance regularization');
-    }
-
-    const level = Number(data.currentLevel ?? 0);
-
-    const steps = Array.isArray(data.approval) ? data.approval : [];
-
-    const step = steps.find((item: any) => Number(item.level) === level);
-
-    /*
-     * Direct manager OR
-     * HR acting on behalf of
-     * direct parent manager.
-     */
-    if (!this.isApprover(approver, step)) {
-      throw new ForbiddenException('You are not authorized to approve this attendance regularization');
-    }
-
-    /*
-     * We have only one approval
-     * level currently.
-     *
-     * Keep this structure so it can
-     * become multi-level later.
-     */
     step.status = 'approved';
-
     step.approvedBy = approver.uid;
-
     step.approvedByRole = approver.role ?? null;
+    step.approvedAt = now;
 
-    step.approvedAt = Timestamp.fromDate(new Date());
-
-    /*
-     * Persist approval first.
-     *
-     * The attendance update is performed
-     * after authorization and validation.
-     */
     await this.applyApprovedRegularization(id, data, approver);
 
     await ref.update({
@@ -464,27 +386,19 @@ export class AttendanceRegularizationService {
       status: 'approved',
 
       approvedBy: approver.uid,
-
       approvedByRole: approver.role ?? null,
-
       approvedAt: FieldValue.serverTimestamp(),
 
       updatedAt: FieldValue.serverTimestamp(),
     });
 
-    this.logger.log(
-      `Attendance regularization approved | id=${id} | actualApprover=${approver.uid} | role=${approver.role}`
-    );
+    this.logger.log(`Attendance regularization approved | id=${id} | approver=${approver.uid} | role=${approver.role}`);
 
     return {
       success: true,
-
       id,
-
       status: 'approved',
-
       approvedBy: approver.uid,
-
       message: 'Attendance regularization approved successfully.',
     };
   }
@@ -496,82 +410,44 @@ export class AttendanceRegularizationService {
   async reject(userId: string, id: string, reason?: string) {
     const approver = await this.getUser(userId);
 
-    const rootId = this.getRootId(approver);
+    const { ref, steps, step } = await this.getPendingRequest(approver, id);
 
-    await this.assertCanApprove(approver);
+    const rejectionReason = reason?.trim() ?? '';
 
-    const ref = this.db.collection('attendanceRegularizations').doc(id);
-
-    const doc = await ref.get();
-
-    if (!doc.exists || doc.data()?.rootId !== rootId) {
-      throw new NotFoundException('Attendance regularization not found');
-    }
-
-    const data = doc.data()!;
-
-    if (data.status !== 'pending') {
-      throw new BadRequestException('Attendance regularization is not pending');
-    }
-
-    /*
-     * Never self reject.
-     */
-    if (data.userId === approver.uid) {
-      throw new BadRequestException('You cannot reject your own attendance regularization');
-    }
-
-    const level = Number(data.currentLevel ?? 0);
-
-    const step = data.approval?.find((item: any) => Number(item.level) === level);
-
-    if (!this.isApprover(approver, step)) {
-      throw new ForbiddenException('You are not authorized to reject this attendance regularization');
-    }
-
-    if (reason != null && reason.trim().length < 3) {
+    if (reason != null && rejectionReason.length < 3) {
       throw new BadRequestException('Rejection reason must contain at least 3 characters');
     }
 
+    const now = Timestamp.fromDate(new Date());
+
     step.status = 'rejected';
-
     step.rejectedBy = approver.uid;
-
     step.rejectedByRole = approver.role ?? null;
-
-    step.rejectedAt = Timestamp.fromDate(new Date());
+    step.rejectedAt = now;
 
     await ref.update({
-      approval: data.approval,
+      approval: steps,
 
       currentLevel: null,
 
       status: 'rejected',
 
-      rejectionReason: reason?.trim() ?? '',
+      rejectionReason,
 
       rejectedBy: approver.uid,
-
       rejectedByRole: approver.role ?? null,
-
       rejectedAt: FieldValue.serverTimestamp(),
 
       updatedAt: FieldValue.serverTimestamp(),
     });
 
-    this.logger.log(
-      `Attendance regularization rejected | id=${id} | actualApprover=${approver.uid} | role=${approver.role}`
-    );
+    this.logger.log(`Attendance regularization rejected | id=${id} | approver=${approver.uid} | role=${approver.role}`);
 
     return {
       success: true,
-
       id,
-
       status: 'rejected',
-
       rejectedBy: approver.uid,
-
       message: 'Attendance regularization rejected.',
     };
   }
@@ -584,6 +460,10 @@ export class AttendanceRegularizationService {
     const requester = await this.getUser(userId);
 
     const rootId = this.getRootId(requester);
+
+    if (!rootId) {
+      throw new BadRequestException('Invalid hierarchy: rootId missing');
+    }
 
     const ref = this.db.collection('attendanceRegularizations').doc(id);
 
@@ -619,12 +499,56 @@ export class AttendanceRegularizationService {
 
     return {
       success: true,
-
       id,
-
       status: 'cancelled',
-
       message: 'Attendance regularization cancelled.',
+    };
+  }
+
+  // ============================================================
+  // PENDING REQUEST
+  // ============================================================
+
+  private async getPendingRequest(user: any, id: string) {
+    await this.assertCanApprove(user);
+
+    const ref = this.db.collection('attendanceRegularizations').doc(id);
+
+    const snapshot = await ref.get();
+
+    if (!snapshot.exists) {
+      throw new NotFoundException('Attendance regularization not found');
+    }
+
+    const data = snapshot.data() ?? {};
+
+    if (data.rootId !== this.getRootId(user)) {
+      throw new NotFoundException('Attendance regularization not found');
+    }
+
+    if (data.status !== 'pending') {
+      throw new BadRequestException('Attendance regularization is not pending');
+    }
+
+    if (data.userId === user.uid) {
+      throw new BadRequestException('You cannot process your own attendance regularization');
+    }
+
+    const level = Number(data.currentLevel ?? 0);
+
+    const steps = Array.isArray(data.approval) ? data.approval : [];
+
+    const step = steps.find((item: any) => Number(item.level) === level);
+
+    if (!this.isApprover(user, step)) {
+      throw new ForbiddenException('You are not authorized to process this attendance regularization');
+    }
+
+    return {
+      ref,
+      data,
+      steps,
+      step,
     };
   }
 
@@ -635,25 +559,14 @@ export class AttendanceRegularizationService {
   private async applyApprovedRegularization(regularizationId: string, data: any, approver: any) {
     const attendanceRef = this.attendanceRecordRef(data.userId, data.date);
 
-    /*
-     * Use a transaction because the
-     * attendance record could have
-     * changed after the employee
-     * submitted the request.
-     */
     await this.db.runTransaction(async (transaction) => {
       const snapshot = await transaction.get(attendanceRef);
 
       const current = snapshot.exists ? (snapshot.data() ?? {}) : {};
 
       /*
-       * ------------------------------------------------------
-       * CONFLICT CHECK
-       * ------------------------------------------------------
-       *
-       * If attendance has changed after
-       * the request was submitted, don't
-       * silently destroy the new state.
+       * Prevent overwriting attendance
+       * changed after request creation.
        */
       const original = data.previousAttendance;
 
@@ -663,77 +576,39 @@ export class AttendanceRegularizationService {
         );
       }
 
-      /*
-       * Historical shift is mandatory
-       * whenever an attendance record
-       * already exists.
-       */
-      let shift = this.shiftFromSnapshot(current.shiftSnapshot);
+      const shift = this.shiftFromSnapshot(current.shiftSnapshot);
 
-      /*
-       * If the attendance record does
-       * not exist, we cannot calculate
-       * attendance without historical
-       * shift information.
-       */
       if (!shift) {
         throw new BadRequestException('Historical shift information is missing from attendance record');
       }
 
-      /*
-       * Existing timestamps.
-       */
       const existingCheckIn = this.toDate(current.checkInTime);
 
       const existingCheckOut = this.toDate(current.checkOutTime);
 
-      /*
-       * Requested timestamps.
-       */
       const requestedCheckIn = data.requestedCheckInTime ? this.toDate(data.requestedCheckInTime) : null;
 
       const requestedCheckOut = data.requestedCheckOutTime ? this.toDate(data.requestedCheckOutTime) : null;
 
       /*
-       * Determine final values.
-       *
-       * A missing value means:
-       * preserve the existing value.
+       * Null means preserve existing value.
        */
       const finalCheckIn = requestedCheckIn ?? existingCheckIn;
 
       const finalCheckOut = requestedCheckOut ?? existingCheckOut;
 
-      /*
-       * ------------------------------------------------------
-       * MISSED BOTH / MISSING RECORD
-       * ------------------------------------------------------
-       */
       if (!finalCheckIn && !finalCheckOut) {
         throw new BadRequestException('At least one valid check-in or check-out time is required');
       }
 
-      /*
-       * Checkout cannot exist
-       * without check-in.
-       */
       if (finalCheckOut && !finalCheckIn) {
         throw new BadRequestException('Check-in time is required when correcting check-out');
       }
 
-      /*
-       * Checkout must be after
-       * check-in.
-       */
       if (finalCheckIn && finalCheckOut && finalCheckOut.getTime() <= finalCheckIn.getTime()) {
         throw new BadRequestException('Checkout time must be after check-in time');
       }
 
-      /*
-       * ------------------------------------------------------
-       * WORKING MINUTES
-       * ------------------------------------------------------
-       */
       let workingMinutes = 0;
 
       let status: 'present' | 'absent' | 'half_day' = 'absent';
@@ -746,16 +621,9 @@ export class AttendanceRegularizationService {
         punctuality = this.isLate(finalCheckIn, shift);
       }
 
-      /*
-       * Complete attendance.
-       */
       if (finalCheckIn && finalCheckOut) {
         const shiftStart = this.shiftStartForDate(finalCheckIn, shift);
 
-        /*
-         * Early check-in does not
-         * count toward working minutes.
-         */
         const effectiveCheckIn = finalCheckIn.getTime() < shiftStart.getTime() ? shiftStart : finalCheckIn;
 
         workingMinutes = Math.max(0, Math.round((finalCheckOut.getTime() - effectiveCheckIn.getTime()) / 60000));
@@ -766,32 +634,15 @@ export class AttendanceRegularizationService {
 
         attendanceType = classification.attendanceType;
       } else {
-        /*
-         * Check-in exists but checkout
-         * is still missing.
-         *
-         * Keep the record as present
-         * with zero calculated minutes,
-         * exactly like the employee
-         * check-in flow.
-         */
         status = 'present';
-
         attendanceType = 'full_day';
-
-        workingMinutes = 0;
       }
 
-      /*
-       * ------------------------------------------------------
-       * PRESERVE ALL PREVIOUS STATE
-       * ------------------------------------------------------
-       */
-      const regularizationHistory = Array.isArray(current.regularizationHistory)
-        ? [...current.regularizationHistory]
-        : [];
+      const history = Array.isArray(current.regularizationHistory) ? [...current.regularizationHistory] : [];
 
-      regularizationHistory.push({
+      const now = Timestamp.fromDate(new Date());
+
+      history.push({
         action: 'REGULARIZATION_APPLIED',
 
         regularizationId,
@@ -804,7 +655,7 @@ export class AttendanceRegularizationService {
 
         approvedByRole: approver.role ?? null,
 
-        approvedAt: Timestamp.fromDate(new Date()),
+        approvedAt: now,
 
         reason: data.reason ?? '',
 
@@ -832,20 +683,9 @@ export class AttendanceRegularizationService {
           punctuality,
         },
 
-        recordedAt: Timestamp.fromDate(new Date()),
+        recordedAt: now,
       });
 
-      /*
-       * Keep a reasonable amount of
-       * history on the attendance record.
-       */
-      const limitedHistory = regularizationHistory.slice(-20);
-
-      /*
-       * ------------------------------------------------------
-       * ATTENDANCE UPDATE
-       * ------------------------------------------------------
-       */
       const update: FirebaseFirestore.DocumentData = {
         staffId: data.userId,
 
@@ -871,86 +711,118 @@ export class AttendanceRegularizationService {
 
         regularizationReason: data.reason ?? '',
 
-        regularizationHistory: limitedHistory,
+        regularizationHistory: history.slice(-20),
 
         updatedAt: FieldValue.serverTimestamp(),
+
+        checkoutUndoUntil: FieldValue.delete(),
+
+        lastCheckoutAt: finalCheckOut ? Timestamp.fromDate(finalCheckOut) : FieldValue.delete(),
       };
 
       /*
        * Check-in.
        */
-      if (finalCheckIn) {
-        update.checkInTime = Timestamp.fromDate(finalCheckIn);
-      } else {
-        update.checkInTime = FieldValue.delete();
-      }
+      update.checkInTime = finalCheckIn ? Timestamp.fromDate(finalCheckIn) : FieldValue.delete();
 
       /*
        * Check-out.
        */
-      if (finalCheckOut) {
-        update.checkOutTime = Timestamp.fromDate(finalCheckOut);
-      } else {
-        update.checkOutTime = FieldValue.delete();
-      }
+      update.checkOutTime = finalCheckOut ? Timestamp.fromDate(finalCheckOut) : FieldValue.delete();
 
       /*
-       * Recalculate punctuality.
+       * Punctuality.
        */
-      if (punctuality) {
-        update.punctuality = punctuality;
-      } else {
-        update.punctuality = FieldValue.delete();
-      }
+      update.punctuality = punctuality ? punctuality : FieldValue.delete();
 
       /*
-       * Employee undo checkout
-       * must not remain available
-       * after a manager/HR
-       * regularization.
+       * Preserve leave information.
        */
-      update.checkoutUndoUntil = FieldValue.delete();
-
-      update.lastCheckoutAt = finalCheckOut ? Timestamp.fromDate(finalCheckOut) : FieldValue.delete();
-
-      /*
-       * Preserve existing leave metadata.
-       *
-       * Regularization must not
-       * destroy leave information.
-       */
-      if (current.leaveRequestId) {
-        update.leaveRequestId = current.leaveRequestId;
-      }
-
-      if (current.leaveTypeId) {
-        update.leaveTypeId = current.leaveTypeId;
-      }
-
-      if (current.leaveDuration) {
-        update.leaveDuration = current.leaveDuration;
-      }
-
-      if (current.leaveStatus) {
-        update.leaveStatus = current.leaveStatus;
+      for (const field of ['leaveRequestId', 'leaveTypeId', 'leaveDuration', 'leaveStatus']) {
+        if (current[field] != null) {
+          update[field] = current[field];
+        }
       }
 
       /*
-       * Never replace historical
-       * shift snapshot.
+       * Never replace historical shift.
        */
       if (current.shiftSnapshot) {
         update.shiftSnapshot = current.shiftSnapshot;
       }
 
-      transaction.set(attendanceRef, update, {
-        merge: true,
-      });
+      transaction.set(attendanceRef, update, { merge: true });
     });
 
     this.logger.log(
       `Attendance regularization applied | regularization=${regularizationId} | staff=${data.userId} | approver=${approver.uid}`
     );
+  }
+
+  // ============================================================
+  // HISTORY ACCESS
+  // ============================================================
+
+  private canViewHistory(requester: any, request: any): boolean {
+    /*
+     * Root roles:
+     * everything.
+     */
+    if (this.isRoot(requester)) {
+      return true;
+    }
+
+    /*
+     * HR acts as the parent manager.
+     *
+     * HR's parentId identifies the manager whose
+     * attendance/regularization scope HR handles.
+     */
+    if (requester.userRole === 'hr' && requester.parentId) {
+      return this.belongsToManagerScope(request, requester.parentId);
+    }
+
+    /*
+     * Manager:
+     * only requests actually processed by this manager.
+     */
+    return this.hasProcessedRequest(requester, request);
+  }
+
+  private belongsToManagerScope(request: any, managerId?: string): boolean {
+    if (!managerId) {
+      return false;
+    }
+
+    /*
+     * Current regularization structure.
+     */
+    if (request.parentId === managerId) {
+      return true;
+    }
+
+    /*
+     * Approval-chain fallback for older records.
+     */
+    if (Array.isArray(request.approval)) {
+      return request.approval.some((step: any) => step.userId === managerId);
+    }
+
+    return false;
+  }
+
+  private hasProcessedRequest(requester: any, request: any): boolean {
+    if (!requester?.uid || !request) {
+      return false;
+    }
+
+    if (request.approvedBy === requester.uid || request.rejectedBy === requester.uid) {
+      return true;
+    }
+
+    return Array.isArray(request.approval)
+      ? request.approval.some((step: any) => step.approvedBy === requester.uid || step.rejectedBy === requester.uid)
+      : false;
   }
 
   // ============================================================
@@ -968,21 +840,13 @@ export class AttendanceRegularizationService {
 
     const permissions = await this.getPermissions(user.uid);
 
-    if (user.role === 'hr') {
-      const allowed =
-        permissions['attendance.regularization.approve'] === true ||
-        permissions['attendance.regularization.approve.all'] === true;
-
-      if (!allowed) {
-        throw new ForbiddenException('Permission denied');
-      }
-
-      return;
-    }
-
-    if (permissions['attendance.regularization.approve'] !== true) {
+    if (!this.hasAttendanceManagePermission(permissions)) {
       throw new ForbiddenException('Permission denied');
     }
+  }
+
+  private hasAttendanceManagePermission(permissions: Record<string, boolean>): boolean {
+    return permissions['attendance.manage'] === true;
   }
 
   private async assertApprovalAccess(user: any, data: any) {
@@ -990,9 +854,23 @@ export class AttendanceRegularizationService {
       return;
     }
 
+    if (this.hasProcessedRequest(user, data)) {
+      return;
+    }
+
+    if (user.role === 'hr' && user.parentId) {
+      const permissions = await this.getPermissions(user.uid);
+
+      if (this.hasAttendanceManagePermission(permissions) && this.belongsToManagerScope(data, user.parentId)) {
+        return;
+      }
+    }
+
     const level = Number(data.currentLevel ?? 0);
 
-    const step = data.approval?.find((item: any) => Number(item.level) === level);
+    const step = Array.isArray(data.approval)
+      ? data.approval.find((item: any) => Number(item.level) === level)
+      : undefined;
 
     if (this.isApprover(user, step)) {
       return;
@@ -1007,23 +885,17 @@ export class AttendanceRegularizationService {
     }
 
     /*
-     * Direct parent manager.
+     * Direct manager.
      */
     if (step.userId === user.uid) {
       return true;
     }
 
     /*
-     * HR delegation.
-     *
-     * HR acts on behalf of
-     * its parent manager.
+     * HR acting on behalf of
+     * parent manager.
      */
-    if (user.role === 'hr' && user.parentId && user.parentId === step.userId) {
-      return true;
-    }
-
-    return false;
+    return user.role === 'hr' && !!user.parentId && user.parentId === step.userId;
   }
 
   // ============================================================
@@ -1058,20 +930,10 @@ export class AttendanceRegularizationService {
       throw new BadRequestException('Check-out time is required for this regularization type');
     }
 
-    /*
-     * SYSTEM_ERROR / LOCATION_ERROR /
-     * OTHER can still correct one
-     * or both times.
-     */
     if (checkIn && checkOut && checkOut.getTime() <= checkIn.getTime()) {
       throw new BadRequestException('Check-out time must be after check-in time');
     }
 
-    /*
-     * Requested timestamps must belong
-     * to the selected attendance date
-     * in India.
-     */
     if (checkIn && this.getIndiaDateParts(checkIn) !== date) {
       throw new BadRequestException('Check-in time must belong to the selected attendance date');
     }
@@ -1082,9 +944,7 @@ export class AttendanceRegularizationService {
   }
 
   private assertNotFutureDate(date: string) {
-    const today = this.todayIndia();
-
-    if (date > today) {
+    if (date > this.todayIndia()) {
       throw new BadRequestException('Attendance regularization cannot be requested for a future date');
     }
   }
@@ -1104,7 +964,7 @@ export class AttendanceRegularizationService {
   }
 
   // ============================================================
-  // ATTENDANCE HELPERS
+  // ATTENDANCE CLASSIFICATION
   // ============================================================
 
   private classifyWorkingMinutes(
@@ -1240,6 +1100,66 @@ export class AttendanceRegularizationService {
   }
 
   // ============================================================
+  // HISTORY HELPERS
+  // ============================================================
+
+  private normalizeHistoryStatus(status?: string): 'approved' | 'rejected' | undefined {
+    if (status == null || status === '') {
+      return undefined;
+    }
+
+    const value = String(status).trim().toLowerCase();
+
+    if (value !== 'approved' && value !== 'rejected') {
+      throw new BadRequestException('Invalid history status');
+    }
+
+    return value as 'approved' | 'rejected';
+  }
+
+  private getHistoryActionTimestamp(request: any): number {
+    const status = String(request?.status ?? '').toLowerCase();
+
+    if (status === 'approved') {
+      const value = this.timestampValue(request.approvedAt);
+
+      if (value) {
+        return value;
+      }
+    }
+
+    if (status === 'rejected') {
+      const value = this.timestampValue(request.rejectedAt);
+
+      if (value) {
+        return value;
+      }
+    }
+
+    if (Array.isArray(request?.approval)) {
+      const timestamps = request.approval
+        .map((step: any) => {
+          if (status === 'approved') {
+            return this.timestampValue(step.approvedAt);
+          }
+
+          if (status === 'rejected') {
+            return this.timestampValue(step.rejectedAt);
+          }
+
+          return 0;
+        })
+        .filter((value: number) => value > 0);
+
+      if (timestamps.length) {
+        return Math.max(...timestamps);
+      }
+    }
+
+    return this.timestampValue(request.updatedAt);
+  }
+
+  // ============================================================
   // FIRESTORE HELPERS
   // ============================================================
 
@@ -1256,7 +1176,6 @@ export class AttendanceRegularizationService {
 
     return {
       uid: doc.id,
-
       ...(doc.data() ?? {}),
     };
   }
@@ -1300,15 +1219,9 @@ export class AttendanceRegularizationService {
 
     let date: Date;
 
-    /*
-     * YYYY-MM-DD
-     */
     if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
       date = this.localDate(value);
     } else {
-      /*
-       * ISO 8601
-       */
       date = this.parseDate(value);
     }
 
@@ -1318,10 +1231,6 @@ export class AttendanceRegularizationService {
 
     const formatted = this.getIndiaDateParts(date);
 
-    /*
-     * If a plain YYYY-MM-DD was supplied,
-     * make sure it was actually valid.
-     */
     if (/^\d{4}-\d{2}-\d{2}$/.test(value) && formatted !== value) {
       throw new BadRequestException('Invalid attendance date');
     }
@@ -1340,31 +1249,21 @@ export class AttendanceRegularizationService {
   }
 
   private todayIndia(): string {
-    const formatter = new Intl.DateTimeFormat('en-CA', {
+    return new Intl.DateTimeFormat('en-CA', {
       timeZone: AttendanceRegularizationService.TIME_ZONE,
-
       year: 'numeric',
-
       month: '2-digit',
-
       day: '2-digit',
-    });
-
-    return formatter.format(new Date());
+    }).format(new Date());
   }
 
   private getIndiaDateParts(date: Date): string {
-    const formatter = new Intl.DateTimeFormat('en-CA', {
+    return new Intl.DateTimeFormat('en-CA', {
       timeZone: AttendanceRegularizationService.TIME_ZONE,
-
       year: 'numeric',
-
       month: '2-digit',
-
       day: '2-digit',
-    });
-
-    return formatter.format(date);
+    }).format(date);
   }
 
   private localDate(date: string): Date {
@@ -1383,6 +1282,43 @@ export class AttendanceRegularizationService {
     if (!Number.isInteger(year) || year < 2020 || year > 2100) {
       throw new BadRequestException('Invalid year');
     }
+  }
+
+  private validateOptionalMonthYear(month?: number, year?: number) {
+    if (month == null && year == null) {
+      return;
+    }
+
+    if (month == null || year == null) {
+      throw new BadRequestException('Both month and year are required');
+    }
+
+    this.validateMonthYear(month, year);
+  }
+
+  private applyMonthFilter(query: FirebaseFirestore.Query, month?: number, year?: number) {
+    if (month == null || year == null) {
+      return query;
+    }
+
+    const { start, end } = this.getMonthRange(month, year);
+
+    return query.where('date', '>=', start).where('date', '<', end);
+  }
+
+  private getMonthRange(month: number, year: number) {
+    const start = `${year}-${String(month).padStart(2, '0')}-01`;
+
+    const nextMonth = month === 12 ? 1 : month + 1;
+
+    const nextYear = month === 12 ? year + 1 : year;
+
+    const end = `${nextYear}-${String(nextMonth).padStart(2, '0')}-01`;
+
+    return {
+      start,
+      end,
+    };
   }
 
   // ============================================================

@@ -25,6 +25,12 @@ export class HrController {
     return this.service.getAll(user.uid, 'hr');
   }
 
+  @Get('staff')
+  @UseGuards(FirebaseAuthGuard)
+  staff(@CurrentUser() user: any) {
+    return this.service.getStaff(user.uid);
+  }
+
   @Post()
   @UseGuards(FirebaseAuthGuard)
   create(@CurrentUser() user: any, @Body() dto: StaffDto) {

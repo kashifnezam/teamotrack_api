@@ -885,252 +885,6 @@ export class AttendanceService {
   }
 
   // ============================================================
-  // MANAGER / HR CHECKOUT CORRECTION
-  // ============================================================
-
-  async correctCheckout(
-    requesterId: string,
-    staffId: string,
-    dto: {
-      checkOutTime: string;
-      reason: string;
-    }
-  ) {
-    const requester = await this.getUser(requesterId);
-
-    if (!['manager', 'hr', 'root', 'root_manager', 'admin'].includes(requester.role ?? '')) {
-      throw new ForbiddenException('You are not authorized to correct attendance');
-    }
-
-    if (!dto.reason || dto.reason.trim().length < 3) {
-      throw new BadRequestException('A correction reason is required');
-    }
-
-    const checkoutDate = new Date(dto.checkOutTime);
-
-    if (Number.isNaN(checkoutDate.getTime())) {
-      throw new BadRequestException('Invalid checkout time');
-    }
-
-    const staff = await this.getUser(staffId);
-
-    const requesterRoot = this.getRootId(requester);
-
-    const staffRoot = this.getRootId(staff);
-
-    if (!requesterRoot || !staffRoot || requesterRoot !== staffRoot) {
-      throw new ForbiddenException('You are not authorized to modify this attendance');
-    }
-
-    /*
-     * ----------------------------------------------------------
-     * MANAGER AUTHORIZATION
-     * ----------------------------------------------------------
-     */
-    if (requester.role === 'manager') {
-      const users = await this.loadRootUsers(requesterRoot);
-
-      const descendants = this.getDescendantIds(requester.uid, users);
-
-      if (staff.uid !== requester.uid && !descendants.has(staff.uid)) {
-        throw new ForbiddenException('You are not authorized to correct this staff attendance');
-      }
-    }
-
-    /*
-     * ----------------------------------------------------------
-     * HR AUTHORIZATION
-     * ----------------------------------------------------------
-     */
-    if (requester.role === 'hr') {
-      const authorizedIds = this.getHrAuthorizedStaffIds(requester);
-
-      if (staff.uid !== requester.uid && !authorizedIds.has(staff.uid)) {
-        throw new ForbiddenException('You are not authorized to correct this staff attendance');
-      }
-    }
-
-    /*
-     * Correction is based on
-     * the India local date.
-     */
-    const date = this.getIndiaDateParts(checkoutDate);
-
-    const ref = this.attendanceRecordRef(staffId, date);
-
-    let result:
-      | {
-          status: AttendanceStatus;
-
-          attendanceType: 'full_day' | 'half_day' | null;
-
-          workingMinutes: number;
-        }
-      | undefined;
-
-    await this.db.runTransaction(async (transaction) => {
-      const snapshot = await transaction.get(ref);
-
-      if (!snapshot.exists) {
-        throw new NotFoundException('Attendance record not found');
-      }
-
-      const existing = snapshot.data() ?? {};
-
-      if (!existing.checkInTime) {
-        throw new BadRequestException('Employee has not checked in');
-      }
-
-      const checkIn = this.toDate(existing.checkInTime);
-
-      if (!checkIn) {
-        throw new InternalServerErrorException('Invalid check-in time');
-      }
-
-      /*
-       * Historical shift is
-       * authoritative.
-       */
-      const shift = this.shiftFromSnapshot(existing.shiftSnapshot);
-
-      if (!shift) {
-        throw new InternalServerErrorException('Historical shift information is missing from attendance record');
-      }
-
-      /*
-       * Do not allow checkout
-       * before check-in.
-       */
-      if (checkoutDate.getTime() <= checkIn.getTime()) {
-        throw new BadRequestException('Checkout time must be after check-in time');
-      }
-
-      /*
-       * Early check-in does not
-       * count toward working minutes.
-       */
-      const shiftStart = this.shiftStartForDate(checkIn, shift);
-
-      const effectiveCheckIn = checkIn.getTime() < shiftStart.getTime() ? shiftStart : checkIn;
-
-      const workingMinutes = Math.max(0, Math.round((checkoutDate.getTime() - effectiveCheckIn.getTime()) / 60000));
-
-      const classification = this.classifyWorkingMinutes(workingMinutes, shift);
-
-      const punctuality = this.isLate(checkIn, shift) ? 'late' : 'on_time';
-
-      /*
-       * Audit history.
-       */
-      const checkoutHistory = Array.isArray(existing.checkoutHistory) ? [...existing.checkoutHistory] : [];
-
-      checkoutHistory.push({
-        action: 'manager_hr_correction',
-
-        performedBy: requester.uid,
-
-        performedByRole: requester.role ?? null,
-
-        previousCheckOutTime: existing.checkOutTime ? this.toDate(existing.checkOutTime) : null,
-
-        newCheckOutTime: Timestamp.fromDate(checkoutDate),
-
-        workingMinutes,
-
-        status: classification.status,
-
-        attendanceType: classification.attendanceType,
-
-        reason: dto.reason.trim(),
-
-        recordedAt: Timestamp.fromDate(new Date()),
-      });
-
-      const limitedHistory = checkoutHistory.slice(-AttendanceService.CHECKOUT_HISTORY_LIMIT);
-
-      const update: FirebaseFirestore.DocumentData = {
-        checkOutTime: Timestamp.fromDate(checkoutDate),
-
-        workingMinutes,
-
-        status: classification.status,
-
-        punctuality,
-
-        checkoutHistory: limitedHistory,
-
-        /*
-         * Employee undo is no
-         * longer available.
-         */
-        checkoutUndoUntil: FieldValue.delete(),
-
-        updatedAt: FieldValue.serverTimestamp(),
-      };
-
-      if (classification.attendanceType) {
-        update.attendanceType = classification.attendanceType;
-      } else {
-        update.attendanceType = FieldValue.delete();
-      }
-
-      /*
-       * Preserve half-day leave
-       * metadata.
-       */
-      if (existing.leaveDuration === 'half_day') {
-        update.leaveDuration = 'half_day';
-
-        if (existing.leaveTypeId) {
-          update.leaveTypeId = existing.leaveTypeId;
-        }
-
-        if (existing.leaveRequestId) {
-          update.leaveRequestId = existing.leaveRequestId;
-        }
-
-        if (existing.leaveStatus) {
-          update.leaveStatus = existing.leaveStatus;
-        }
-      }
-
-      transaction.set(ref, update, {
-        merge: true,
-      });
-
-      result = {
-        status: classification.status,
-
-        attendanceType: classification.attendanceType,
-
-        workingMinutes,
-      };
-    });
-
-    if (!result) {
-      throw new InternalServerErrorException('Unable to correct checkout');
-    }
-
-    return {
-      staffId,
-
-      date,
-
-      status: result.status,
-
-      attendanceType: result.attendanceType,
-
-      workingMinutes: result.workingMinutes,
-
-      correctedBy: requester.uid,
-
-      correctedByRole: requester.role,
-
-      message: 'Attendance checkout corrected successfully.',
-    };
-  }
-
-  // ============================================================
   // ATTENDANCE CLASSIFICATION
   // ============================================================
 
@@ -1349,13 +1103,11 @@ export class AttendanceService {
      * HR.
      */
     if (requester.role === 'hr') {
-      const authorizedIds = this.getHrAuthorizedStaffIds(requester);
+      const users = await this.loadRootUsers(requesterRoot);
 
-      if (authorizedIds.has(target.uid)) {
-        return target;
-      }
+      const targetExistsInRoot = users.some((user) => user.uid === target.uid);
 
-      if (target.uid === requester.uid) {
+      if (targetExistsInRoot) {
         return target;
       }
 
@@ -1380,15 +1132,15 @@ export class AttendanceService {
     throw new ForbiddenException('You are not authorized to view this attendance');
   }
 
-  private getHrAuthorizedStaffIds(user: any): Set<string> {
-    const values = [
-      ...(Array.isArray(user.authorizedStaffIds) ? user.authorizedStaffIds : []),
+  // private getHrAuthorizedStaffIds(user: any): Set<string> {
+  //   const values = [
+  //     ...(Array.isArray(user.authorizedStaffIds) ? user.authorizedStaffIds : []),
 
-      ...(Array.isArray(user.staffIds) ? user.staffIds : []),
-    ];
+  //     ...(Array.isArray(user.staffIds) ? user.staffIds : []),
+  //   ];
 
-    return new Set(values.filter((x) => typeof x === 'string'));
-  }
+  //   return new Set(values.filter((x) => typeof x === 'string'));
+  // }
 
   private async loadRootUsers(rootId: string): Promise<any[]> {
     const snapshot = await this.db.collection('user').where('rootId', '==', rootId).get();

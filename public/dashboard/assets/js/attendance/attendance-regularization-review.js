@@ -3,18 +3,24 @@
    attendance-regularization-review.js
 
    HR / Manager Attendance Regularization Review
+
+   Same page:
+   - Pending Requests
+   - History
    ========================================================== */
 
-
-// ==========================================================
-// STATE
-// ==========================================================
-
 const state = {
+  activeTab: 'pending',
+
+  pendingRequests: [],
+  historyRequests: [],
+
   requests: [],
   filteredRequests: [],
+
   selectedRequestId: null,
   selectedRequest: null,
+
   loading: false,
   detailLoading: false,
 };
@@ -24,15 +30,15 @@ const state = {
 // ==========================================================
 
 const TYPE_LABELS = {
-  missed_check_in: 'Missed Check-in',
-  missed_check_out: 'Missed Check-out',
-  missed_both: 'Missed Both',
-  wrong_check_in: 'Wrong Check-in',
-  wrong_check_out: 'Wrong Check-out',
-  wrong_both: 'Wrong Both',
-  system_error: 'System Error',
-  location_error: 'Location Error',
-  other: 'Other',
+  MISSED_CHECK_IN: 'Missed Check-in',
+  MISSED_CHECK_OUT: 'Missed Check-out',
+  MISSED_BOTH: 'Missed Both',
+  WRONG_CHECK_IN: 'Wrong Check-in',
+  WRONG_CHECK_OUT: 'Wrong Check-out',
+  WRONG_BOTH: 'Wrong Both',
+  SYSTEM_ERROR: 'System Error',
+  LOCATION_ERROR: 'Location Error',
+  OTHER: 'Other',
 };
 
 // ==========================================================
@@ -42,27 +48,41 @@ const TYPE_LABELS = {
 async function initializeAttendanceRegularizationReviewPage() {
   bindEvents();
 
-  await loadRequests();
+  setActiveTab('pending');
+
+  await loadAllRequests();
 }
 
 // ==========================================================
-// DOM HELPERS
+// DOM
 // ==========================================================
 
 function $(id) {
   return document.getElementById(id);
 }
 
+// ==========================================================
+// VISIBILITY
+// ==========================================================
+
 function show(element) {
-  if (element) {
-    element.hidden = false;
+  if (!element) {
+    return;
   }
+
+  element.hidden = false;
+
+  element.classList.remove('hidden');
 }
 
 function hide(element) {
-  if (element) {
-    element.hidden = true;
+  if (!element) {
+    return;
   }
+
+  element.hidden = true;
+
+  element.classList.add('hidden');
 }
 
 // ==========================================================
@@ -71,17 +91,27 @@ function hide(element) {
 
 function bindEvents() {
   $('refreshRequestsBtn')?.addEventListener('click', async () => {
-    await loadRequests();
+    await loadAllRequests();
   });
 
   $('retryRequestsBtn')?.addEventListener('click', async () => {
-    await loadRequests();
+    await loadAllRequests();
+  });
+
+  $('pendingTabBtn')?.addEventListener('click', () => {
+    setActiveTab('pending');
+  });
+
+  $('historyTabBtn')?.addEventListener('click', () => {
+    setActiveTab('history');
   });
 
   $('clearFiltersBtn')?.addEventListener('click', () => {
     $('requestSearch').value = '';
 
     $('requestTypeFilter').value = '';
+
+    $('requestStatusFilter').value = '';
 
     $('requestDateFilter').value = '';
 
@@ -93,6 +123,10 @@ function bindEvents() {
   });
 
   $('requestTypeFilter')?.addEventListener('change', () => {
+    applyFilters();
+  });
+
+  $('requestStatusFilter')?.addEventListener('change', () => {
     applyFilters();
   });
 
@@ -119,17 +153,80 @@ function bindEvents() {
   });
 
   document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape' && !$('requestDetailModal').hidden) {
+    if (event.key === 'Escape' && $('requestDetailModal') && !$('requestDetailModal').hidden) {
       closeDetailModal();
     }
   });
 }
 
 // ==========================================================
-// LOAD APPROVAL REQUESTS
+// TABS
 // ==========================================================
 
-async function loadRequests() {
+function setActiveTab(tab) {
+  state.activeTab = tab === 'history' ? 'history' : 'pending';
+
+  const pendingButton = $('pendingTabBtn');
+
+  const historyButton = $('historyTabBtn');
+
+  pendingButton?.classList.toggle('active', state.activeTab === 'pending');
+
+  historyButton?.classList.toggle('active', state.activeTab === 'history');
+
+  /*
+   * Status filter only makes sense
+   * for history.
+   */
+  if ($('requestStatusFilter')) {
+    $('requestStatusFilter').disabled = state.activeTab !== 'history';
+  }
+
+  if ($('requestListTitle')) {
+    $('requestListTitle').textContent = state.activeTab === 'pending' ? 'Pending Requests' : 'Processing History';
+  }
+
+  if ($('requestListDescription')) {
+    $('requestListDescription').textContent =
+      state.activeTab === 'pending'
+        ? 'Attendance requests waiting for your action.'
+        : 'Attendance regularization requests you have already processed.';
+  }
+
+  if ($('emptyTitle')) {
+    $('emptyTitle').textContent = state.activeTab === 'pending' ? 'No pending requests' : 'No processing history';
+  }
+
+  if ($('emptyDescription')) {
+    $('emptyDescription').textContent =
+      state.activeTab === 'pending'
+        ? 'There are currently no attendance regularization requests requiring your approval.'
+        : 'You have not approved or rejected any attendance regularization requests yet.';
+  }
+
+  /*
+   * History has a different sixth column.
+   */
+  if ($('actionHeader')) {
+    $('actionHeader').textContent = state.activeTab === 'pending' ? 'Submitted' : 'Processed';
+  }
+
+  /*
+   * Clear status filter when
+   * switching to pending.
+   */
+  if (state.activeTab === 'pending' && $('requestStatusFilter')) {
+    $('requestStatusFilter').value = '';
+  }
+
+  refreshCurrentDataset();
+}
+
+// ==========================================================
+// LOAD BOTH DATASETS
+// ==========================================================
+
+async function loadAllRequests() {
   if (state.loading) {
     return;
   }
@@ -139,17 +236,31 @@ async function loadRequests() {
   setListLoading(true);
 
   try {
-    const response = await Api.get('/attendance-regularization/approvals');
+    /*
+     * Pending approvals.
+     */
+    const approvalsResponse = await Api.get('/attendance-regularization/approvals');
 
-    state.requests = Array.isArray(response?.requests) ? response.requests : [];
+    state.pendingRequests = Array.isArray(approvalsResponse?.requests) ? approvalsResponse.requests : [];
 
-    state.filteredRequests = [...state.requests];
+    /*
+     * Manager / HR processing history.
+     */
+    const historyResponse = await Api.get('/attendance-regularization/history');
+
+    state.historyRequests = Array.isArray(historyResponse?.requests) ? historyResponse.requests : [];
 
     updateSummary();
 
-    applyFilters();
+    refreshCurrentDataset();
   } catch (error) {
-    console.error('Failed to load attendance regularization approvals:', error);
+
+    AppAlert.error(error?.message || 'Unable to load attendance regularization requests.', 'Request Load Failed');
+    console.error('Failed to load attendance regularization requests:', error);
+
+    state.pendingRequests = [];
+
+    state.historyRequests = [];
 
     state.requests = [];
 
@@ -164,6 +275,18 @@ async function loadRequests() {
 }
 
 // ==========================================================
+// CURRENT DATASET
+// ==========================================================
+
+function refreshCurrentDataset() {
+  state.requests = state.activeTab === 'pending' ? [...state.pendingRequests] : [...state.historyRequests];
+
+  state.filteredRequests = [...state.requests];
+
+  applyFilters();
+}
+
+// ==========================================================
 // FILTERS
 // ==========================================================
 
@@ -174,25 +297,56 @@ function applyFilters() {
 
   const type = String($('requestTypeFilter')?.value || '');
 
+  const status = String($('requestStatusFilter')?.value || '').toLowerCase();
+
   const date = String($('requestDateFilter')?.value || '');
 
   state.filteredRequests = state.requests.filter((request) => {
+    /*
+     * Type.
+     */
     if (type && request.type !== type) {
       return false;
     }
 
+    /*
+     * Status.
+     */
+    if (status && String(request.status || '').toLowerCase() !== status) {
+      return false;
+    }
+
+    /*
+     * Date.
+     */
     if (date && String(request.date || '') !== date) {
       return false;
     }
 
+    /*
+     * Search.
+     */
     if (search) {
       const searchableText = [
         request.userName,
+
         request.userRole,
+
         request.date,
+
         request.type,
+
+        TYPE_LABELS[request.type],
+
         request.reason,
+
         request.parentName,
+
+        request.status,
+
+        request.approvedByRole,
+
+        request.rejectedByRole,
       ]
         .filter(Boolean)
         .join(' ')
@@ -214,19 +368,31 @@ function applyFilters() {
 // ==========================================================
 
 function updateSummary() {
-  const total = state.requests.length;
+  const pending = state.pendingRequests.length;
 
-  const pending = state.requests.filter((request) => request.status === 'pending').length;
+  const approved = state.historyRequests.filter(
+    (request) => String(request.status || '').toLowerCase() === 'approved'
+  ).length;
+
+  const rejected = state.historyRequests.filter(
+    (request) => String(request.status || '').toLowerCase() === 'rejected'
+  ).length;
 
   $('pendingCount').textContent = String(pending);
 
-  $('totalCount').textContent = String(total);
+  $('totalCount').textContent = String(pending);
 
-  $('visibleRequestCount').textContent = String(state.filteredRequests.length);
+  $('approvedCount').textContent = String(approved);
+
+  $('rejectedCount').textContent = String(rejected);
+
+  $('pendingTabCount').textContent = String(pending);
+
+  $('historyTabCount').textContent = String(state.historyRequests.length);
 }
 
 // ==========================================================
-// RENDER LIST
+// RENDER REQUESTS
 // ==========================================================
 
 function renderRequests() {
@@ -296,15 +462,28 @@ function createTableRow(request) {
 
   applyTypeClass(typeElement, request.type);
 
-  row.querySelector('.request-check-in').textContent = formatDateTime(request.requestedCheckInTime);
+  /*
+   * IMPORTANT:
+   *
+   * Requested values are displayed
+   * as TIME ONLY.
+   *
+   * Date is already a separate column.
+   */
+  row.querySelector('.request-check-in').textContent = formatTime(request.requestedCheckInTime);
 
-  row.querySelector('.request-check-out').textContent = formatDateTime(request.requestedCheckOutTime);
+  row.querySelector('.request-check-out').textContent = formatTime(request.requestedCheckOutTime);
 
   row.querySelector('.reason-preview').textContent = request.reason || 'No reason provided';
 
-  row.querySelector('.submitted-date').textContent = formatDateTime(request.createdAt);
+  const processedDate = getProcessedAt(request);
 
-  row.querySelector('.view-request-btn').addEventListener('click', async () => {
+  row.querySelector('.submitted-date').textContent =
+    state.activeTab === 'pending' ? formatDateTime(request.createdAt) : formatDateTime(processedDate);
+
+  const button = row.querySelector('.view-request-btn');
+
+  button.addEventListener('click', async () => {
     await openRequestDetail(request.id);
   });
 
@@ -312,7 +491,7 @@ function createTableRow(request) {
 }
 
 // ==========================================================
-// MOBILE REQUEST CARD
+// MOBILE CARD
 // ==========================================================
 
 function createMobileRequest(request) {
@@ -322,7 +501,12 @@ function createMobileRequest(request) {
 
   const name = request.userName || 'Unknown Employee';
 
+  const status = String(request.status || '').toLowerCase();
+
+  const processedDate = getProcessedAt(request);
+
   wrapper.innerHTML = `
+
     <div class="mobile-request-top">
 
       <div class="employee-cell">
@@ -332,6 +516,7 @@ function createMobileRequest(request) {
         </div>
 
         <div>
+
           <strong class="employee-name">
             ${escapeHtml(name)}
           </strong>
@@ -339,6 +524,7 @@ function createMobileRequest(request) {
           <span class="employee-role">
             ${escapeHtml(formatRole(request.userRole))}
           </span>
+
         </div>
 
       </div>
@@ -353,31 +539,67 @@ function createMobileRequest(request) {
     <div class="mobile-request-meta">
 
       <div class="mobile-meta-item">
-        <span>Date</span>
+
+        <span>
+          Date
+        </span>
+
         <strong>
           ${escapeHtml(formatDate(request.date))}
         </strong>
+
       </div>
 
-      <div class="mobile-meta-item">
-        <span>Submitted</span>
-        <strong>
-          ${escapeHtml(formatDateTime(request.createdAt))}
-        </strong>
-      </div>
 
       <div class="mobile-meta-item">
-        <span>Check-in</span>
+
+        <span>
+          Status
+        </span>
+
         <strong>
-          ${escapeHtml(formatDateTime(request.requestedCheckInTime))}
+          ${escapeHtml(formatStatus(status))}
         </strong>
+
       </div>
 
+
       <div class="mobile-meta-item">
-        <span>Check-out</span>
+
+        <span>
+          Check-in
+        </span>
+
         <strong>
-          ${escapeHtml(formatDateTime(request.requestedCheckOutTime))}
+          ${escapeHtml(formatTime(request.requestedCheckInTime))}
         </strong>
+
+      </div>
+
+
+      <div class="mobile-meta-item">
+
+        <span>
+          Check-out
+        </span>
+
+        <strong>
+          ${escapeHtml(formatTime(request.requestedCheckOutTime))}
+        </strong>
+
+      </div>
+
+
+      <div class="mobile-meta-item">
+
+        <span>
+          ${state.activeTab === 'pending' ? 'Submitted' : 'Processed'}
+        </span>
+
+        <strong>
+          ${escapeHtml(formatDateTime(state.activeTab === 'pending' ? request.createdAt : processedDate))}
+        </strong>
+
       </div>
 
     </div>
@@ -408,7 +630,7 @@ function createMobileRequest(request) {
 }
 
 // ==========================================================
-// REQUEST DETAIL
+// DETAIL
 // ==========================================================
 
 async function openRequestDetail(id) {
@@ -428,7 +650,7 @@ async function openRequestDetail(id) {
     const response = await Api.get(`/attendance-regularization/${encodeURIComponent(id)}`);
 
     if (!response) {
-      return;
+      throw new Error('Attendance regularization not found.');
     }
 
     state.selectedRequest = response;
@@ -452,9 +674,9 @@ function renderRequestDetail(request) {
 
   show($('detailContent'));
 
-  show($('detailActions'));
-
   const name = request.userName || 'Unknown Employee';
+
+  const status = String(request.status || 'pending').toLowerCase();
 
   $('detailEmployeeAvatar').textContent = getInitials(name);
 
@@ -462,15 +684,18 @@ function renderRequestDetail(request) {
 
   $('detailEmployeeRole').textContent = formatRole(request.userRole);
 
-  $('detailStatus').innerHTML = createStatusBadge(request.status);
+  $('detailStatus').innerHTML = createStatusBadge(status);
 
   $('detailDate').textContent = formatDate(request.date);
 
   $('detailType').textContent = getTypeLabel(request.type);
 
-  $('detailCheckIn').textContent = formatDateTime(request.requestedCheckInTime);
+  /*
+   * TIME ONLY.
+   */
+  $('detailCheckIn').textContent = formatTime(request.requestedCheckInTime);
 
-  $('detailCheckOut').textContent = formatDateTime(request.requestedCheckOutTime);
+  $('detailCheckOut').textContent = formatTime(request.requestedCheckOutTime);
 
   renderPreviousAttendance(request.previousAttendance);
 
@@ -478,13 +703,26 @@ function renderRequestDetail(request) {
 
   renderAttachment(request.attachmentUrl);
 
-  renderApprovalTimeline(request.approval);
+  renderApprovalTimeline(request.approval, request);
 
-  const isPending = request.status === 'pending';
+  const isPending = status === 'pending';
 
-  $('approveRequestBtn').disabled = !isPending;
+  /*
+   * Approve/reject are available
+   * only while reviewing pending
+   * requests.
+   *
+   * History is read-only.
+   */
+  if (isPending) {
+    show($('detailActions'));
 
-  $('rejectRequestBtn').disabled = !isPending;
+    $('approveRequestBtn').disabled = false;
+
+    $('rejectRequestBtn').disabled = false;
+  } else {
+    hide($('detailActions'));
+  }
 }
 
 // ==========================================================
@@ -505,48 +743,84 @@ function renderPreviousAttendance(previous) {
     <div class="previous-attendance-grid">
 
       <div class="previous-value">
-        <span>Check-in</span>
+
+        <span>
+          Check-in
+        </span>
+
         <strong>
-          ${escapeHtml(formatDateTime(previous.checkInTime))}
+          ${escapeHtml(formatTime(previous.checkInTime))}
         </strong>
+
       </div>
 
-      <div class="previous-value">
-        <span>Check-out</span>
-        <strong>
-          ${escapeHtml(formatDateTime(previous.checkOutTime))}
-        </strong>
-      </div>
 
       <div class="previous-value">
-        <span>Working Time</span>
+
+        <span>
+          Check-out
+        </span>
+
+        <strong>
+          ${escapeHtml(formatTime(previous.checkOutTime))}
+        </strong>
+
+      </div>
+
+
+      <div class="previous-value">
+
+        <span>
+          Working Time
+        </span>
+
         <strong>
           ${escapeHtml(formatMinutes(previous.workingMinutes))}
         </strong>
+
       </div>
 
+
       <div class="previous-value">
-        <span>Status</span>
+
+        <span>
+          Status
+        </span>
+
         <strong>
           ${escapeHtml(formatStatus(previous.status))}
         </strong>
+
       </div>
 
+
       <div class="previous-value">
-        <span>Attendance Type</span>
+
+        <span>
+          Attendance Type
+        </span>
+
         <strong>
           ${escapeHtml(formatStatus(previous.attendanceType))}
         </strong>
+
       </div>
 
+
       <div class="previous-value">
-        <span>Punctuality</span>
+
+        <span>
+          Punctuality
+        </span>
+
         <strong>
           ${escapeHtml(formatStatus(previous.punctuality))}
         </strong>
+
       </div>
 
     </div>
+
   `;
 }
 
@@ -576,21 +850,63 @@ function renderAttachment(url) {
 // APPROVAL TIMELINE
 // ==========================================================
 
-function renderApprovalTimeline(approval) {
+function renderApprovalTimeline(approval, request) {
   const container = $('approvalTimeline');
 
   container.innerHTML = '';
 
   if (!Array.isArray(approval) || approval.length === 0) {
+    /*
+     * Fallback to top-level
+     * approval information.
+     */
+    if (request?.status === 'approved') {
+      container.innerHTML = `
+        <div class="approval-step approval-approved">
+
+          <div class="approval-step-title">
+            Approved
+          </div>
+
+          <div class="approval-step-meta">
+            ${escapeHtml(formatDateTime(request.approvedAt))}
+          </div>
+
+        </div>
+      `;
+
+      return;
+    }
+
+    if (request?.status === 'rejected') {
+      container.innerHTML = `
+        <div class="approval-step approval-rejected">
+
+          <div class="approval-step-title">
+            Rejected
+          </div>
+
+          <div class="approval-step-meta">
+            ${escapeHtml(formatDateTime(request.rejectedAt))}
+          </div>
+
+        </div>
+      `;
+
+      return;
+    }
+
     container.innerHTML = `
       <div class="approval-step approval-pending">
+
         <div class="approval-step-title">
           Pending approval
         </div>
 
         <div class="approval-step-meta">
-          No approval history available.
+          Waiting for action.
         </div>
+
       </div>
     `;
 
@@ -623,15 +939,36 @@ function renderApprovalTimeline(approval) {
     wrapper.innerHTML = `
 
       <div class="approval-step-title">
+
         Level ${Number(step.level ?? 0) + 1}
-        · ${escapeHtml(person)}
+
+        ·
+
+        ${escapeHtml(person)}
+
       </div>
 
+
       <div class="approval-step-meta">
+
         ${timestamp ? escapeHtml(formatDateTime(timestamp)) : 'Waiting for action'}
+
       </div>
 
     `;
+
+    /*
+     * Rejection reason.
+     */
+    if (status === 'rejected' && request?.rejectionReason) {
+      const reason = document.createElement('div');
+
+      reason.className = 'approval-step-meta';
+
+      reason.textContent = `Reason: ${request.rejectionReason}`;
+
+      wrapper.appendChild(reason);
+    }
 
     container.appendChild(wrapper);
   }
@@ -679,7 +1016,7 @@ async function approveSelectedRequest() {
       'Request Approved'
     );
 
-    await loadRequests();
+    await loadAllRequests();
   } catch (error) {
     AppAlert.close();
 
@@ -714,36 +1051,63 @@ async function rejectSelectedRequest() {
     title: 'Reject Regularization',
 
     html: `
-      <div style="text-align:left">
 
-        <p style="margin:0 0 12px;color:#6b7280;font-size:14px">
-          You are rejecting the attendance regularization request
-          submitted by <strong>${escapeHtml(employeeName)}</strong>.
-        </p>
+        <div style="text-align:left">
 
-        <label
-          for="regularizationRejectReason"
-          style="display:block;margin-bottom:6px;font-size:13px;font-weight:600;color:#374151"
-        >
-          Rejection reason
-        </label>
+          <p
+            style="
+              margin:0 0 12px;
+              color:#6b7280;
+              font-size:14px
+            "
+          >
+            You are rejecting the attendance regularization request submitted by
+            <strong>
+              ${escapeHtml(employeeName)}
+            </strong>.
+          </p>
 
-        <textarea
-          id="regularizationRejectReason"
-          class="swal2-textarea"
-          placeholder="Enter the reason for rejection..."
-          maxlength="1000"
-          style="width:100%;box-sizing:border-box;margin:0"
-        ></textarea>
 
-        <div
-          style="margin-top:6px;font-size:11px;color:#9ca3af;text-align:right"
-        >
-          Minimum 3 characters
+          <label
+            for="regularizationRejectReason"
+            style="
+              display:block;
+              margin-bottom:6px;
+              font-size:13px;
+              font-weight:600;
+              color:#374151
+            "
+          >
+            Rejection reason
+          </label>
+
+
+          <textarea
+            id="regularizationRejectReason"
+            class="swal2-textarea"
+            placeholder="Enter the reason for rejection..."
+            maxlength="1000"
+            style="
+              width:100%;
+              box-sizing:border-box;
+              margin:0
+            "
+          ></textarea>
+
+
+          <div
+            style="
+              margin-top:6px;
+              font-size:11px;
+              color:#9ca3af;
+              text-align:right
+            "
+          >
+            Minimum 3 characters
+          </div>
+
         </div>
-
-      </div>
-    `,
+      `,
 
     showCancelButton: true,
 
@@ -793,7 +1157,7 @@ async function rejectSelectedRequest() {
 
     await AppAlert.success('The attendance regularization request has been rejected.', 'Request Rejected');
 
-    await loadRequests();
+    await loadAllRequests();
   } catch (error) {
     AppAlert.close();
 
@@ -898,6 +1262,36 @@ function showListError(message) {
 }
 
 // ==========================================================
+// PROCESSED DATE
+// ==========================================================
+
+function getProcessedAt(request) {
+  if (String(request.status || '').toLowerCase() === 'approved') {
+    return request.approvedAt || findApprovalTimestamp(request, 'approved');
+  }
+
+  if (String(request.status || '').toLowerCase() === 'rejected') {
+    return request.rejectedAt || findApprovalTimestamp(request, 'rejected');
+  }
+
+  return null;
+}
+
+function findApprovalTimestamp(request, status) {
+  if (!Array.isArray(request?.approval)) {
+    return null;
+  }
+
+  const step = [...request.approval].reverse().find((item) => String(item?.status || '').toLowerCase() === status);
+
+  if (!step) {
+    return null;
+  }
+
+  return status === 'approved' ? step.approvedAt : step.rejectedAt;
+}
+
+// ==========================================================
 // FORMATTING
 // ==========================================================
 
@@ -934,11 +1328,23 @@ function formatStatus(status) {
     .replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
+// ==========================================================
+// DATE
+// ==========================================================
+
 function formatDate(value) {
   if (!value) {
     return '-';
   }
 
+  /*
+   * Backend date:
+   *
+   * YYYY-MM-DD
+   *
+   * Do not pass this directly
+   * to new Date().
+   */
   if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
     const [year, month, day] = value.split('-');
 
@@ -959,7 +1365,56 @@ function formatDate(value) {
   }).format(date);
 }
 
+// ==========================================================
+// TIME ONLY
+// ==========================================================
+
+function formatTime(value) {
+  if (!value) {
+    return '-';
+  }
+
+  /*
+   * If backend ever sends
+   * plain HH:mm.
+   */
+  if (typeof value === 'string' && /^\d{1,2}:\d{2}(:\d{2})?$/.test(value)) {
+    const parts = value.split(':');
+
+    return formatHourMinute(Number(parts[0]), Number(parts[1]));
+  }
+
+  const date = toDate(value);
+
+  if (!date) {
+    return '-';
+  }
+
+  return new Intl.DateTimeFormat('en-IN', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+    timeZone: 'Asia/Kolkata',
+  }).format(date);
+}
+
+function formatHourMinute(hour, minute) {
+  const suffix = hour >= 12 ? 'PM' : 'AM';
+
+  const displayHour = hour % 12 || 12;
+
+  return `${displayHour}:${String(minute).padStart(2, '0')} ${suffix}`;
+}
+
+// ==========================================================
+// DATE + TIME
+// ==========================================================
+
 function formatDateTime(value) {
+  if (!value) {
+    return '-';
+  }
+
   const date = toDate(value);
 
   if (!date) {
@@ -970,17 +1425,25 @@ function formatDateTime(value) {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
-    hour: '2-digit',
+    hour: 'numeric',
     minute: '2-digit',
     hour12: true,
     timeZone: 'Asia/Kolkata',
   }).format(date);
 }
 
-function formatMinutes(value) {
-  const minutes = Number(value ?? 0);
+// ==========================================================
+// MINUTES
+// ==========================================================
 
-  if (!Number.isFinite(minutes) || minutes <= 0) {
+function formatMinutes(value) {
+  if (value === null || value === undefined || value === '') {
+    return '0 min';
+  }
+
+  const minutes = Number(value);
+
+  if (!Number.isFinite(minutes) || minutes < 0) {
     return '0 min';
   }
 
@@ -988,7 +1451,7 @@ function formatMinutes(value) {
 
   const remaining = minutes % 60;
 
-  if (hours <= 0) {
+  if (hours === 0) {
     return `${remaining} min`;
   }
 
@@ -1000,7 +1463,7 @@ function formatMinutes(value) {
 }
 
 // ==========================================================
-// FIREBASE / API DATE CONVERSION
+// FIRESTORE DATE CONVERSION
 // ==========================================================
 
 function toDate(value) {
@@ -1013,32 +1476,19 @@ function toDate(value) {
   }
 
   /*
-   * Firestore Timestamp returned as:
-   *
-   * {
-   *   _seconds: number,
-   *   _nanoseconds: number
-   * }
+   * Firestore Timestamp-like.
    */
   if (typeof value === 'object' && typeof value._seconds === 'number') {
     return new Date(value._seconds * 1000 + Math.floor(Number(value._nanoseconds || 0) / 1000000));
   }
 
   /*
-   * Some serializers return:
-   *
-   * {
-   *   seconds: number,
-   *   nanoseconds: number
-   * }
+   * Firestore serialized Timestamp.
    */
   if (typeof value === 'object' && typeof value.seconds === 'number') {
     return new Date(value.seconds * 1000 + Math.floor(Number(value.nanoseconds || 0) / 1000000));
   }
 
-  /*
-   * ISO string / date string.
-   */
   if (typeof value === 'string') {
     const date = new Date(value);
 
@@ -1055,11 +1505,11 @@ function toDate(value) {
 function createStatusBadge(status) {
   const safeStatus = String(status || 'pending').toLowerCase();
 
-  const label = formatStatus(safeStatus);
-
   return `
-    <span class="status-badge status-${escapeHtml(safeStatus)}">
-      ${escapeHtml(label)}
+    <span
+      class="status-badge status-${escapeHtml(safeStatus)}"
+    >
+      ${escapeHtml(formatStatus(safeStatus))}
     </span>
   `;
 }
@@ -1114,7 +1564,7 @@ function escapeHtml(value) {
 }
 
 // ==========================================================
-// EXPORT / GLOBAL INITIALIZER
+// GLOBAL INITIALIZER
 // ==========================================================
 
 window.initializeAttendanceRegularizationReviewPage = initializeAttendanceRegularizationReviewPage;

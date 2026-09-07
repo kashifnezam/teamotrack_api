@@ -4,6 +4,7 @@ import { FirebaseService } from '../firebase/firebase.service';
 
 import { LeaveDto, LeaveTypeDto } from './dto/leave.dto';
 import { FieldValue } from 'firebase-admin/firestore';
+import { request } from 'https';
 
 @Injectable()
 export class LeaveService {
@@ -120,7 +121,12 @@ export class LeaveService {
        * Parent manager's own leave is intentionally
        * excluded.
        */
-      leaves = leaves.filter((leave) => descendantIds.has(leave.userId));
+      leaves = leaves.filter((leave) => {
+         if(user.role === 'hr' && (leave.role === 'manager' || leave.role === 'hr')) {
+            return false; // HR cannot see requests from managers or other HRs
+        }
+        return descendantIds.has(leave.userId);
+      });
 
       return {
         leaves,
@@ -207,6 +213,9 @@ export class LeaveService {
         ...doc.data(),
       }))
       .filter((leave: any) => {
+         if(user.role === 'hr' && (leave.role === 'manager' || leave.role === 'hr')) {
+            return false; // HR cannot approve requests from managers or other HRs
+        }
         const level = Number(leave.currentLevel);
 
         const step = leave.approval?.find((item: any) => Number(item.level) === level);

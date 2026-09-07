@@ -150,12 +150,7 @@
     try {
       AppAlert.loading('Loading staff...');
 
-      /*
-       * Dashboard already knows the user's
-       * authorized visibility scope.
-       */
-
-      const data = await Api.get('/dashboard/me');
+      const data = await Api.get('/managers/staff');
 
       AppAlert.close();
 
@@ -163,13 +158,11 @@
         return;
       }
 
-      staff = Array.isArray(data.staff) ? data.staff : [];
+      staff = Array.isArray(data.users) ? data.users : [];
 
       populateTeamSelect();
 
       populateStaffSelect(staff);
-
-      populateScope(data);
     } catch (error) {
       console.error('Attendance staff loading failed:', error);
 

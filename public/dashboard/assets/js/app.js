@@ -97,11 +97,11 @@ if (window.TeamoTrackApp) {
 
       initializeUserProfile();
 
+      initializeSidebarHeaderVisibility();
+
       initializeHeaderProfile();
 
       initializeNotifications();
-
-      initializePayrollVisibility();
 
       initializeSidebar();
 
@@ -1205,10 +1205,11 @@ if (window.TeamoTrackApp) {
        PAYROLL VISIBILITY
   ====================================================== */
 
-  function initializePayrollVisibility() {
+  function initializeSidebarHeaderVisibility() {
     const userData = JSON.parse(localStorage.getItem('userData') || '{}');
 
     const myAttendance = document.querySelector('[data-menu="attendance-my"]');
+    const companySetting = document.getElementById('company-setting');
     const payrollMenu = document.querySelector('[data-menu="payroll"]');
 
     const role = String(userData.role || userData.roleName || '')
@@ -1224,6 +1225,10 @@ if (window.TeamoTrackApp) {
     }
     if (myAttendance && role == 'root_manager') {
       myAttendance.remove();
+    }
+    
+    if (companySetting && role !== 'root_manager') {
+      companySetting.remove();
     }
   }
 

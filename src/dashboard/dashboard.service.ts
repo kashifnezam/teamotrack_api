@@ -245,7 +245,7 @@ export class DashboardService {
        * Manager response remains unchanged.
        */
       if (currentUser.role === 'hr') {
-        result.hr = await this.buildHrDashboard(currentUser, visibleStaff, date, todayAttendance);
+        await this.buildHrDashboard(currentUser, visibleStaff, date, todayAttendance);
       }
 
       // ======================================================
@@ -286,20 +286,18 @@ export class DashboardService {
      * These operations are independent,
      * so execute them concurrently.
      */
-    const [pendingLeave, exceptions, holidays] = await Promise.all([
-      this.loadPendingLeave(user),
+    // const [pendingLeave, exceptions, holidays] = await Promise.all([
+    //   // this.loadPendingLeave(user),
 
-      this.loadAttendanceExceptions(staff, todayAttendance, date),
+    //   // this.loadAttendanceExceptions(staff, todayAttendance, date),
 
-      this.loadUpcomingHolidays(user, date),
-    ]);
+    //   // this.loadUpcomingHolidays(user, date),
+    // ]);
 
     return {
-      pendingLeave,
-
-      exceptions,
-
-      holidays,
+      // pendingLeave,
+      // exceptions,
+      // holidays,
     };
   }
 

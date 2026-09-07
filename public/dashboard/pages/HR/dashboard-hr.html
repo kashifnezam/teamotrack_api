@@ -29,19 +29,21 @@
 
           <div>
             <span class="hr-date-label">Today</span>
+
             <strong id="hrCurrentDate">—</strong>
           </div>
         </div>
       </header>
 
       <!-- ==================================================
-           KPI / WORKFORCE SUMMARY
+           WORKFORCE SUMMARY
       =================================================== -->
 
       <section class="hr-section">
         <div class="hr-section-heading">
           <div>
             <h2>Workforce today</h2>
+
             <p>Quick view of your workforce status.</p>
           </div>
         </div>
@@ -127,106 +129,21 @@
             </div>
           </article>
 
-          <!-- PENDING -->
+          <!-- REGULARIZATION -->
 
           <article class="hr-stat-card hr-stat-warning">
             <div class="hr-stat-icon">
-              <i class="bi bi-hourglass-split"></i>
+              <i class="bi bi-clock-history"></i>
             </div>
 
             <div class="hr-stat-content">
-              <span class="hr-stat-label"> Pending Leave </span>
+              <span class="hr-stat-label"> Regularizations </span>
 
-              <strong class="hr-stat-value" id="pendingLeaveCount"> — </strong>
+              <strong class="hr-stat-value" id="regularizationCount"> — </strong>
 
-              <span class="hr-stat-meta"> Waiting for action </span>
+              <span class="hr-stat-meta"> Waiting for review </span>
             </div>
           </article>
-
-          <!-- EXCEPTIONS -->
-
-          <article class="hr-stat-card hr-stat-danger">
-            <div class="hr-stat-icon">
-              <i class="bi bi-exclamation-triangle-fill"></i>
-            </div>
-
-            <div class="hr-stat-content">
-              <span class="hr-stat-label"> Exceptions </span>
-
-              <strong class="hr-stat-value" id="exceptionCount"> — </strong>
-
-              <span class="hr-stat-meta"> Need attention </span>
-            </div>
-          </article>
-        </div>
-      </section>
-
-      <!-- ==================================================
-           ACTION CENTER
-      =================================================== -->
-
-      <section class="hr-section">
-        <div class="hr-section-heading">
-          <div>
-            <h2>Action center</h2>
-            <p>Items that may need your attention.</p>
-          </div>
-        </div>
-
-        <div class="hr-action-grid">
-          <!-- PENDING LEAVE -->
-
-          <a href="/leave/" class="hr-action-panel">
-            <div class="hr-action-panel-icon">
-              <i class="bi bi-calendar2-check"></i>
-            </div>
-
-            <div class="hr-action-panel-content">
-              <span>Pending leave</span>
-
-              <strong id="hrPendingLeaveAction"> — </strong>
-
-              <small> Requests waiting for review </small>
-            </div>
-
-            <i class="bi bi-arrow-up-right"></i>
-          </a>
-
-          <!-- EXCEPTIONS -->
-
-          <a href="/attendance/exceptions" class="hr-action-panel">
-            <div class="hr-action-panel-icon">
-              <i class="bi bi-exclamation-circle"></i>
-            </div>
-
-            <div class="hr-action-panel-content">
-              <span>Attendance exceptions</span>
-
-              <strong id="hrExceptionAction"> — </strong>
-
-              <small> Issues requiring attention </small>
-            </div>
-
-            <i class="bi bi-arrow-up-right"></i>
-          </a>
-
-          <!-- ATTENDANCE -->
-
-          <a href="/attendance" class="hr-action-panel">
-            <div class="hr-action-panel-icon">
-              <i class="bi bi-calendar-check"></i>
-            </div>
-
-            <div class="hr-action-panel-content">
-              <span>Today's attendance</span>
-
-              <strong id="hrAttendanceAction"> View </strong>
-
-              <small> Review the workforce </small>
-            </div>
-
-            <i class="bi bi-arrow-up-right"></i>
-          </a>
         </div>
       </section>
 
@@ -290,13 +207,9 @@
               <thead>
                 <tr>
                   <th>Executive</th>
-
                   <th>Check in</th>
-
                   <th>Check out</th>
-
                   <th>Working</th>
-
                   <th>Status</th>
                 </tr>
               </thead>
@@ -320,12 +233,12 @@
         </section>
 
         <!-- ==================================================
-             RIGHT COLUMN
+             SIDE COLUMN
         =================================================== -->
 
-        <div class="hr-side-column">
+        <aside class="hr-side-column">
           <!-- ==================================================
-               EXCEPTIONS
+               REGULARIZATIONS
           =================================================== -->
 
           <section class="hr-panel">
@@ -333,25 +246,25 @@
               <div>
                 <div class="hr-panel-title-row">
                   <div class="hr-panel-title-icon">
-                    <i class="bi bi-exclamation-triangle"></i>
+                    <i class="bi bi-clock-history"></i>
                   </div>
 
-                  <h2>Exceptions</h2>
+                  <h2>Attendance regularizations</h2>
                 </div>
 
-                <p>Issues that need attention.</p>
+                <p>Requests waiting for review.</p>
               </div>
 
-              <a href="/attendance/exceptions" class="hr-view-link"> View all </a>
+              <a href="/attendance/regularization" class="hr-view-link"> View all </a>
             </div>
 
-            <div class="hr-compact-list" id="hrExceptionList">
-              <div class="hr-list-loading">Loading exceptions...</div>
+            <div class="hr-compact-list" id="hrRegularizationList">
+              <div class="hr-list-loading">Loading regularizations...</div>
             </div>
 
             <div class="hr-panel-footer">
-              <a href="/attendance/exceptions">
-                Review exceptions
+              <a href="/attendance/regularization">
+                Review regularizations
                 <i class="bi bi-arrow-right"></i>
               </a>
             </div>
@@ -375,7 +288,7 @@
                 <p>Requests awaiting review.</p>
               </div>
 
-              <a href="/leave/requests" class="hr-view-link"> View all </a>
+              <a href="/leave/" class="hr-view-link"> View all </a>
             </div>
 
             <div class="hr-compact-list" id="hrLeaveList">
@@ -422,17 +335,18 @@
               </a>
             </div>
           </section>
-        </div>
+        </aside>
       </section>
 
       <!-- ==================================================
            QUICK ACTIONS
       =================================================== -->
-
+<!-- 
       <section class="hr-section">
         <div class="hr-section-heading">
           <div>
             <h2>Quick actions</h2>
+
             <p>Common HR tasks.</p>
           </div>
         </div>
@@ -444,8 +358,23 @@
             </span>
 
             <div>
-              <strong>Attendance</strong>
-              <small>Review workforce</small>
+              <strong> Attendance </strong>
+
+              <small> Review workforce </small>
+            </div>
+
+            <i class="bi bi-arrow-right"></i>
+          </a>
+
+          <a href="/attendance/regularization" class="hr-quick-action">
+            <span>
+              <i class="bi bi-clock-history"></i>
+            </span>
+
+            <div>
+              <strong> Regularizations </strong>
+
+              <small> Review attendance requests </small>
             </div>
 
             <i class="bi bi-arrow-right"></i>
@@ -457,8 +386,9 @@
             </span>
 
             <div>
-              <strong>Leave requests</strong>
-              <small>Review pending leave</small>
+              <strong> Leave requests </strong>
+
+              <small> Review pending leave </small>
             </div>
 
             <i class="bi bi-arrow-right"></i>
@@ -470,8 +400,9 @@
             </span>
 
             <div>
-              <strong>Executives</strong>
-              <small>Manage workforce</small>
+              <strong> Executives </strong>
+
+              <small> Manage workforce </small>
             </div>
 
             <i class="bi bi-arrow-right"></i>
@@ -483,14 +414,15 @@
             </span>
 
             <div>
-              <strong>Live tracking</strong>
-              <small>Track field teams</small>
+              <strong> Live tracking </strong>
+
+              <small> Track field teams </small>
             </div>
 
             <i class="bi bi-arrow-right"></i>
           </a>
         </div>
-      </section>
+      </section> -->
     </div>
   </div>
 </section>

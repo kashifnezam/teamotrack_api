@@ -1,29 +1,15 @@
 /* ==========================================================
    TeamoTrack HR Dashboard
-   dashboard.js
-
-   API
-   ----------------------------------------------------------
-   GET /hr-dashboard/me?date=YYYY-MM-DD
-
-   Dashboard strategy:
-   ----------------------------------------------------------
-   - Show workforce summary
-   - Show action center
-   - Show only a small attendance preview
-   - Search/filter attendance locally
-   - Show limited exceptions
-   - Show limited pending leave
-   - Show limited holidays
-   - Full datasets remain on dedicated pages
 =========================================================== */
 
 (function () {
   'use strict';
 
-  /* ======================================================
-     STATE
-  ====================================================== */
+  const TIME_ZONE = 'Asia/Kolkata';
+
+  const ATTENDANCE_PREVIEW_LIMIT = 10;
+
+  const LIST_PREVIEW_LIMIT = 5;
 
   let dashboardData = null;
 
@@ -35,18 +21,6 @@
 
   let attendanceStatus = 'all';
 
-  /*
-   * Dashboard should remain fast and readable
-   * even when HR has 100+ employees.
-   */
-  const ATTENDANCE_PREVIEW_LIMIT = 10;
-
-  const EXCEPTION_PREVIEW_LIMIT = 5;
-
-  const LEAVE_PREVIEW_LIMIT = 5;
-
-  const HOLIDAY_PREVIEW_LIMIT = 5;
-
   /* ======================================================
      INIT
   ====================================================== */
@@ -57,137 +31,86 @@
   }
 
   window.initializeHrDashboard = async function () {
-    console.log('Initializing HR dashboard...');
-
     try {
-      initializeHrDashboardUser();
+      initializeUser();
 
-      initializeHrDashboardDate();
+      initializeDate();
 
       initializeAttendanceControls();
 
-      await loadHrDashboard();
-
-      console.log('HR dashboard initialized.');
+      await loadDashboard();
     } catch (error) {
       console.error('HR dashboard initialization failed:', error);
 
-      if (typeof AppAlert !== 'undefined' && typeof AppAlert.close === 'function') {
-        AppAlert.close();
-      }
+      closeAlert();
 
-      if (typeof AppAlert !== 'undefined' && typeof AppAlert.error === 'function') {
-        AppAlert.error(error.message || 'Failed to load HR dashboard');
-      }
+      showDashboardError();
 
-      showHrDashboardError();
+      showAlertError(error?.message || 'Failed to load HR dashboard');
     }
   };
 
   /* ======================================================
-     LOAD DASHBOARD
+     LOAD
   ====================================================== */
 
-  async function loadHrDashboard(requestedDate = null) {
-    /*
-     * Priority:
-     *
-     * 1. Explicit date
-     * 2. Date filter if available
-     * 3. India today
-     */
-
+  async function loadDashboard(requestedDate = null) {
     const date = requestedDate || document.getElementById('hrDashboardDateFilter')?.value || getTodayIndia();
 
     const requestId = ++dateRequestSequence;
 
-    try {
-      setDashboardLoading();
+    setDashboardLoading();
 
-      AppAlert.loading("Loading Dashboard");
+    showLoading('Loading Dashboard');
+
+    try {
       const query = `?date=${encodeURIComponent(date)}`;
 
       const data = await Api.get(`/hr-dashboard/me${query}`);
 
-      /*
-       * Ignore stale requests.
-       */
       if (requestId !== dateRequestSequence) {
-        AppAlert.close();
+        closeAlert();
         return;
       }
 
       if (!data) {
-        AppAlert.close();
         throw new Error('Empty dashboard response.');
       }
 
       dashboardData = data;
 
-      /*
-       * Keep backend date as source of truth.
-       */
       updateDashboardDate(data.date);
 
-      /*
-       * Header.
-       */
       populateHeader(data);
 
-      /*
-       * Workforce statistics.
-       */
       populateAttendance(data);
 
-      /*
-       * HR statistics.
-       */
       populateHrData(data);
 
-      /*
-       * Attendance dataset.
-       */
       attendanceRows = Array.isArray(data.staff) ? data.staff : [];
 
-      /*
-       * Render dashboard preview.
-       */
       renderAttendance(attendanceRows);
 
-      renderExceptions(data.hr?.exceptions || []);
+      renderRegularizations(data.hr?.regularizations || []);
 
       renderPendingLeave(data.hr?.pendingLeave || []);
 
       renderHolidays(data.hr?.holidays || []);
 
-      /*
-       * Action center.
-       */
-      updateActionCenter(data);
-
-      /*
-       * Close loading alert if one exists.
-       */
-      if (typeof AppAlert !== 'undefined' && typeof AppAlert.close === 'function') {
-        AppAlert.close();
-      }
+      closeAlert();
     } catch (error) {
       console.error('HR dashboard loading failed:', error);
 
       if (requestId !== dateRequestSequence) {
-        AppAlert.close();
+        closeAlert();
         return;
       }
 
-      if (typeof AppAlert !== 'undefined' && typeof AppAlert.close === 'function') {
-        AppAlert.close();
-      }
+      closeAlert();
 
-      showHrDashboardError();
+      showDashboardError();
 
-      if (typeof AppAlert !== 'undefined' && typeof AppAlert.error === 'function') {
-        AppAlert.error(error.message || 'Failed to load HR dashboard');
-      }
+      showAlertError(error?.message || 'Failed to load HR dashboard');
     }
   }
 
@@ -196,15 +119,13 @@
   ====================================================== */
 
   function populateHeader(data) {
-    const user = data.user || {};
+    const user = data?.user || {};
 
-    const scope = data.scope || {};
+    const scope = data?.scope || {};
 
-    const name = user.fullName || user.name || 'User';
+    setText('hrUserName', user.fullName || user.name || 'User');
 
-    setText('hrUserName', name);
-
-    setText('hrCurrentDate', formatDashboardDate(data.date));
+    setText('hrCurrentDate', formatDashboardDate(data?.date));
 
     setText('hrScopeLabel', scope.label || 'Authorized Staff');
   }
@@ -213,15 +134,13 @@
      USER
   ====================================================== */
 
-  function initializeHrDashboardUser() {
+  function initializeUser() {
     try {
       const raw = localStorage.getItem('userData') || '{}';
 
-      const userData = JSON.parse(raw);
+      const user = JSON.parse(raw);
 
-      const name = userData.fullName || userData.name || 'User';
-
-      setText('hrUserName', name);
+      setText('hrUserName', user.fullName || user.name || 'User');
     } catch (error) {
       console.warn('Unable to load local HR user:', error);
 
@@ -233,14 +152,8 @@
      DATE
   ====================================================== */
 
-  function initializeHrDashboardDate() {
-    const element = document.getElementById('hrCurrentDate');
-
-    if (!element) {
-      return;
-    }
-
-    element.textContent = formatTodayForDisplay();
+  function initializeDate() {
+    setText('hrCurrentDate', formatTodayForDisplay());
   }
 
   function updateDashboardDate(value) {
@@ -252,87 +165,43 @@
   }
 
   /* ======================================================
-     ATTENDANCE
+     ATTENDANCE SUMMARY
   ====================================================== */
 
   function populateAttendance(data) {
-    const attendance = data.attendance || {};
+    const attendance = data?.attendance || {};
 
-    const total = Number(attendance.total ?? 0);
+    const values = {
+      totalExecutives: Number(attendance.total ?? 0),
 
-    const present = Number(attendance.present ?? 0);
+      presentCount: Number(attendance.present ?? 0),
 
-    const absent = Number(attendance.absent ?? 0);
+      absentCount: Number(attendance.absent ?? 0),
 
-    const late = Number(attendance.late ?? 0);
+      lateCount: Number(attendance.late ?? 0),
 
-    const leave = Number(attendance.leave ?? 0);
+      onLeaveCount: Number(attendance.leave ?? 0),
+    };
 
-    setDashboardValue('totalExecutives', total);
-
-    setDashboardValue('presentCount', present);
-
-    setDashboardValue('absentCount', absent);
-
-    setDashboardValue('lateCount', late);
-
-    setDashboardValue('onLeaveCount', leave);
+    Object.entries(values).forEach(([id, value]) => {
+      setDashboardValue(id, value);
+    });
   }
 
   /* ======================================================
-     HR DATA
+     HR SUMMARY
   ====================================================== */
 
   function populateHrData(data) {
-    const hr = data.hr || {};
+    const hr = data?.hr || {};
 
-    const pendingLeave = Array.isArray(hr.pendingLeave) ? hr.pendingLeave : [];
+    const pendingLeave = getArray(hr.pendingLeave);
 
-    const exceptions = Array.isArray(hr.exceptions) ? hr.exceptions : [];
-
-    const holidays = Array.isArray(hr.holidays) ? hr.holidays : [];
+    const regularizations = getArray(hr.regularizations);
 
     setDashboardValue('pendingLeaveCount', pendingLeave.length);
 
-    setDashboardValue('exceptionCount', exceptions.length);
-
-    return {
-      pendingLeave,
-      exceptions,
-      holidays,
-    };
-  }
-
-  /* ======================================================
-     ACTION CENTER
-  ====================================================== */
-
-  function updateActionCenter(data) {
-    const hr = data.hr || {};
-
-    const pendingLeave = Array.isArray(hr.pendingLeave) ? hr.pendingLeave : [];
-
-    const exceptions = Array.isArray(hr.exceptions) ? hr.exceptions : [];
-
-    const attendance = data.attendance || {};
-
-    setText('hrPendingLeaveAction', pendingLeave.length);
-
-    setText('hrExceptionAction', exceptions.length);
-
-    /*
-     * Show present/total in the attendance
-     * action card if the element exists.
-     */
-    const attendanceAction = document.getElementById('hrAttendanceAction');
-
-    if (attendanceAction) {
-      const present = Number(attendance.present ?? 0);
-
-      const total = Number(attendance.total ?? 0);
-
-      attendanceAction.textContent = `${present} / ${total}`;
-    }
+    setDashboardValue('regularizationCount', regularizations.length);
   }
 
   /* ======================================================
@@ -344,23 +213,19 @@
 
     const status = document.getElementById('hrAttendanceStatus');
 
-    if (search) {
-      search.addEventListener('input', () => {
-        attendanceSearch = search.value.trim().toLowerCase();
+    search?.addEventListener('input', () => {
+      attendanceSearch = search.value.trim().toLowerCase();
 
-        renderAttendance(attendanceRows);
-      });
-    }
+      renderAttendance(attendanceRows);
+    });
 
-    if (status) {
-      status.addEventListener('change', () => {
-        attendanceStatus = String(status.value || 'all')
-          .trim()
-          .toLowerCase();
+    status?.addEventListener('change', () => {
+      attendanceStatus = String(status.value || 'all')
+        .trim()
+        .toLowerCase();
 
-        renderAttendance(attendanceRows);
-      });
-    }
+      renderAttendance(attendanceRows);
+    });
   }
 
   /* ======================================================
@@ -374,7 +239,7 @@
       return;
     }
 
-    if (!Array.isArray(staff) || !staff.length) {
+    if (!staff.length) {
       renderAttendanceEmpty(tbody, 'No executives found.');
 
       updateAttendanceSummary(0, 0);
@@ -382,62 +247,49 @@
       return;
     }
 
-    /*
-     * Search.
-     */
-    let filtered = staff.filter((employee) => {
-      if (!attendanceSearch) {
-        return true;
-      }
+    const filtered = staff.filter(matchesAttendanceFilters);
 
-      const name = String(employee.fullName || employee.name || '').toLowerCase();
-
-      return name.includes(attendanceSearch);
-    });
-
-    /*
-     * Status.
-     */
-    if (attendanceStatus !== 'all') {
-      filtered = filtered.filter((employee) => {
-        const status = String(employee.status || 'not_marked')
-          .trim()
-          .toLowerCase();
-
-        return status === attendanceStatus;
-      });
-    }
-
-    const totalFiltered = filtered.length;
-
-    /*
-     * Only render a small preview.
-     */
     const visible = filtered.slice(0, ATTENDANCE_PREVIEW_LIMIT);
 
     if (!visible.length) {
       renderAttendanceEmpty(tbody, 'No attendance matches your filters.');
 
-      updateAttendanceSummary(0, totalFiltered);
+      updateAttendanceSummary(0, filtered.length);
 
       return;
     }
 
-    tbody.innerHTML = visible
-      .map((employee) => {
-        return renderAttendanceRow(employee);
-      })
-      .join('');
+    tbody.innerHTML = visible.map(renderAttendanceRow).join('');
 
-    updateAttendanceSummary(visible.length, totalFiltered);
+    updateAttendanceSummary(visible.length, filtered.length);
   }
 
-  /* ======================================================
-     ATTENDANCE ROW
-  ====================================================== */
+  function matchesAttendanceFilters(employee) {
+    if (attendanceSearch) {
+      const name = String(employee.fullName || employee.name || '').toLowerCase();
+
+      if (!name.includes(attendanceSearch)) {
+        return false;
+      }
+    }
+
+    if (attendanceStatus !== 'all') {
+      const status = String(employee.status || 'not_marked')
+        .trim()
+        .toLowerCase();
+
+      if (status !== attendanceStatus) {
+        return false;
+      }
+    }
+
+    return true;
+  }
 
   function renderAttendanceRow(employee) {
-    const name = escapeHtml(employee.fullName || employee.name || 'Unknown');
+    const name = employee.fullName || employee.name || 'Unknown';
+
+    const initials = getInitials(name);
 
     const checkIn = employee.checkIn ? formatTime(employee.checkIn) : '—';
 
@@ -448,15 +300,6 @@
     const status = String(employee.status || 'not_marked')
       .trim()
       .toLowerCase();
-
-    const statusLabel = formatAttendanceStatus(status);
-
-    const statusClass = getStatusClass(status);
-
-    /*
-     * Optional initials.
-     */
-    const initials = getInitials(employee.fullName || employee.name || 'User');
 
     return `
       <tr>
@@ -469,7 +312,7 @@
             </div>
 
             <div class="hr-staff-name">
-              ${name}
+              ${escapeHtml(name)}
             </div>
 
           </div>
@@ -488,20 +331,14 @@
         </td>
 
         <td>
-          <span
-            class="hr-status-badge ${statusClass}"
-          >
-            ${escapeHtml(statusLabel)}
+          <span class="hr-status-badge ${getStatusClass(status)}">
+            ${escapeHtml(formatAttendanceStatus(status))}
           </span>
         </td>
 
       </tr>
     `;
   }
-
-  /* ======================================================
-     ATTENDANCE EMPTY
-  ====================================================== */
 
   function renderAttendanceEmpty(tbody, message) {
     tbody.innerHTML = `
@@ -524,10 +361,6 @@
     `;
   }
 
-  /* ======================================================
-     ATTENDANCE SUMMARY
-  ====================================================== */
-
   function updateAttendanceSummary(visibleCount, filteredCount) {
     const element = document.getElementById('hrAttendanceSummary');
 
@@ -543,177 +376,131 @@
 
     if (filteredCount > ATTENDANCE_PREVIEW_LIMIT) {
       element.textContent = `Showing ${visibleCount} of ${filteredCount}`;
-    } else {
-      element.textContent = `Showing ${filteredCount} employee${filteredCount === 1 ? '' : 's'}`;
-    }
-  }
 
-  /* ======================================================
-     EXCEPTIONS
-  ====================================================== */
-
-  function renderExceptions(exceptions) {
-    const container = document.getElementById('hrExceptionList');
-
-    if (!container) {
       return;
     }
 
-    if (!Array.isArray(exceptions) || !exceptions.length) {
-      container.innerHTML = `
-        <div class="hr-list-empty">
+    element.textContent = `Showing ${filteredCount} employee${filteredCount === 1 ? '' : 's'}`;
+  }
 
-          <i class="bi bi-check-circle"></i>
+  /* ======================================================
+     REGULARIZATIONS
+  ====================================================== */
 
-          <span>
-            No attendance exceptions.
+  function renderRegularizations(regularizations) {
+    renderCompactList({
+      containerId: 'hrRegularizationList',
+
+      items: regularizations,
+
+      emptyIcon: 'bi bi-check-circle',
+
+      emptyMessage: 'No pending regularizations.',
+
+      moreLabel: 'more regularizations',
+
+      renderItem: renderRegularizationItem,
+    });
+  }
+
+  function renderRegularizationItem(item) {
+    const name = item.userName || item.fullName || 'Unknown';
+
+    const initials = getInitials(name);
+
+    const type = formatRegularizationType(item.type);
+
+    const date = formatIsoDate(item.date);
+
+    return `
+      <div class="hr-list-item">
+
+        <div class="hr-list-item-icon">
+          ${escapeHtml(initials)}
+        </div>
+
+        <div class="hr-list-item-content">
+
+          <span class="hr-list-item-title">
+            ${escapeHtml(name)}
+          </span>
+
+          <span class="hr-list-item-meta">
+            ${escapeHtml(type)}
+            · ${escapeHtml(date)}
           </span>
 
         </div>
-      `;
 
-      return;
-    }
+        <span class="hr-status hr-status-pending">
+          Pending
+        </span>
 
-    const visible = exceptions.slice(0, EXCEPTION_PREVIEW_LIMIT);
-
-    container.innerHTML = visible
-      .map((item) => {
-        const name = escapeHtml(item.fullName || item.userName || 'Unknown');
-
-        const label = escapeHtml(item.label || item.message || 'Attendance exception');
-
-        const initials = getInitials(item.fullName || item.userName || 'User');
-
-        return `
-            <div class="hr-list-item">
-
-              <div class="hr-list-item-icon">
-                ${escapeHtml(initials)}
-              </div>
-
-              <div class="hr-list-item-content">
-
-                <span class="hr-list-item-title">
-                  ${name}
-                </span>
-
-                <span class="hr-list-item-meta">
-                  ${label}
-                </span>
-
-              </div>
-
-              <i
-                class="bi bi-chevron-right hr-list-item-action"
-              ></i>
-
-            </div>
-          `;
-      })
-      .join('');
-
-    if (exceptions.length > EXCEPTION_PREVIEW_LIMIT) {
-      container.insertAdjacentHTML(
-        'beforeend',
-        `
-          <div class="hr-list-more">
-            +${exceptions.length - EXCEPTION_PREVIEW_LIMIT}
-            more exceptions
-          </div>
-        `
-      );
-    }
+      </div>
+    `;
   }
 
   /* ======================================================
-     PENDING LEAVE
+     LEAVE
   ====================================================== */
 
   function renderPendingLeave(leaves) {
-    const container = document.getElementById('hrLeaveList');
+    renderCompactList({
+      containerId: 'hrLeaveList',
 
-    if (!container) {
-      return;
-    }
+      items: leaves,
 
-    if (!Array.isArray(leaves) || !leaves.length) {
-      container.innerHTML = `
-        <div class="hr-list-empty">
+      emptyIcon: 'bi bi-check-circle',
 
-          <i class="bi bi-check-circle"></i>
+      emptyMessage: 'No pending leave requests.',
 
-          <span>
-            No pending leave requests.
+      moreLabel: 'more pending requests',
+
+      renderItem: renderLeaveItem,
+    });
+  }
+
+  function renderLeaveItem(leave) {
+    const name = leave.userName || leave.fullName || 'Unknown';
+
+    const initials = getInitials(name);
+
+    const start = formatIsoDate(leave.startDate);
+
+    const end = formatIsoDate(leave.endDate);
+
+    const days = Number(leave.days);
+
+    const duration = Number.isFinite(days) ? `${days} day${days === 1 ? '' : 's'}` : '—';
+
+    const dateRange = start !== end ? `${start} – ${end}` : start;
+
+    return `
+      <div class="hr-list-item">
+
+        <div class="hr-list-item-icon">
+          ${escapeHtml(initials)}
+        </div>
+
+        <div class="hr-list-item-content">
+
+          <span class="hr-list-item-title">
+            ${escapeHtml(name)}
+          </span>
+
+          <span class="hr-list-item-meta">
+            ${escapeHtml(dateRange)}
+            · ${escapeHtml(duration)}
           </span>
 
         </div>
-      `;
 
-      return;
-    }
+        <span class="hr-status hr-status-pending">
+          Pending
+        </span>
 
-    const visible = leaves.slice(0, LEAVE_PREVIEW_LIMIT);
-
-    container.innerHTML = visible
-      .map((leave) => {
-        const name = escapeHtml(leave.userName || leave.fullName || 'Unknown');
-
-        const start = formatIsoDate(leave.startDate);
-
-        const end = formatIsoDate(leave.endDate);
-
-        const days = leave.days != null ? Number(leave.days) : null;
-
-        let duration = '—';
-
-        if (days != null && Number.isFinite(days)) {
-          duration = `${days} day${days === 1 ? '' : 's'}`;
-        }
-
-        const initials = getInitials(leave.userName || leave.fullName || 'User');
-
-        return `
-            <div class="hr-list-item">
-
-              <div class="hr-list-item-icon">
-                ${escapeHtml(initials)}
-              </div>
-
-              <div class="hr-list-item-content">
-
-                <span class="hr-list-item-title">
-                  ${name}
-                </span>
-
-                <span class="hr-list-item-meta">
-                  ${escapeHtml(start)}
-                  ${start !== end ? ` – ${escapeHtml(end)}` : ''}
-                  · ${escapeHtml(duration)}
-                </span>
-
-              </div>
-
-              <span class="hr-status hr-status-pending">
-                Pending
-              </span>
-
-            </div>
-          `;
-      })
-      .join('');
-
-    if (leaves.length > LEAVE_PREVIEW_LIMIT) {
-      container.insertAdjacentHTML(
-        'beforeend',
-        `
-          <div class="hr-list-more">
-            +${leaves.length - LEAVE_PREVIEW_LIMIT}
-            more pending requests
-          </div>
-        `
-      );
-    }
+      </div>
+    `;
   }
 
   /* ======================================================
@@ -721,20 +508,81 @@
   ====================================================== */
 
   function renderHolidays(holidays) {
-    const container = document.getElementById('hrHolidayList');
+    renderCompactList({
+      containerId: 'hrHolidayList',
+
+      items: holidays,
+
+      emptyIcon: 'bi bi-calendar-x',
+
+      emptyMessage: 'No upcoming holidays.',
+
+      moreLabel: 'more holidays',
+
+      renderItem: renderHolidayItem,
+    });
+  }
+
+  function renderHolidayItem(holiday) {
+    const name = holiday.name || 'Holiday';
+
+    const date = formatIsoDate(holiday.date);
+
+    const optional = holiday.isOptional === true ? 'Optional' : '';
+
+    return `
+      <div class="hr-list-item">
+
+        <div class="hr-holiday-date">
+
+          <span>
+            ${escapeHtml(formatHolidayDay(holiday.date))}
+          </span>
+
+          <small>
+            ${escapeHtml(formatHolidayMonth(holiday.date))}
+          </small>
+
+        </div>
+
+        <div class="hr-list-item-content">
+
+          <span class="hr-list-item-title">
+            ${escapeHtml(name)}
+          </span>
+
+          <span class="hr-list-item-meta">
+            ${escapeHtml(date)}
+            ${optional ? ` · ${escapeHtml(optional)}` : ''}
+          </span>
+
+        </div>
+
+      </div>
+    `;
+  }
+
+  /* ======================================================
+     GENERIC COMPACT LIST
+  ====================================================== */
+
+  function renderCompactList({ containerId, items, emptyIcon, emptyMessage, moreLabel, renderItem }) {
+    const container = document.getElementById(containerId);
 
     if (!container) {
       return;
     }
 
-    if (!Array.isArray(holidays) || !holidays.length) {
+    const list = getArray(items);
+
+    if (!list.length) {
       container.innerHTML = `
         <div class="hr-list-empty">
 
-          <i class="bi bi-calendar-x"></i>
+          <i class="${emptyIcon}"></i>
 
           <span>
-            No upcoming holidays.
+            ${escapeHtml(emptyMessage)}
           </span>
 
         </div>
@@ -743,54 +591,17 @@
       return;
     }
 
-    const visible = holidays.slice(0, HOLIDAY_PREVIEW_LIMIT);
+    const visible = list.slice(0, LIST_PREVIEW_LIMIT);
 
-    container.innerHTML = visible
-      .map((holiday) => {
-        const name = escapeHtml(holiday.name || 'Holiday');
+    container.innerHTML = visible.map(renderItem).join('');
 
-        const date = formatIsoDate(holiday.date);
-
-        const optional = holiday.isOptional === true ? 'Optional' : '';
-
-        return `
-            <div class="hr-list-item">
-
-              <div class="hr-holiday-date">
-                <span>
-                  ${escapeHtml(formatHolidayDay(holiday.date))}
-                </span>
-
-                <small>
-                  ${escapeHtml(formatHolidayMonth(holiday.date))}
-                </small>
-              </div>
-
-              <div class="hr-list-item-content">
-
-                <span class="hr-list-item-title">
-                  ${name}
-                </span>
-
-                <span class="hr-list-item-meta">
-                  ${escapeHtml(date)}
-                  ${optional ? ` · ${escapeHtml(optional)}` : ''}
-                </span>
-
-              </div>
-
-            </div>
-          `;
-      })
-      .join('');
-
-    if (holidays.length > HOLIDAY_PREVIEW_LIMIT) {
+    if (list.length > LIST_PREVIEW_LIMIT) {
       container.insertAdjacentHTML(
         'beforeend',
         `
           <div class="hr-list-more">
-            +${holidays.length - HOLIDAY_PREVIEW_LIMIT}
-            more holidays
+            +${list.length - LIST_PREVIEW_LIMIT}
+            ${escapeHtml(moreLabel)}
           </div>
         `
       );
@@ -802,32 +613,28 @@
   ====================================================== */
 
   function setDashboardLoading() {
-    const values = [
+    const statIds = [
       'totalExecutives',
       'presentCount',
       'absentCount',
       'lateCount',
       'onLeaveCount',
-      'pendingLeaveCount',
-      'exceptionCount',
+      'regularizationCount',
     ];
 
-    values.forEach((id) => {
-      setDashboardValue(id, '—');
-    });
+    statIds.forEach((id) => setDashboardValue(id, '—'));
 
-    setText('hrPendingLeaveAction', '—');
+    renderLoadingList('hrRegularizationList', 'Loading regularizations...');
 
-    setText('hrExceptionAction', '—');
+    renderLoadingList('hrLeaveList', 'Loading leave requests...');
 
-    setText('hrAttendanceAction', '—');
+    renderLoadingList('hrHolidayList', 'Loading holidays...');
 
-    const attendance = document.getElementById('hrAttendanceTable');
+    const table = document.getElementById('hrAttendanceTable');
 
-    if (attendance) {
-      attendance.innerHTML = `
+    if (table) {
+      table.innerHTML = `
         <tr>
-
           <td
             colspan="5"
             class="hr-table-empty"
@@ -842,79 +649,54 @@
 
             </div>
           </td>
-
         </tr>
       `;
     }
 
-    const summary = document.getElementById('hrAttendanceSummary');
+    setText('hrAttendanceSummary', 'Loading...');
+  }
 
-    if (summary) {
-      summary.textContent = 'Loading...';
+  function renderLoadingList(id, message) {
+    const container = document.getElementById(id);
+
+    if (!container) {
+      return;
     }
 
-    const exceptions = document.getElementById('hrExceptionList');
-
-    if (exceptions) {
-      exceptions.innerHTML = `
-        <div class="hr-list-loading">
-          Loading exceptions...
-        </div>
-      `;
-    }
-
-    const leave = document.getElementById('hrLeaveList');
-
-    if (leave) {
-      leave.innerHTML = `
-        <div class="hr-list-loading">
-          Loading leave requests...
-        </div>
-      `;
-    }
-
-    const holidays = document.getElementById('hrHolidayList');
-
-    if (holidays) {
-      holidays.innerHTML = `
-        <div class="hr-list-loading">
-          Loading holidays...
-        </div>
-      `;
-    }
+    container.innerHTML = `
+      <div class="hr-list-loading">
+        ${escapeHtml(message)}
+      </div>
+    `;
   }
 
   /* ======================================================
      ERROR
   ====================================================== */
 
-  function showHrDashboardError() {
-    const values = [
+  function showDashboardError() {
+    const statIds = [
       'totalExecutives',
       'presentCount',
       'absentCount',
       'lateCount',
       'onLeaveCount',
-      'pendingLeaveCount',
-      'exceptionCount',
+      'regularizationCount',
     ];
 
-    values.forEach((id) => {
-      setDashboardValue(id, '—');
-    });
+    statIds.forEach((id) => setDashboardValue(id, '—'));
 
-    setText('hrPendingLeaveAction', '—');
+    renderErrorList('hrRegularizationList', 'Unable to load regularizations.');
 
-    setText('hrExceptionAction', '—');
+    renderErrorList('hrLeaveList', 'Unable to load leave requests.');
 
-    setText('hrAttendanceAction', '—');
+    renderErrorList('hrHolidayList', 'Unable to load holidays.');
 
-    const attendance = document.getElementById('hrAttendanceTable');
+    const table = document.getElementById('hrAttendanceTable');
 
-    if (attendance) {
-      attendance.innerHTML = `
+    if (table) {
+      table.innerHTML = `
         <tr>
-
           <td
             colspan="5"
             class="hr-table-empty"
@@ -929,51 +711,56 @@
 
             </div>
           </td>
-
         </tr>
       `;
     }
 
-    const summary = document.getElementById('hrAttendanceSummary');
+    setText('hrAttendanceSummary', 'Unable to load data');
+  }
 
-    if (summary) {
-      summary.textContent = 'Unable to load data';
+  function renderErrorList(id, message) {
+    const container = document.getElementById(id);
+
+    if (!container) {
+      return;
     }
 
-    const exceptions = document.getElementById('hrExceptionList');
+    container.innerHTML = `
+      <div class="hr-list-empty">
+        ${escapeHtml(message)}
+      </div>
+    `;
+  }
 
-    if (exceptions) {
-      exceptions.innerHTML = `
-        <div class="hr-list-empty">
-          Unable to load exceptions.
-        </div>
-      `;
+  /* ======================================================
+     ALERT HELPERS
+  ====================================================== */
+
+  function showLoading(message) {
+    if (typeof AppAlert !== 'undefined' && typeof AppAlert.loading === 'function') {
+      AppAlert.loading(message);
     }
+  }
 
-    const leave = document.getElementById('hrLeaveList');
-
-    if (leave) {
-      leave.innerHTML = `
-        <div class="hr-list-empty">
-          Unable to load leave requests.
-        </div>
-      `;
+  function closeAlert() {
+    if (typeof AppAlert !== 'undefined' && typeof AppAlert.close === 'function') {
+      AppAlert.close();
     }
+  }
 
-    const holidays = document.getElementById('hrHolidayList');
-
-    if (holidays) {
-      holidays.innerHTML = `
-        <div class="hr-list-empty">
-          Unable to load holidays.
-        </div>
-      `;
+  function showAlertError(message) {
+    if (typeof AppAlert !== 'undefined' && typeof AppAlert.error === 'function') {
+      AppAlert.error(message);
     }
   }
 
   /* ======================================================
-     STAT VALUE
+     GENERIC HELPERS
   ====================================================== */
+
+  function getArray(value) {
+    return Array.isArray(value) ? value : [];
+  }
 
   function setDashboardValue(elementId, value) {
     const element = document.getElementById(elementId);
@@ -982,10 +769,6 @@
       element.textContent = value ?? '—';
     }
   }
-
-  /* ======================================================
-     TEXT
-  ====================================================== */
 
   function setText(id, value) {
     const element = document.getElementById(id);
@@ -1000,65 +783,55 @@
   ====================================================== */
 
   function formatAttendanceStatus(status) {
-    switch (status) {
-      case 'working':
-        return 'Working';
+    const labels = {
+      working: 'Working',
+      present: 'Present',
+      late: 'Late',
+      leave: 'On Leave',
+      absent: 'Absent',
+      weekly_off: 'Weekly Off',
+      holiday: 'Holiday',
+      not_marked: 'Not Marked',
+    };
 
-      case 'present':
-        return 'Present';
+    return labels[status] || labels.not_marked;
+  }
 
-      case 'late':
-        return 'Late';
+  function getStatusClass(status) {
+    const classes = {
+      working: 'status-working',
+      present: 'status-present',
+      late: 'status-late',
+      leave: 'status-leave',
+      absent: 'status-absent',
+      weekly_off: 'status-weekly-off',
+      holiday: 'status-holiday',
+      not_marked: 'status-not-marked',
+    };
 
-      case 'leave':
-        return 'On Leave';
-
-      case 'absent':
-        return 'Absent';
-
-      case 'weekly_off':
-        return 'Weekly Off';
-
-      case 'holiday':
-        return 'Holiday';
-
-      case 'not_marked':
-      default:
-        return 'Not Marked';
-    }
+    return classes[status] || classes.not_marked;
   }
 
   /* ======================================================
-     STATUS CLASS
+     REGULARIZATION TYPE
   ====================================================== */
 
-  function getStatusClass(status) {
-    switch (status) {
-      case 'working':
-        return 'status-working';
+  function formatRegularizationType(type) {
+    const labels = {
+      MISSED_CHECK_IN: 'Missed check-in',
+      MISSED_CHECK_OUT: 'Missed check-out',
+      MISSED_BOTH: 'Missed check-in & check-out',
 
-      case 'present':
-        return 'status-present';
+      WRONG_CHECK_IN: 'Wrong check-in',
+      WRONG_CHECK_OUT: 'Wrong check-out',
+      WRONG_BOTH: 'Wrong check-in & check-out',
 
-      case 'late':
-        return 'status-late';
+      SYSTEM_ERROR: 'System error',
+      LOCATION_ERROR: 'Location error',
+      OTHER: 'Other',
+    };
 
-      case 'leave':
-        return 'status-leave';
-
-      case 'absent':
-        return 'status-absent';
-
-      case 'weekly_off':
-        return 'status-weekly-off';
-
-      case 'holiday':
-        return 'status-holiday';
-
-      case 'not_marked':
-      default:
-        return 'status-not-marked';
-    }
+    return labels[type] || 'Attendance correction';
   }
 
   /* ======================================================
@@ -1118,7 +891,7 @@
       hour: '2-digit',
       minute: '2-digit',
       hour12: true,
-      timeZone: 'Asia/Kolkata',
+      timeZone: TIME_ZONE,
     }).format(date);
   }
 
@@ -1144,7 +917,7 @@
       day: 'numeric',
       month: 'long',
       year: 'numeric',
-      timeZone: 'Asia/Kolkata',
+      timeZone: TIME_ZONE,
     }).format(date);
   }
 
@@ -1154,7 +927,7 @@
       day: 'numeric',
       month: 'long',
       year: 'numeric',
-      timeZone: 'Asia/Kolkata',
+      timeZone: TIME_ZONE,
     }).format(new Date());
   }
 
@@ -1165,16 +938,10 @@
 
     const string = String(value).trim();
 
-    /*
-     * YYYYMMDD
-     */
     if (/^\d{8}$/.test(string)) {
       return `${string.substring(0, 4)}-` + `${string.substring(4, 6)}-` + `${string.substring(6, 8)}`;
     }
 
-    /*
-     * YYYY-MM-DD
-     */
     if (/^\d{4}-\d{2}-\d{2}$/.test(string)) {
       return string;
     }
@@ -1207,7 +974,7 @@
   }
 
   /* ======================================================
-     HOLIDAY DAY
+     HOLIDAY DATE
   ====================================================== */
 
   function formatHolidayDay(value) {
@@ -1225,10 +992,6 @@
       day: 'numeric',
     }).format(date);
   }
-
-  /* ======================================================
-     HOLIDAY MONTH
-  ====================================================== */
 
   function formatHolidayMonth(value) {
     if (!value) {
@@ -1254,7 +1017,7 @@
 
   function getTodayIndia() {
     const parts = new Intl.DateTimeFormat('en-CA', {
-      timeZone: 'Asia/Kolkata',
+      timeZone: TIME_ZONE,
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
@@ -1272,7 +1035,7 @@
   }
 
   /* ======================================================
-     PARSE DATE
+     DATE PARSER
   ====================================================== */
 
   function parseDateValue(value) {

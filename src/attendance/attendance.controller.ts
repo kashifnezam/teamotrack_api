@@ -69,19 +69,6 @@ export class AttendanceController {
     return this.service.undoCheckout(user.uid);
   }
 
-  // ============================================================
-  // CORRECT CHECK OUT
-  // ============================================================
-
-  @Post('correct-check-out')
-  @UseGuards(FirebaseAuthGuard)
-  async correctCheckout(@CurrentUser() user: any, @Body() dto: CorrectCheckOutDto) {
-    return this.service.correctCheckout(user.uid, dto.staffId, {
-      checkOutTime: dto.checkOutTime,
-
-      reason: dto.reason,
-    });
-  }
 
   // ============================================================
   // ATTENDANCE DATA

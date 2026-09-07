@@ -208,7 +208,7 @@ export class StaffService {
      */
 
     const result = uniqueUsers
-      .filter((item) => item.role === role)
+      .filter((item) => item.id !== user.uid && item.role === role)
       .map((item) => {
         const parent = userMap.get(item.parentId);
 
@@ -960,15 +960,7 @@ export class StaffService {
      */
     else if (role === 'hr') {
       permissions = {
-        // ==================================================
-        // HR
-        // ==================================================
-
-        // 'hr.create': false,
-        // 'hr.edit': false,
-        // 'hr.delete': false,
-        // 'hr.manage_permissions': false,
-
+      
         // ==================================================
         // FIELD EXECUTIVES
         // ==================================================
@@ -1449,6 +1441,292 @@ export class StaffService {
       role: data.role ?? '',
 
       parentId: data.parentId ?? '',
+    };
+  }
+
+  // Using on Attendance page to get the list of staff for the current user
+  // ==================================================
+  // GET AUTHORIZED STAFF
+  // ==================================================
+
+  async getStaff(userId: string) {
+    const user = await this.getUser(userId);
+
+    const rootId = this.getRootId(user);
+
+    /*
+     * --------------------------------------------------
+     * LOAD ORGANIZATION
+     * --------------------------------------------------
+     *
+     * Load all users belonging to the organization.
+     *
+     * Root users may not have rootId on their document,
+     * so the root user is added separately when required.
+     */
+
+    const snap = await this.db.collection('user').where('rootId', '==', rootId).get();
+
+    const users = snap.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    })) as any[];
+
+    /*
+     * Root users may not have rootId.
+     *
+     * Add root user so the hierarchy remains complete.
+     */
+    if (!users.some((item) => item.id === rootId)) {
+      const rootDoc = await this.db.collection('user').doc(rootId).get();
+
+      if (rootDoc.exists) {
+        users.push({
+          id: rootDoc.id,
+          ...rootDoc.data(),
+        });
+      }
+    }
+
+    /*
+     * --------------------------------------------------
+     * BUILD LOOKUPS
+     * --------------------------------------------------
+     */
+
+    const userMap = new Map<string, any>();
+    const byParent = new Map<string, any[]>();
+
+    for (const item of users) {
+      userMap.set(item.id, item);
+
+      /*
+       * Root manager is the organization head.
+       * Users belonging directly to root may not have
+       * parentId, so treat rootId as their implicit parent.
+       */
+      const parentId = item.parentId || (item.id !== rootId ? rootId : undefined);
+
+      if (!parentId) {
+        continue;
+      }
+
+      const children = byParent.get(parentId) ?? [];
+
+      children.push(item);
+
+      byParent.set(parentId, children);
+    }
+    /*
+     * --------------------------------------------------
+     * DETERMINE SCOPE
+     * --------------------------------------------------
+     *
+     * ROOT:
+     *   Entire organization.
+     *
+     * MANAGER:
+     *   Own hierarchy.
+     *
+     * HR:
+     *   Parent manager's complete hierarchy.
+     *
+     * HR does NOT get a separate/root scope.
+     * HR simply acts within the hierarchy of its
+     * owning manager.
+     */
+
+    const scopeRootId = this.isRoot(user) ? rootId : await this.getEffectiveScopeRootId(user);
+
+    const scopeRoot = userMap.get(scopeRootId);
+
+    if (!scopeRoot) {
+      this.logger.error(
+        `Invalid hierarchy | method=getStaff | user=${userId} scopeRootId=${scopeRootId} rootId=${rootId}`
+      );
+
+      throw new BadRequestException('Invalid hierarchy');
+    }
+
+    /*
+     * --------------------------------------------------
+     * BUILD SCOPE
+     * --------------------------------------------------
+     */
+
+    const scopedUsers: any[] = [scopeRoot];
+
+    const visited = new Set<string>();
+
+    const walk = (parentId: string) => {
+      if (visited.has(parentId)) {
+        return;
+      }
+
+      visited.add(parentId);
+
+      const children = byParent.get(parentId) ?? [];
+
+      for (const child of children) {
+        scopedUsers.push(child);
+
+        walk(child.id);
+      }
+    };
+
+    walk(scopeRootId);
+
+    /*
+     * Remove duplicates.
+     */
+    const uniqueUsers = Array.from(new Map(scopedUsers.map((item) => [item.id, item])).values());
+
+    /*
+     * --------------------------------------------------
+     * DETERMINE VIEW PERMISSIONS
+     * --------------------------------------------------
+     *
+     * ROOT:
+     *   Root is the organization head.
+     *   No permission document is required.
+     *
+     * MANAGER / HR:
+     *   Read the requester's permissions ONCE.
+     *
+     * HR:
+     *   HR acts on behalf of its parent manager's
+     *   hierarchy, but role visibility is controlled
+     *   by HR's own permissions.
+     */
+
+    let allowedRoles = new Set<string>();
+
+    if (this.isRoot(user)) {
+      /*
+       * Root has complete organization-wide access.
+       */
+      allowedRoles = new Set(['manager', 'hr', 'field_executive']);
+    } else {
+      /*
+       * Load requester permissions only once.
+       */
+      const permissions = await this.permissions(user.uid);
+
+      if (permissions['manager.view'] === true) {
+        allowedRoles.add('manager');
+      }
+
+      if (permissions['hr.view'] === true) {
+        allowedRoles.add('hr');
+      }
+
+      if (permissions['field_executive.view'] === true) {
+        allowedRoles.add('field_executive');
+      }
+    }
+
+    /*
+     * --------------------------------------------------
+     * BUILD RESULT
+     * --------------------------------------------------
+     *
+     * IMPORTANT:
+     *
+     * The current user is NEVER returned.
+     */
+
+    const result = uniqueUsers
+      .filter((item) => {
+        /*
+         * Never return requester.
+         */
+        if (item.id === userId) {
+          return false;
+        }
+
+        /*
+         * Only return roles for which the requester
+         * has view permission.
+         */
+        if (!allowedRoles.has(item.role)) {
+          return false;
+        }
+
+        return true;
+      })
+      .map((item) => {
+        const parent = userMap.get(item.parentId);
+
+        return {
+          id: item.id,
+
+          fullName: item.fullName ?? '',
+
+          email: item.email ?? '',
+
+          mobile: item.mobile ?? '',
+
+          isActive: item.isActive !== false,
+
+          role: item.role ?? '',
+
+          parentId: item.parentId ?? '',
+
+          parentName: parent?.fullName ?? 'Root',
+
+          shiftId: item.shiftId ?? '',
+
+          teamId: item.teamId ?? '',
+        };
+      });
+
+    /*
+     * --------------------------------------------------
+     * LOAD TEAMS
+     * --------------------------------------------------
+     *
+     * Only load teams belonging to returned staff.
+     */
+
+    const teamIds = Array.from(new Set(result.map((item) => item.teamId).filter(Boolean)));
+
+    const teamMap = new Map<string, any>();
+
+    if (teamIds.length > 0) {
+      const refs = teamIds.map((teamId) => this.db.collection('teams').doc(teamId));
+
+      const teamDocs = await this.db.getAll(...refs);
+
+      for (const doc of teamDocs) {
+        if (!doc.exists) {
+          continue;
+        }
+
+        teamMap.set(doc.id, {
+          id: doc.id,
+          ...doc.data(),
+        });
+      }
+    }
+
+    /*
+     * --------------------------------------------------
+     * ATTACH TEAM
+     * --------------------------------------------------
+     */
+
+    const staff = result.map((item) => {
+      const team = item.teamId ? teamMap.get(item.teamId) : undefined;
+
+      return {
+        ...item,
+
+        teamName: team?.name ?? team?.teamName ?? '',
+      };
+    });
+
+    return {
+      users: staff,
     };
   }
 }

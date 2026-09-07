@@ -3,6 +3,7 @@ import { BadRequestException, ForbiddenException, Injectable, Logger } from '@ne
 import { FirebaseService } from '../firebase/firebase.service';
 import { LeaveService } from '../leave/leave.service';
 import { HolidayService } from '../holiday/holiday.service';
+import { AttendanceRegularizationService } from '../attendance-regularization/attendance-regularization.service';
 
 @Injectable()
 export class HrDashboardService {
@@ -10,12 +11,11 @@ export class HrDashboardService {
 
   private static readonly TIME_ZONE = 'Asia/Kolkata';
 
-  private static readonly STAFF_ROLES = ['field_executive', 'manager', 'hr'];
-
   constructor(
     private readonly firebase: FirebaseService,
     private readonly leaveService: LeaveService,
-    private readonly holidayService: HolidayService
+    private readonly holidayService: HolidayService,
+    private readonly attendanceRegularizationService: AttendanceRegularizationService
   ) {}
 
   private get db() {
@@ -59,15 +59,10 @@ export class HrDashboardService {
 
     const hasDashboardAccess =
       permissions['attendance.view'] === true ||
-      permissions['attendance.manage'] === true ||
       permissions['field_executive.view'] === true ||
-      permissions['field_executive.edit'] === true ||
       permissions['manager.view'] === true ||
-      permissions['manager.edit'] === true ||
       permissions['hr.view'] === true ||
-      permissions['hr.edit'] === true ||
       permissions['leave.view'] === true ||
-      permissions['leave.approve'] === true ||
       permissions['tracking.view'] === true ||
       permissions['task.view'] === true;
 
@@ -99,8 +94,6 @@ export class HrDashboardService {
      *
      * We only need it as the top hierarchy node.
      */
-    // const rootExists = users.some((item) => (item.uid || item.id) === rootId);
-
     const rootUser = await this.getUser(rootId);
 
     users.push(rootUser);
@@ -129,7 +122,7 @@ export class HrDashboardService {
      * Attendance is loaded only if HR has attendance
      * permission.
      */
-    if (permissions['attendance.view'] === true || permissions['attendance.manage'] === true) {
+    if (permissions['attendance.view'] === true) {
       const attendanceMap = await this.loadAttendance(visibleStaff, date);
 
       todayAttendance = attendanceMap.get(date) ?? new Map<string, any>();
@@ -146,9 +139,7 @@ export class HrDashboardService {
     // ========================================================
 
     const attendance =
-      permissions['attendance.view'] === true || permissions['attendance.manage'] === true
-        ? this.calculateAttendance(staff)
-        : this.emptyAttendance();
+      permissions['attendance.view'] === true ? this.calculateAttendance(staff) : this.emptyAttendance();
 
     const tracking =
       permissions['tracking.view'] === true
@@ -163,7 +154,7 @@ export class HrDashboardService {
     // ========================================================
 
     let pendingLeave: any[] = [];
-    let exceptions: any[] = [];
+    let regularizations: any[] = [];
     let holidays: any[] = [];
 
     /*
@@ -174,10 +165,11 @@ export class HrDashboardService {
     }
 
     /*
-     * Attendance exceptions require attendance permission.
+     * Attendance regularizations are approval/processing
+     * requests and therefore require attendance.manage.
      */
-    if (permissions['attendance.view'] === true || permissions['attendance.manage'] === true) {
-      exceptions = await this.loadAttendanceExceptions(staff, todayAttendance, date);
+    if (permissions['attendance.manage'] === true) {
+      regularizations = await this.loadPendingRegularizations(currentUser);
     }
 
     /*
@@ -232,7 +224,7 @@ export class HrDashboardService {
 
       hr: {
         pendingLeave,
-        exceptions,
+        regularizations,
         holidays,
       },
     };
@@ -245,6 +237,7 @@ export class HrDashboardService {
   private async getVisibleStaff(hr: any, users: any[], permissions: Record<string, any>): Promise<any[]> {
     if (!hr.parentId) {
       this.logger.warn(`HR has no parent | hr=${hr.uid}`);
+
       return [];
     }
 
@@ -271,11 +264,17 @@ export class HrDashboardService {
         continue;
       }
 
-      const children = byParent.get(item.parentId || item.rootId) ?? [];
+      const parentKey = item.parentId || item.rootId;
+
+      if (!parentKey) {
+        continue;
+      }
+
+      const children = byParent.get(parentKey) ?? [];
 
       children.push(item);
 
-      byParent.set(item.parentId, children);
+      byParent.set(parentKey, children);
     }
 
     /*
@@ -313,7 +312,6 @@ export class HrDashboardService {
         }
       }
     };
-
 
     /*
      * Start from HR's direct manager.
@@ -682,81 +680,23 @@ export class HrDashboardService {
   }
 
   // ==========================================================
-  // EXCEPTIONS
+  // REGULARIZATIONS
   // ==========================================================
 
-  private async loadAttendanceExceptions(staff: any[], attendance: Map<string, any>, date: string) {
-    const exceptions: any[] = [];
+  private async loadPendingRegularizations(user: any) {
+    try {
+      const result = await this.attendanceRegularizationService.getApprovals(user.uid);
 
-    for (const employee of staff) {
-      const id = employee.uid || employee.id;
+      return result?.requests ?? [];
+    } catch (error) {
+      this.logger.warn(
+        `Unable to load HR attendance regularizations | user=${user.uid} | ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
 
-      const record = attendance.get(id);
-
-      if (!record) {
-        continue;
-      }
-
-      const exception = this.getAttendanceException(record);
-
-      if (!exception) {
-        continue;
-      }
-
-      exceptions.push({
-        id: `${id}_${date}`,
-
-        userId: id,
-
-        fullName: employee.fullName ?? employee.userName ?? employee.name ?? 'Unknown',
-
-        role: employee.role ?? '',
-
-        date,
-
-        ...exception,
-      });
+      return [];
     }
-
-    return exceptions;
-  }
-
-  private getAttendanceException(attendance: any) {
-    if (!attendance) {
-      return null;
-    }
-
-    if (Array.isArray(attendance.exceptions) && attendance.exceptions.length) {
-      return {
-        type: 'attendance',
-
-        label: 'Attendance exception',
-
-        details: attendance.exceptions,
-      };
-    }
-
-    if (attendance.exception && typeof attendance.exception === 'object') {
-      return {
-        type: attendance.exception.type ?? 'attendance',
-
-        label: attendance.exception.label ?? 'Attendance exception',
-
-        details: attendance.exception,
-      };
-    }
-
-    if (attendance.punctuality === 'late') {
-      return {
-        type: 'late',
-
-        label: 'Late arrival',
-
-        punctuality: 'late',
-      };
-    }
-
-    return null;
   }
 
   // ==========================================================
