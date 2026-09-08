@@ -7,8 +7,9 @@ import { AttendanceSchedulerService } from './scheduler.service';
 
 import { AttendanceDto } from './dto/attendance.dto';
 import { CheckInDto } from './dto/check-in.dto';
-import { CheckOutDto, CorrectCheckOutDto } from './dto/check-out.dto';
+import { CheckOutDto } from './dto/check-out.dto';
 import { ProcessAttendanceDto } from './dto/process-attendance.dto';
+import { BreakDto } from './dto/break.dto';
 
 import { FirebaseAuthGuard } from '../auth/firebase-auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
@@ -60,15 +61,24 @@ export class AttendanceController {
   }
 
   // ============================================================
-  // UNDO CHECK OUT
+  // START BREAK
   // ============================================================
 
-  @Post('undo-check-out')
+  @Post('start-break')
   @UseGuards(FirebaseAuthGuard)
-  async undoCheckOut(@CurrentUser() user: any) {
-    return this.service.undoCheckout(user.uid);
+  startBreak(@CurrentUser() user: any, @Body() dto: BreakDto) {
+    return this.service.startBreak(user.uid, dto);
   }
 
+  // ============================================================
+  // END BREAK
+  // ============================================================
+
+  @Post('end-break')
+  @UseGuards(FirebaseAuthGuard)
+  endBreak(@CurrentUser() user: any, @Body() dto: BreakDto) {
+    return this.service.endBreak(user.uid, dto);
+  }
 
   // ============================================================
   // ATTENDANCE DATA
@@ -107,9 +117,7 @@ export class AttendanceController {
 
     return this.schedulerService.processAttendanceForDate(dto.date, {
       mode: 'manual',
-
       triggeredBy: user.uid,
-
       rootId: authority.rootId,
     });
   }

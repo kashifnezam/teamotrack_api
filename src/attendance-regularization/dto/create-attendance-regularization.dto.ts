@@ -17,6 +17,18 @@ export enum AttendanceRegularizationType {
 
   LOCATION_ERROR = 'LOCATION_ERROR',
 
+  /*
+   * Break correction.
+   *
+   * Used for:
+   * - missing break
+   * - wrong break time
+   * - excessive break
+   * - incomplete break
+   * - break recording/system issue
+   */
+  BREAK_ERROR = 'BREAK_ERROR',
+
   OTHER = 'OTHER',
 }
 
@@ -52,6 +64,26 @@ export class CreateAttendanceRegularizationDto {
   @IsOptional()
   @IsDateString()
   checkOutTime?: string;
+
+  /*
+   * Requested break start time.
+   *
+   * ISO 8601:
+   * 2026-09-05T13:05:00+05:30
+   */
+  @IsOptional()
+  @IsDateString()
+  breakStartTime?: string;
+
+  /*
+   * Requested break end time.
+   *
+   * ISO 8601:
+   * 2026-09-05T13:35:00+05:30
+   */
+  @IsOptional()
+  @IsDateString()
+  breakEndTime?: string;
 
   /*
    * Mandatory explanation.

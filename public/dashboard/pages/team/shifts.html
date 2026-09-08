@@ -39,7 +39,7 @@
           <div class="shift-count">
             <span class="count-number" id="shiftCount"> 0 </span>
 
-            <span> active shifts </span>
+            <span>active shifts</span>
           </div>
         </div>
       </div>
@@ -67,6 +67,7 @@
               <th>Grace</th>
               <th>Half Day</th>
               <th>Full Day</th>
+              <th>Selfie Check-In</th>
               <th>Weekly Off</th>
               <th class="text-end">Action</th>
             </tr>
@@ -96,7 +97,9 @@
 <div class="modal fade" id="shiftModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-lg">
     <div class="modal-content shift-modal">
-      <!-- HEADER -->
+      <!-- ==================================================
+           HEADER
+      =================================================== -->
 
       <div class="modal-header">
         <div>
@@ -104,74 +107,100 @@
 
           <h5 class="modal-title" id="modalTitle">Add Shift</h5>
 
-          <p class="modal-subtitle mb-0">Define working hours and attendance rules.</p>
+          <p class="modal-subtitle mb-0">Configure schedule and attendance rules.</p>
         </div>
 
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
 
-      <!-- BODY -->
+      <!-- ==================================================
+           BODY
+      =================================================== -->
 
       <div class="modal-body">
         <input type="hidden" id="shiftId" />
 
         <!-- ==================================================
-             BASIC DETAILS
+             SHIFT SCHEDULE
         =================================================== -->
 
-        <div class="form-section">
-          <div class="form-section-header">
-            <div class="section-icon">
+        <div class="config-block">
+          <div class="config-heading">
+            <div class="config-icon">
               <i class="bi bi-clock"></i>
             </div>
 
             <div>
-              <h6>Shift Details</h6>
+              <h6>Shift Schedule</h6>
 
-              <p>Set the employee's scheduled working hours.</p>
+              <p>Set working hours and optional break time.</p>
             </div>
           </div>
 
-          <div class="row g-3">
-            <!-- NAME -->
+          <!-- SHIFT NAME -->
 
-            <div class="col-12">
-              <label for="shiftName" class="form-label"> Shift Name </label>
+          <div class="mb-3">
+            <label for="shiftName" class="form-label"> Shift Name </label>
 
-              <input id="shiftName" type="text" class="form-control" placeholder="e.g. General Shift" />
-            </div>
+            <input id="shiftName" type="text" class="form-control" placeholder="e.g. General Shift" />
+          </div>
 
-            <!-- START -->
+          <!-- WORKING TIME -->
 
-            <div class="col-md-6">
+          <div class="time-row">
+            <div class="time-field">
               <label for="startTime" class="form-label"> Start Time </label>
 
               <input id="startTime" type="time" class="form-control" />
             </div>
 
-            <!-- END -->
+            <div class="time-arrow">
+              <i class="bi bi-arrow-right"></i>
+            </div>
 
-            <div class="col-md-6">
+            <div class="time-field">
               <label for="endTime" class="form-label"> End Time </label>
 
               <input id="endTime" type="time" class="form-control" />
             </div>
+          </div>
 
-            <!-- DURATION PREVIEW -->
+          <!-- BREAK -->
 
-            <div class="col-12">
-              <div class="shift-duration-preview" id="shiftDurationPreview">
-                <div class="preview-icon">
-                  <i class="bi bi-hourglass-split"></i>
-                </div>
+          <div class="break-row">
+            <label class="break-toggle">
+              <input type="checkbox" id="breakEnabled" />
 
-                <div class="preview-content">
-                  <span> Shift Duration </span>
+              <span class="break-checkbox">
+                <i class="bi bi-check"></i>
+              </span>
 
-                  <strong id="shiftDurationText"> Set start and end time </strong>
-                </div>
+              <span class="break-label"> Add Break </span>
+            </label>
+
+            <div id="breakFields" class="break-fields" style="display: none">
+              <div class="break-time-field">
+                <label for="breakStartTime" class="break-time-label"> Start </label>
+
+                <input id="breakStartTime" type="time" class="form-control" aria-label="Break start time" />
+              </div>
+
+              <span class="break-separator">—</span>
+
+              <div class="break-time-field">
+                <label for="breakEndTime" class="break-time-label"> End </label>
+
+                <input id="breakEndTime" type="time" class="form-control" aria-label="Break end time" />
               </div>
             </div>
+          </div>
+
+          <!-- SCHEDULE SUMMARY -->
+
+          <div class="schedule-summary" id="shiftDurationPreview">
+            <i class="bi bi-hourglass-split"></i>
+
+            <span id="shiftDurationText"> Set start and end time </span>
           </div>
         </div>
 
@@ -179,201 +208,177 @@
              ATTENDANCE RULES
         =================================================== -->
 
-        <div class="form-section">
-          <div class="form-section-header">
-            <div class="section-icon rules-icon">
+        <div class="config-block">
+          <div class="config-heading">
+            <div class="config-icon rules">
               <i class="bi bi-shield-check"></i>
             </div>
 
             <div>
               <h6>Attendance Rules</h6>
 
-              <p>Define how attendance is classified.</p>
+              <p>Set thresholds used for attendance classification.</p>
             </div>
           </div>
 
-          <!-- GRACE EXPLANATION -->
-
-          <div class="grace-info">
-            <div class="grace-info-icon">
-              <i class="bi bi-info-circle"></i>
-            </div>
-
-            <div>
-              <strong> What is Grace Time? </strong>
-
-              <p class="mb-0">
-                Grace is the allowed attendance difference. If an employee arrives late within the grace period, they
-                will not be marked late. It also allows a small shortage in working hours without marking them absent or
-                half day.
-              </p>
-            </div>
-          </div>
-
-          <div class="row g-3 mt-1">
+          <div class="rules-grid">
             <!-- GRACE -->
 
-            <div class="col-md-4">
-              <div class="rule-card">
-                <div class="rule-card-header">
-                  <div class="rule-title">
-                    <span class="rule-dot grace-dot"></span>
+            <div class="rule-field">
+              <div class="rule-field-header">
+                <label> Grace </label>
 
-                    Grace
-                  </div>
-
-                  <button
-                    type="button"
-                    class="info-btn"
-                    data-bs-toggle="tooltip"
-                    data-bs-placement="top"
-                    title="The allowed attendance difference for late arrival and small working-hour shortages."
-                    aria-label="Grace information"
-                  >
-                    <i class="bi bi-info-circle"></i>
-                  </button>
-                </div>
-
-                <div class="duration-input">
-                  <div>
-                    <input id="graceHours" type="number" min="0" class="form-control" value="0" placeholder="0" />
-
-                    <small> Hours </small>
-                  </div>
-
-                  <span> : </span>
-
-                  <div>
-                    <input
-                      id="graceMinutes"
-                      type="number"
-                      min="0"
-                      max="59"
-                      class="form-control"
-                      value="0"
-                      placeholder="00"
-                    />
-
-                    <small> Minutes </small>
-                  </div>
-                </div>
-
-                <div class="rule-hint" id="graceRuleHint">No grace time</div>
+                <button
+                  type="button"
+                  class="info-btn"
+                  data-bs-toggle="tooltip"
+                  data-bs-placement="top"
+                  title="Allowed difference for late arrival and small working-hour shortages."
+                  aria-label="Grace information"
+                >
+                  <i class="bi bi-info-circle"></i>
+                </button>
               </div>
+
+              <div class="compact-duration">
+                <div class="duration-part">
+                  <input id="graceHours" type="number" min="0" class="form-control" value="0" placeholder="0" />
+
+                  <small>Hours</small>
+                </div>
+
+                <span>:</span>
+
+                <div class="duration-part">
+                  <input
+                    id="graceMinutes"
+                    type="number"
+                    min="0"
+                    max="59"
+                    class="form-control"
+                    value="0"
+                    placeholder="00"
+                  />
+
+                  <small>Minutes</small>
+                </div>
+              </div>
+
+              <div class="rule-hint" id="graceRuleHint">No grace time</div>
             </div>
 
             <!-- HALF DAY -->
 
-            <div class="col-md-4">
-              <div class="rule-card">
-                <div class="rule-card-header">
-                  <div class="rule-title">
-                    <span class="rule-dot half-dot"></span>
+            <div class="rule-field">
+              <div class="rule-field-header">
+                <label> Half Day </label>
 
-                    Half Day
-                  </div>
-
-                  <span class="rule-label"> Threshold </span>
-                </div>
-
-                <div class="duration-input">
-                  <div>
-                    <input id="halfDayHours" type="number" min="0" class="form-control" value="4" placeholder="0" />
-
-                    <small> Hours </small>
-                  </div>
-
-                  <span> : </span>
-
-                  <div>
-                    <input
-                      id="halfDayMinutes"
-                      type="number"
-                      min="0"
-                      max="59"
-                      class="form-control"
-                      value="0"
-                      placeholder="00"
-                    />
-
-                    <small> Minutes </small>
-                  </div>
-                </div>
-
-                <div class="rule-hint" id="halfDayRuleHint">4 hr</div>
+                <span> Threshold </span>
               </div>
+
+              <div class="compact-duration">
+                <div class="duration-part">
+                  <input id="halfDayHours" type="number" min="0" class="form-control" value="4" placeholder="0" />
+
+                  <small>Hours</small>
+                </div>
+
+                <span>:</span>
+
+                <div class="duration-part">
+                  <input
+                    id="halfDayMinutes"
+                    type="number"
+                    min="0"
+                    max="59"
+                    class="form-control"
+                    value="0"
+                    placeholder="00"
+                  />
+
+                  <small>Minutes</small>
+                </div>
+              </div>
+
+              <div class="rule-hint" id="halfDayRuleHint">4 hr</div>
             </div>
 
             <!-- FULL DAY -->
 
-            <div class="col-md-4">
-              <div class="rule-card">
-                <div class="rule-card-header">
-                  <div class="rule-title">
-                    <span class="rule-dot full-dot"></span>
+            <div class="rule-field">
+              <div class="rule-field-header">
+                <label> Full Day </label>
 
-                    Full Day
-                  </div>
-
-                  <span class="rule-label"> Threshold </span>
-                </div>
-
-                <div class="duration-input">
-                  <div>
-                    <input id="fullDayHours" type="number" min="0" class="form-control" value="8" placeholder="0" />
-
-                    <small> Hours </small>
-                  </div>
-
-                  <span> : </span>
-
-                  <div>
-                    <input
-                      id="fullDayMinutes"
-                      type="number"
-                      min="0"
-                      max="59"
-                      class="form-control"
-                      value="0"
-                      placeholder="00"
-                    />
-
-                    <small> Minutes </small>
-                  </div>
-                </div>
-
-                <div class="rule-hint" id="fullDayRuleHint">8 hr</div>
+                <span> Threshold </span>
               </div>
+
+              <div class="compact-duration">
+                <div class="duration-part">
+                  <input id="fullDayHours" type="number" min="0" class="form-control" value="8" placeholder="0" />
+
+                  <small>Hours</small>
+                </div>
+
+                <span>:</span>
+
+                <div class="duration-part">
+                  <input
+                    id="fullDayMinutes"
+                    type="number"
+                    min="0"
+                    max="59"
+                    class="form-control"
+                    value="0"
+                    placeholder="00"
+                  />
+
+                  <small>Minutes</small>
+                </div>
+              </div>
+
+              <div class="rule-hint" id="fullDayRuleHint">8 hr</div>
+            </div>
+
+            <!-- SELFIE CHECK-IN -->
+
+            <div class="rule-field">
+              <div class="rule-field-header">
+                <label> Selfie Check-In </label>
+
+                <button
+                  type="button"
+                  class="info-btn"
+                  data-bs-toggle="tooltip"
+                  data-bs-placement="top"
+                  title="When enabled, employees assigned to this shift must take a live selfie before checking in."
+                  aria-label="Selfie check-in information"
+                >
+                  <i class="bi bi-info-circle"></i>
+                </button>
+              </div>
+
+              <label class="break-toggle selfie-toggle">
+                <input type="checkbox" id="selfieCheckIn" />
+
+                <span class="break-checkbox">
+                  <i class="bi bi-check"></i>
+                </span>
+
+                <span class="break-label"> Require Selfie </span>
+              </label>
+
+              <div class="rule-hint">Employee must capture a selfie before check-in</div>
             </div>
           </div>
 
           <!-- RULE SUMMARY -->
 
-          <div class="attendance-summary" id="attendanceSummary">
-            <div class="summary-title">
-              <i class="bi bi-lightbulb"></i>
-              Attendance rule preview
-            </div>
+          <div class="rule-summary">
+            <span id="summaryGrace"> Grace: 0 min </span>
 
-            <div class="summary-items">
-              <div class="summary-item">
-                <span class="summary-dot grace-dot"></span>
+            <span id="summaryHalf"> Half Day: 4 hr </span>
 
-                <span id="summaryGrace"> Grace: 0 min </span>
-              </div>
-
-              <div class="summary-item">
-                <span class="summary-dot half-dot"></span>
-
-                <span id="summaryHalf"> Half Day: 4 hr </span>
-              </div>
-
-              <div class="summary-item">
-                <span class="summary-dot full-dot"></span>
-
-                <span id="summaryFull"> Full Day: 8 hr </span>
-              </div>
-            </div>
+            <span id="summaryFull"> Full Day: 8 hr </span>
           </div>
         </div>
 
@@ -381,66 +386,61 @@
              WEEKLY OFF
         =================================================== -->
 
-        <div class="form-section">
-          <div class="form-section-header">
-            <div class="section-icon">
+        <div class="config-block">
+          <div class="config-heading">
+            <div class="config-icon">
               <i class="bi bi-calendar-week"></i>
             </div>
 
             <div>
               <h6>Weekly Off</h6>
 
-              <p>Select the days that are not working days.</p>
+              <p>Select non-working days.</p>
             </div>
           </div>
 
           <div class="weekly-off">
             <label>
               <input type="checkbox" value="0" />
-
-              <span> Sun </span>
+              <span>Sun</span>
             </label>
 
             <label>
               <input type="checkbox" value="1" />
-
-              <span> Mon </span>
+              <span>Mon</span>
             </label>
 
             <label>
               <input type="checkbox" value="2" />
-
-              <span> Tue </span>
+              <span>Tue</span>
             </label>
 
             <label>
               <input type="checkbox" value="3" />
-
-              <span> Wed </span>
+              <span>Wed</span>
             </label>
 
             <label>
               <input type="checkbox" value="4" />
-
-              <span> Thu </span>
+              <span>Thu</span>
             </label>
 
             <label>
               <input type="checkbox" value="5" />
-
-              <span> Fri </span>
+              <span>Fri</span>
             </label>
 
             <label>
               <input type="checkbox" value="6" />
-
-              <span> Sat </span>
+              <span>Sat</span>
             </label>
           </div>
         </div>
       </div>
 
-      <!-- FOOTER -->
+      <!-- ==================================================
+           FOOTER
+      =================================================== -->
 
       <div class="modal-footer">
         <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>

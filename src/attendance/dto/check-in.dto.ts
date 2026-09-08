@@ -1,19 +1,15 @@
-import {
-    IsLatitude,
-    IsLongitude,
-    IsNumber,
-    IsOptional,
-} from 'class-validator';
+import {IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class CheckInDto {
+  @IsOptional()
+  @IsNumber()
+  lat?: number;
 
-    @IsOptional()
-    @IsNumber()
-    @IsLatitude()
-    lat?: number;
+  @IsOptional()
+  @IsNumber()
+  lng?: number;
 
-    @IsOptional()
-    @IsNumber()
-    @IsLongitude()
-    lng?: number;
+  @IsOptional()
+  @IsString()
+  selfieUrl?: string;
 }

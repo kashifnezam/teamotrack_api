@@ -43,6 +43,11 @@
               <span>Shift</span>
 
               <strong id="attendanceShiftTime"> -- </strong>
+
+              <span class="attendance-break-schedule" id="attendanceBreakSchedule" hidden>
+                • Break
+                <strong id="attendanceBreakScheduleTime"> -- </strong>
+              </span>
             </div>
           </div>
 
@@ -76,9 +81,21 @@
             </div>
 
             <div>
-              <span>Check Out</span>
+              <span>Latest Check Out</span>
 
               <strong id="myCheckOut"> -- </strong>
+            </div>
+          </div>
+
+          <div class="today-metric">
+            <div class="today-metric-icon">
+              <i class="bi bi-clock-history"></i>
+            </div>
+
+            <div>
+              <span>Check Outs</span>
+
+              <strong id="myCheckoutCount"> 0 </strong>
             </div>
           </div>
 
@@ -96,6 +113,18 @@
 
           <div class="today-metric">
             <div class="today-metric-icon">
+              <i class="bi bi-pause-circle"></i>
+            </div>
+
+            <div>
+              <span>Break</span>
+
+              <strong id="myBreakTime"> 0m </strong>
+            </div>
+          </div>
+
+          <div class="today-metric">
+            <div class="today-metric-icon">
               <i class="bi bi-activity"></i>
             </div>
 
@@ -103,6 +132,50 @@
               <span>Punctuality</span>
 
               <strong id="myPunctuality"> -- </strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==================================================
+             WORK / BREAK PROGRESS
+        =================================================== -->
+
+        <div class="attendance-work-break-section" id="attendanceWorkBreakSection" hidden>
+          <div class="attendance-work-break-header">
+            <div>
+              <strong> Today's Activity </strong>
+
+              <span> Working time vs break time </span>
+            </div>
+
+            <div class="attendance-work-break-total" id="attendanceWorkBreakTotal">--</div>
+          </div>
+
+          <div class="attendance-work-break-bar">
+            <div class="attendance-work-segment" id="attendanceWorkSegment" style="width: 100%">
+              <span id="attendanceWorkSegmentLabel"> Working </span>
+            </div>
+
+            <div class="attendance-break-segment" id="attendanceBreakSegment" style="width: 0%">
+              <span id="attendanceBreakSegmentLabel"> Break </span>
+            </div>
+          </div>
+
+          <div class="attendance-work-break-legend">
+            <div>
+              <span class="activity-dot working"></span>
+
+              <span> Working </span>
+
+              <strong id="attendanceWorkLegend"> 0h 0m </strong>
+            </div>
+
+            <div>
+              <span class="activity-dot break"></span>
+
+              <span> Break </span>
+
+              <strong id="attendanceBreakLegend"> 0h 0m </strong>
             </div>
           </div>
         </div>
@@ -125,25 +198,66 @@
               <span> Check In </span>
             </button>
 
+            <button type="button" class="attendance-action-btn break-start" id="attendanceStartBreakBtn" hidden>
+              <i class="bi bi-pause-circle"></i>
+
+              <span> Start Break </span>
+            </button>
+
+            <button type="button" class="attendance-action-btn break-end" id="attendanceEndBreakBtn" hidden>
+              <i class="bi bi-play-circle"></i>
+
+              <span> End Break </span>
+            </button>
+
+            <!-- First checkout -->
             <button type="button" class="attendance-action-btn check-out" id="attendanceCheckOutBtn" disabled>
               <i class="bi bi-box-arrow-right"></i>
 
               <span> Check Out </span>
             </button>
 
-            <button type="button" class="attendance-action-btn undo-checkout" id="attendanceUndoCheckoutBtn" hidden>
-              <i class="bi bi-arrow-counterclockwise"></i>
+            <!-- ==================================================
+                 THREE DOTS
+            =================================================== -->
 
-              <span> Undo Checkout </span>
+            <div class="attendance-more-wrapper" id="attendanceMoreWrapper" hidden>
+              <button
+                type="button"
+                class="attendance-more-btn"
+                id="attendanceMoreBtn"
+                aria-label="More attendance actions"
+                aria-expanded="false"
+              >
+                <i class="bi bi-three-dots-vertical"></i>
+              </button>
 
-              <small id="attendanceUndoCountdown"></small>
-            </button>
+              <div class="attendance-more-menu" id="attendanceMoreMenu" hidden>
+                <button type="button" class="attendance-more-menu-item checkout-again" id="attendanceCheckoutAgainBtn">
+                  <i class="bi bi-box-arrow-right"></i>
+
+                  <span> Check Out Again </span>
+                </button>
+
+                <button type="button" class="attendance-more-menu-item" id="attendanceViewCheckoutHistoryBtn">
+                  <i class="bi bi-clock-history"></i>
+
+                  <span> Checkout History </span>
+                </button>
+              </div>
+            </div>
           </div>
 
-          <div class="attendance-correction-note" id="attendanceCorrectionNote" hidden>
-            <i class="bi bi-shield-check"></i>
+          <div class="attendance-break-info" id="attendanceBreakInfo" hidden>
+            <i class="bi bi-pause-circle"></i>
 
-            <span id="attendanceCorrectionNoteText"></span>
+            <span id="attendanceBreakMessage"></span>
+          </div>
+
+          <div class="attendance-checkout-info" id="attendanceCheckoutInfo" hidden>
+            <i class="bi bi-clock-history"></i>
+
+            <span id="attendanceCheckoutInfoText"></span>
           </div>
         </div>
       </div>
@@ -283,7 +397,7 @@
               <th>Date</th>
               <th>Check In</th>
               <th>Check Out</th>
-              <th>Working</th>
+              <th>Work / Break</th>
               <th>Attendance</th>
               <th>Punctuality</th>
               <th>Regularization</th>
@@ -306,16 +420,38 @@
 </section>
 
 <!-- ==========================================================
+     CHECKOUT HISTORY MODAL
+========================================================== -->
+
+<div class="modal fade" id="attendanceCheckoutHistoryModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content attendance-checkout-history-modal">
+      <div class="modal-header">
+        <div>
+          <div class="attendance-modal-eyebrow">ATTENDANCE ACTIVITY</div>
+
+          <h5 class="modal-title">Checkout History</h5>
+
+          <p class="attendance-modal-subtitle">All checkout events recorded for today.</p>
+        </div>
+
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <div class="modal-body" id="attendanceCheckoutHistoryBody">
+        <div class="attendance-history-empty">No checkout history.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==========================================================
      ATTENDANCE REGULARIZATION MODAL
 ========================================================== -->
 
 <div class="modal fade" id="attendanceRegularizationModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-lg">
     <div class="modal-content attendance-regularization-modal">
-      <!-- ====================================================
-           HEADER
-      ===================================================== -->
-
       <div class="modal-header">
         <div>
           <div class="attendance-modal-eyebrow">ATTENDANCE CORRECTION</div>
@@ -331,14 +467,10 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
 
-      <!-- ====================================================
-           BODY
-      ===================================================== -->
-
       <div class="modal-body">
-        <!-- ==================================================
-             SELECTED ATTENDANCE DATE
-        =================================================== -->
+        <!-- ======================================================
+             SELECTED DATE
+        ======================================================= -->
 
         <div class="regularization-selected-date">
           <div class="regularization-selected-icon">
@@ -352,9 +484,9 @@
           </div>
         </div>
 
-        <!-- ==================================================
+        <!-- ======================================================
              CURRENT ATTENDANCE
-        =================================================== -->
+        ======================================================= -->
 
         <div class="regularization-current-card">
           <div class="regularization-current-title">Current Attendance</div>
@@ -362,33 +494,50 @@
           <div class="regularization-current-grid">
             <div>
               <span>Check In</span>
-
               <strong id="regularizationCurrentCheckIn"> -- </strong>
             </div>
 
             <div>
               <span>Check Out</span>
-
               <strong id="regularizationCurrentCheckOut"> -- </strong>
             </div>
 
             <div>
               <span>Working</span>
-
               <strong id="regularizationCurrentWorking"> -- </strong>
             </div>
 
             <div>
-              <span>Status</span>
+              <span>Break</span>
+              <strong id="regularizationCurrentBreak"> -- </strong>
+            </div>
 
+            <div>
+              <span>Status</span>
               <strong id="regularizationCurrentStatus"> -- </strong>
             </div>
           </div>
         </div>
 
-        <!-- ==================================================
-             ISSUE TYPE
-        =================================================== -->
+        <!-- ======================================================
+             BREAK ISSUE
+        ======================================================= -->
+
+        <div class="regularization-break-alert" id="regularizationBreakIssue" hidden>
+          <div class="regularization-break-alert-icon">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+          </div>
+
+          <div>
+            <strong id="regularizationBreakIssueTitle"> Break Issue </strong>
+
+            <p id="regularizationBreakIssueMessage">--</p>
+          </div>
+        </div>
+
+        <!-- ======================================================
+             TYPE
+        ======================================================= -->
 
         <div class="regularization-form-group">
           <label for="regularizationType">
@@ -416,13 +565,15 @@
 
             <option value="LOCATION_ERROR">Location Issue</option>
 
+            <option value="BREAK_ERROR">Break Issue</option>
+
             <option value="OTHER">Other</option>
           </select>
         </div>
 
-        <!-- ==================================================
-             REQUESTED TIMES
-        =================================================== -->
+        <!-- ======================================================
+             CHECK-IN / CHECK-OUT TIMES
+        ======================================================= -->
 
         <div class="regularization-time-section" id="regularizationTimeSection">
           <div class="regularization-time-grid">
@@ -444,9 +595,49 @@
           </div>
         </div>
 
-        <!-- ==================================================
+        <!-- ======================================================
+             BREAK TIMES
+        ======================================================= -->
+
+        <div class="regularization-break-section" id="regularizationBreakSection" hidden>
+          <div class="regularization-section-heading">
+            <div>
+              <strong> Correct Break Time </strong>
+
+              <small> Enter the actual break start and end time. </small>
+            </div>
+
+            <span class="regularization-break-schedule" id="regularizationBreakSchedule"> Scheduled: -- </span>
+          </div>
+
+          <div class="regularization-time-grid">
+            <div class="regularization-form-group">
+              <label for="regularizationBreakStart">
+                Requested Break Start
+                <span>*</span>
+              </label>
+
+              <input type="time" id="regularizationBreakStart" class="form-control" />
+
+              <small> Enter when the scheduled break actually started. </small>
+            </div>
+
+            <div class="regularization-form-group">
+              <label for="regularizationBreakEnd">
+                Requested Break End
+                <span>*</span>
+              </label>
+
+              <input type="time" id="regularizationBreakEnd" class="form-control" />
+
+              <small> Break end cannot be after the scheduled break end. </small>
+            </div>
+          </div>
+        </div>
+
+        <!-- ======================================================
              REASON
-        =================================================== -->
+        ======================================================= -->
 
         <div class="regularization-form-group">
           <label for="regularizationReason">
@@ -459,7 +650,7 @@
             id="regularizationReason"
             class="form-control"
             rows="4"
-            maxlength="500"
+            maxlength="1000"
             required
             placeholder="Explain what happened and why your attendance needs correction..."
           ></textarea>
@@ -467,13 +658,13 @@
           <div class="regularization-character-count">
             <span id="regularizationReasonCount"> 0 </span>
 
-            / 500
+            / 1000
           </div>
         </div>
 
-        <!-- ==================================================
+        <!-- ======================================================
              INFO
-        =================================================== -->
+        ======================================================= -->
 
         <div class="regularization-info-box">
           <i class="bi bi-info-circle"></i>
@@ -488,10 +679,6 @@
           </div>
         </div>
       </div>
-
-      <!-- ====================================================
-           FOOTER
-      ===================================================== -->
 
       <div class="modal-footer">
         <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>

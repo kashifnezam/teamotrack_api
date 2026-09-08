@@ -63,7 +63,13 @@ export class AttendanceRegularizationService {
 
     const checkOutTime = dto.checkOutTime ? this.parseDate(dto.checkOutTime) : null;
 
+    const breakStartTime = dto.breakStartTime ? this.parseDate(dto.breakStartTime) : null;
+
+    const breakEndTime = dto.breakEndTime ? this.parseDate(dto.breakEndTime) : null;
+
     this.validateRequestedTimes(dto.type, date, checkInTime, checkOutTime);
+
+    this.validateRequestedBreakTimes(dto.type, date, breakStartTime, breakEndTime);
 
     const parent = await this.getUser(requester.parentId);
 
@@ -111,6 +117,10 @@ export class AttendanceRegularizationService {
       requestedCheckInTime: checkInTime ? Timestamp.fromDate(checkInTime) : null,
 
       requestedCheckOutTime: checkOutTime ? Timestamp.fromDate(checkOutTime) : null,
+
+      requestedBreakStartTime: breakStartTime ? Timestamp.fromDate(breakStartTime) : null,
+
+      requestedBreakEndTime: breakEndTime ? Timestamp.fromDate(breakEndTime) : null,
 
       reason: dto.reason.trim(),
 
@@ -565,8 +575,8 @@ export class AttendanceRegularizationService {
       const current = snapshot.exists ? (snapshot.data() ?? {}) : {};
 
       /*
-       * Prevent overwriting attendance
-       * changed after request creation.
+       * Prevent overwriting attendance that changed
+       * after the employee submitted the request.
        */
       const original = data.previousAttendance;
 
@@ -590,8 +600,12 @@ export class AttendanceRegularizationService {
 
       const requestedCheckOut = data.requestedCheckOutTime ? this.toDate(data.requestedCheckOutTime) : null;
 
+      const requestedBreakStart = data.requestedBreakStartTime ? this.toDate(data.requestedBreakStartTime) : null;
+
+      const requestedBreakEnd = data.requestedBreakEndTime ? this.toDate(data.requestedBreakEndTime) : null;
+
       /*
-       * Null means preserve existing value.
+       * Null means preserve the existing check-in/out.
        */
       const finalCheckIn = requestedCheckIn ?? existingCheckIn;
 
@@ -609,7 +623,69 @@ export class AttendanceRegularizationService {
         throw new BadRequestException('Checkout time must be after check-in time');
       }
 
-      let workingMinutes = 0;
+      /*
+       * ============================================================
+       * BREAK CORRECTION
+       * ============================================================
+       */
+
+      let finalBreakHistory = Array.isArray(current.breakHistory) ? [...current.breakHistory] : [];
+
+      if (data.type === AttendanceRegularizationType.BREAK_ERROR) {
+        if (current.currentBreak?.active === true) {
+          throw new ConflictException(
+            'The attendance record currently has an active break. End the active break before applying break regularization.'
+          );
+        }
+
+        if (!requestedBreakStart) {
+          throw new BadRequestException('Requested break start time is required');
+        }
+
+        if (!requestedBreakEnd) {
+          throw new BadRequestException('Requested break end time is required');
+        }
+
+        this.validateBreakAgainstShift(requestedBreakStart, requestedBreakEnd, shift);
+
+        /*
+         * This attendance model supports one scheduled break
+         * per shift/day.
+         *
+         * Therefore the approved correction becomes the
+         * authoritative breakHistory for the scheduled break.
+         */
+        finalBreakHistory = [
+          {
+            id: `regularization_${regularizationId}`,
+
+            startTime: Timestamp.fromDate(requestedBreakStart),
+
+            endTime: Timestamp.fromDate(requestedBreakEnd),
+
+            durationMinutes: Math.max(
+              0,
+              Math.round((requestedBreakEnd.getTime() - requestedBreakStart.getTime()) / 60000)
+            ),
+
+            regularized: true,
+
+            regularizationId,
+
+            regularizedBy: approver.uid,
+
+            regularizedAt: Timestamp.fromDate(new Date()),
+          },
+        ];
+      }
+
+      /*
+       * ============================================================
+       * WORKING MINUTES
+       * ============================================================
+       */
+
+      let workingMinutes = Number(current.workingMinutes ?? 0);
 
       let status: 'present' | 'absent' | 'half_day' = 'absent';
 
@@ -622,11 +698,7 @@ export class AttendanceRegularizationService {
       }
 
       if (finalCheckIn && finalCheckOut) {
-        const shiftStart = this.shiftStartForDate(finalCheckIn, shift);
-
-        const effectiveCheckIn = finalCheckIn.getTime() < shiftStart.getTime() ? shiftStart : finalCheckIn;
-
-        workingMinutes = Math.max(0, Math.round((finalCheckOut.getTime() - effectiveCheckIn.getTime()) / 60000));
+        workingMinutes = this.calculateWorkingMinutes(finalCheckIn, finalCheckOut, finalBreakHistory, shift);
 
         const classification = this.classifyWorkingMinutes(workingMinutes, shift);
 
@@ -638,9 +710,33 @@ export class AttendanceRegularizationService {
         attendanceType = 'full_day';
       }
 
+      /*
+       * ============================================================
+       * REGULARIZATION HISTORY
+       * ============================================================
+       */
+
       const history = Array.isArray(current.regularizationHistory) ? [...current.regularizationHistory] : [];
 
       const now = Timestamp.fromDate(new Date());
+
+      const resulting: FirebaseFirestore.DocumentData = {
+        checkInTime: finalCheckIn ? Timestamp.fromDate(finalCheckIn) : null,
+
+        checkOutTime: finalCheckOut ? Timestamp.fromDate(finalCheckOut) : null,
+
+        workingMinutes,
+
+        status,
+
+        attendanceType,
+
+        punctuality,
+      };
+
+      if (data.type === AttendanceRegularizationType.BREAK_ERROR) {
+        resulting.breakHistory = finalBreakHistory;
+      }
 
       history.push({
         action: 'REGULARIZATION_APPLIED',
@@ -667,24 +763,22 @@ export class AttendanceRegularizationService {
           checkInTime: data.requestedCheckInTime ?? null,
 
           checkOutTime: data.requestedCheckOutTime ?? null,
+
+          breakStartTime: data.requestedBreakStartTime ?? null,
+
+          breakEndTime: data.requestedBreakEndTime ?? null,
         },
 
-        resulting: {
-          checkInTime: finalCheckIn ? Timestamp.fromDate(finalCheckIn) : null,
-
-          checkOutTime: finalCheckOut ? Timestamp.fromDate(finalCheckOut) : null,
-
-          workingMinutes,
-
-          status,
-
-          attendanceType,
-
-          punctuality,
-        },
+        resulting,
 
         recordedAt: now,
       });
+
+      /*
+       * ============================================================
+       * ATTENDANCE UPDATE
+       * ============================================================
+       */
 
       const update: FirebaseFirestore.DocumentData = {
         staffId: data.userId,
@@ -736,6 +830,30 @@ export class AttendanceRegularizationService {
       update.punctuality = punctuality ? punctuality : FieldValue.delete();
 
       /*
+       * Break correction.
+       */
+      if (data.type === AttendanceRegularizationType.BREAK_ERROR) {
+        update.breakHistory = finalBreakHistory;
+
+        update.totalBreakMinutes = finalBreakHistory.reduce((total: number, breakItem: any) => {
+          const start = this.toDate(breakItem.startTime);
+
+          const end = this.toDate(breakItem.endTime);
+
+          if (!start || !end) {
+            return total;
+          }
+
+          return total + Math.max(0, Math.round((end.getTime() - start.getTime()) / 60000));
+        }, 0);
+
+        /*
+         * The approved break is now completed.
+         */
+        update.currentBreak = FieldValue.delete();
+      }
+
+      /*
        * Preserve leave information.
        */
       for (const field of ['leaveRequestId', 'leaveTypeId', 'leaveDuration', 'leaveStatus']) {
@@ -751,7 +869,9 @@ export class AttendanceRegularizationService {
         update.shiftSnapshot = current.shiftSnapshot;
       }
 
-      transaction.set(attendanceRef, update, { merge: true });
+      transaction.set(attendanceRef, update, {
+        merge: true,
+      });
     });
 
     this.logger.log(
@@ -943,6 +1063,37 @@ export class AttendanceRegularizationService {
     }
   }
 
+  private validateRequestedBreakTimes(
+    type: AttendanceRegularizationType,
+    date: string,
+    breakStart: Date | null,
+    breakEnd: Date | null
+  ) {
+    if (type !== AttendanceRegularizationType.BREAK_ERROR) {
+      return;
+    }
+
+    if (!breakStart) {
+      throw new BadRequestException('Break start time is required for break regularization');
+    }
+
+    if (!breakEnd) {
+      throw new BadRequestException('Break end time is required for break regularization');
+    }
+
+    if (breakEnd.getTime() <= breakStart.getTime()) {
+      throw new BadRequestException('Break end time must be after break start time');
+    }
+
+    if (this.getIndiaDateParts(breakStart) !== date) {
+      throw new BadRequestException('Break start time must belong to the selected attendance date');
+    }
+
+    if (this.getIndiaDateParts(breakEnd) !== date) {
+      throw new BadRequestException('Break end time must belong to the selected attendance date');
+    }
+  }
+
   private assertNotFutureDate(date: string) {
     if (date > this.todayIndia()) {
       throw new BadRequestException('Attendance regularization cannot be requested for a future date');
@@ -1027,11 +1178,9 @@ export class AttendanceRegularizationService {
       shiftId: String(snapshot.shiftId ?? snapshot.id ?? 'historical'),
 
       startHour: Number(snapshot.startHour),
-
       startMinute: Number(snapshot.startMinute),
 
       endHour: Number(snapshot.endHour),
-
       endMinute: Number(snapshot.endMinute),
 
       graceMinutes: Number(snapshot.graceMinutes ?? 0),
@@ -1041,6 +1190,17 @@ export class AttendanceRegularizationService {
       fullDayMinutes: Number(snapshot.fullDayMinutes ?? 480),
 
       weeklyOff: Array.isArray(snapshot.weeklyOff) ? snapshot.weeklyOff : [],
+
+      /*
+       * Historical scheduled break.
+       */
+      breakStartHour: snapshot.breakStartHour != null ? Number(snapshot.breakStartHour) : null,
+
+      breakStartMinute: snapshot.breakStartMinute != null ? Number(snapshot.breakStartMinute) : null,
+
+      breakEndHour: snapshot.breakEndHour != null ? Number(snapshot.breakEndHour) : null,
+
+      breakEndMinute: snapshot.breakEndMinute != null ? Number(snapshot.breakEndMinute) : null,
     };
   }
 
@@ -1051,7 +1211,84 @@ export class AttendanceRegularizationService {
       `${localDate}T${String(shift.startHour).padStart(2, '0')}:${String(shift.startMinute).padStart(2, '0')}:00+05:30`
     );
   }
+  private getScheduledBreakWindow(date: Date, shift: any): { start: Date; end: Date } | null {
+    if (!shift) {
+      return null;
+    }
 
+    const startHour = Number(shift.breakStartHour);
+    const startMinute = Number(shift.breakStartMinute);
+    const endHour = Number(shift.breakEndHour);
+    const endMinute = Number(shift.breakEndMinute);
+
+    if (
+      !Number.isFinite(startHour) ||
+      !Number.isFinite(startMinute) ||
+      !Number.isFinite(endHour) ||
+      !Number.isFinite(endMinute)
+    ) {
+      return null;
+    }
+
+    if (
+      startHour < 0 ||
+      startHour > 23 ||
+      endHour < 0 ||
+      endHour > 23 ||
+      startMinute < 0 ||
+      startMinute > 59 ||
+      endMinute < 0 ||
+      endMinute > 59
+    ) {
+      return null;
+    }
+
+    const localDate = this.getIndiaDateParts(date);
+
+    const start = new Date(
+      `${localDate}T${String(startHour).padStart(2, '0')}:${String(startMinute).padStart(2, '0')}:00+05:30`
+    );
+
+    let end = new Date(
+      `${localDate}T${String(endHour).padStart(2, '0')}:${String(endMinute).padStart(2, '0')}:00+05:30`
+    );
+
+    /*
+     * Support an overnight break window.
+     */
+    if (end.getTime() <= start.getTime()) {
+      end = new Date(end.getTime() + 24 * 60 * 60 * 1000);
+    }
+
+    return {
+      start,
+      end,
+    };
+  }
+
+  private validateBreakAgainstShift(breakStart: Date, breakEnd: Date, shift: any) {
+    const window = this.getScheduledBreakWindow(breakStart, shift);
+
+    if (!window) {
+      throw new BadRequestException('No scheduled break is configured for this historical shift');
+    }
+
+    if (breakStart.getTime() < window.start.getTime()) {
+      throw new BadRequestException('Break start time is before the scheduled break window');
+    }
+
+    if (breakStart.getTime() > window.end.getTime()) {
+      throw new BadRequestException('Break start time is after the scheduled break window');
+    }
+
+    if (breakEnd.getTime() > window.end.getTime()) {
+      throw new BadRequestException('Break end time cannot be after the scheduled break end time');
+    }
+
+    if (breakEnd.getTime() <= breakStart.getTime()) {
+      throw new BadRequestException('Break end time must be after break start time');
+    }
+  }
   // ============================================================
   // ATTENDANCE HISTORY
   // ============================================================
@@ -1061,8 +1298,80 @@ export class AttendanceRegularizationService {
       this.dateValue(current.checkInTime) === this.dateValue(original.checkInTime) &&
       this.dateValue(current.checkOutTime) === this.dateValue(original.checkOutTime) &&
       Number(current.workingMinutes ?? 0) === Number(original.workingMinutes ?? 0) &&
-      String(current.status ?? '') === String(original.status ?? '')
+      String(current.status ?? '') === String(original.status ?? '') &&
+      Number(current.checkoutCount ?? 0) === Number(original.checkoutCount ?? 0) &&
+      this.historyMatches(current.checkoutHistory, original.checkoutHistory) &&
+      this.historyMatches(current.breakHistory, original.breakHistory) &&
+      this.breakStateMatches(current.currentBreak, original.currentBreak) &&
+      Number(current.totalBreakMinutes ?? 0) === Number(original.totalBreakMinutes ?? 0)
     );
+  }
+
+  private historyMatches(current: any, original: any): boolean {
+    const currentHistory = Array.isArray(current) ? current : [];
+    const originalHistory = Array.isArray(original) ? original : [];
+
+    return (
+      JSON.stringify(currentHistory.map((item: any) => this.normalizeHistoryItem(item))) ===
+      JSON.stringify(originalHistory.map((item: any) => this.normalizeHistoryItem(item)))
+    );
+  }
+
+  private normalizeHistoryItem(item: any): any {
+    if (!item || typeof item !== 'object') {
+      return item ?? null;
+    }
+
+    return {
+      ...item,
+      startTime: this.dateValue(item.startTime),
+      endTime: this.dateValue(item.endTime),
+      checkoutTime: this.dateValue(item.checkoutTime),
+      cancelledAt: this.dateValue(item.cancelledAt),
+    };
+  }
+
+  private breakStateMatches(current: any, original: any): boolean {
+    if (!current && !original) {
+      return true;
+    }
+
+    if (!current || !original) {
+      return false;
+    }
+
+    return (
+      Boolean(current.active) === Boolean(original.active) &&
+      this.dateValue(current.startTime) === this.dateValue(original.startTime)
+    );
+  }
+
+  private calculateWorkingMinutes(checkIn: Date, checkOut: Date, breakHistory: any[], shift: any): number {
+    const shiftStart = this.shiftStartForDate(checkIn, shift);
+
+    const effectiveCheckIn = checkIn.getTime() < shiftStart.getTime() ? shiftStart : checkIn;
+
+    let workingMinutes = Math.max(0, Math.round((checkOut.getTime() - effectiveCheckIn.getTime()) / 60000));
+
+    const totalBreakMinutes = (Array.isArray(breakHistory) ? breakHistory : []).reduce(
+      (total: number, breakItem: any) => {
+        const start = this.toDate(breakItem.startTime);
+        const end = this.toDate(breakItem.endTime);
+
+        if (!start || !end) {
+          return total;
+        }
+
+        const duration = Math.max(0, Math.round((end.getTime() - start.getTime()) / 60000));
+
+        return total + duration;
+      },
+      0
+    );
+
+    workingMinutes = Math.max(0, workingMinutes - totalBreakMinutes);
+
+    return workingMinutes;
   }
 
   private serializeForHistory(data: any) {
@@ -1096,6 +1405,12 @@ export class AttendanceRegularizationService {
       checkoutCount: data.checkoutCount != null ? Number(data.checkoutCount) : null,
 
       checkoutHistory: Array.isArray(data.checkoutHistory) ? data.checkoutHistory : [],
+
+      currentBreak: data.currentBreak ?? null,
+
+      breakHistory: Array.isArray(data.breakHistory) ? data.breakHistory : [],
+
+      totalBreakMinutes: data.totalBreakMinutes != null ? Number(data.totalBreakMinutes) : 0,
     };
   }
 

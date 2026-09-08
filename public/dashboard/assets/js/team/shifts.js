@@ -42,7 +42,7 @@
   }
 
   /* ==========================================================
-     Duration Listeners
+     Duration / Form Listeners
   ========================================================== */
 
   function initializeDurationListeners() {
@@ -55,10 +55,16 @@
     document.getElementById('startTime')?.addEventListener('change', updateAttendancePreview);
 
     document.getElementById('endTime')?.addEventListener('change', updateAttendancePreview);
+
+    document.getElementById('breakEnabled')?.addEventListener('change', toggleBreakTime);
+
+    document.getElementById('breakStartTime')?.addEventListener('change', updateAttendancePreview);
+
+    document.getElementById('breakEndTime')?.addEventListener('change', updateAttendancePreview);
   }
 
   /* ==========================================================
-     Load
+     Load Shifts
   ========================================================== */
 
   async function loadShifts() {
@@ -94,7 +100,9 @@
 
     const search = searchInput.value.trim().toLowerCase();
 
-    const list = shifts.filter((shift) => !search || shift.name?.toLowerCase().includes(search));
+    const list = shifts.filter((shift) => {
+      return !search || shift.name?.toLowerCase().includes(search);
+    });
 
     const count = document.getElementById('shiftCount');
 
@@ -105,8 +113,10 @@
     if (!list.length) {
       tbody.innerHTML = `
         <tr>
-          <td colspan="7" class="empty-state">
-
+          <td
+            colspan="7"
+            class="empty-state"
+          >
             <div class="empty-icon">
               <i class="bi bi-calendar3"></i>
             </div>
@@ -114,7 +124,6 @@
             <div class="empty-title">
               ${search ? 'No shifts match your search' : 'No shifts configured yet'}
             </div>
-
           </td>
         </tr>
       `;
@@ -127,7 +136,9 @@
         const weeklyOff = shift.weeklyOff || [];
 
         const off = weeklyOff
-          .map((day) => (typeof day === 'number' ? WEEK_DAYS[day] : day))
+          .map((day) => {
+            return typeof day === 'number' ? WEEK_DAYS[day] : day;
+          })
           .filter(Boolean)
           .join(', ');
 
@@ -149,10 +160,12 @@
               </div>
             </td>
 
+
             <!-- WORKING HOURS -->
 
             <td>
               <div class="shift-time">
+
                 <span>
                   ${formatTime(shift.startHour, shift.startMinute)}
                 </span>
@@ -166,8 +179,26 @@
                 <span class="text-muted">
                   (${formatDuration(shiftDuration)})
                 </span>
+
               </div>
+
+              ${
+                hasShiftBreak(shift)
+                  ? `
+                    <div class="shift-break">
+                      <i class="bi bi-cup-hot"></i>
+
+                      Break
+                      ${formatTime(shift.breakStartHour, shift.breakStartMinute)}
+                      -
+                      ${formatTime(shift.breakEndHour, shift.breakEndMinute)}
+                    </div>
+                  `
+                  : ''
+              }
+
             </td>
+
 
             <!-- GRACE -->
 
@@ -177,6 +208,7 @@
               </span>
             </td>
 
+
             <!-- HALF DAY -->
 
             <td>
@@ -185,12 +217,32 @@
               </span>
             </td>
 
+
             <!-- FULL DAY -->
 
             <td>
               <span class="duration-badge">
                 ${formatDuration(shift.fullDayMinutes)}
               </span>
+            </td>
+
+            <!-- SELFIE CHECK-IN -->
+
+            <td>
+              ${
+                shift.selfieCheckIn === true
+                  ? `
+                    <span class="weekly-badge">
+                      <i class="bi bi-camera me-1"></i>
+                      Required
+                    </span>
+                  `
+                  : `
+                    <span class="no-off">
+                      Not Required
+                    </span>
+                  `
+              }
             </td>
 
             <!-- WEEKLY OFF -->
@@ -210,6 +262,7 @@
                   `
               }
             </td>
+
 
             <!-- ACTION -->
 
@@ -248,9 +301,15 @@
   function openShiftModal(id = null) {
     editingId = id;
 
+    const modal = document.getElementById('shiftModal');
+
     const modalTitle = document.getElementById('modalTitle');
 
     const saveButton = document.getElementById('saveShiftBtn');
+
+    if (!modal || !modalTitle || !saveButton) {
+      return;
+    }
 
     modalTitle.textContent = id ? 'Edit Shift' : 'Add Shift';
 
@@ -258,7 +317,13 @@
       ? '<i class="bi bi-check2 me-1"></i> Update Shift'
       : '<i class="bi bi-check2 me-1"></i> Save Shift';
 
+    /*
+     * New shift
+     */
+
     if (!id) {
+      document.getElementById('selfieCheckIn').checked = false;
+
       document.getElementById('shiftId').value = '';
 
       document.getElementById('shiftName').value = '';
@@ -266,6 +331,14 @@
       document.getElementById('startTime').value = '';
 
       document.getElementById('endTime').value = '';
+
+      document.getElementById('breakEnabled').checked = false;
+
+      document.getElementById('breakStartTime').value = '';
+
+      document.getElementById('breakEndTime').value = '';
+
+      document.getElementById('breakFields').style.display = 'none';
 
       setDurationMinutes('graceHours', 'graceMinutes', 0);
 
@@ -278,9 +351,18 @@
       });
     }
 
+    /*
+     * Make sure break UI matches
+     * current checkbox state.
+     */
+
+    const breakEnabled = document.getElementById('breakEnabled')?.checked;
+
+    document.getElementById('breakFields').style.display = breakEnabled ? 'flex' : 'none';
+
     updateAttendancePreview();
 
-    bootstrap.Modal.getOrCreateInstance(document.getElementById('shiftModal')).show();
+    bootstrap.Modal.getOrCreateInstance(modal).show();
 
     initializeTooltips();
   }
@@ -290,7 +372,7 @@
   ========================================================== */
 
   function editShift(id) {
-    const shift = shifts.find((s) => s.id === id);
+    const shift = shifts.find((item) => item.id === id);
 
     if (!shift) {
       return;
@@ -304,20 +386,39 @@
 
     document.getElementById('endTime').value = formatTime(shift.endHour, shift.endMinute);
 
-    /*
-     * Backend -> UI
-     *
-     * Example:
-     * 270 minutes
-     * becomes
-     * 4 hours + 30 minutes
-     */
+    /* --------------------------------------------------------
+       Break
+    -------------------------------------------------------- */
+
+    const hasBreak = hasShiftBreak(shift);
+
+    document.getElementById('breakEnabled').checked = hasBreak;
+
+    document.getElementById('breakFields').style.display = hasBreak ? 'flex' : 'none';
+
+    document.getElementById('breakStartTime').value = hasBreak
+      ? formatTime(shift.breakStartHour, shift.breakStartMinute)
+      : '';
+
+    document.getElementById('breakEndTime').value = hasBreak
+      ? formatTime(shift.breakEndHour, shift.breakEndMinute)
+      : '';
+
+    /* --------------------------------------------------------
+       Attendance Rules
+    -------------------------------------------------------- */
 
     setDurationMinutes('graceHours', 'graceMinutes', shift.graceMinutes);
 
     setDurationMinutes('halfDayHours', 'halfDayMinutes', shift.halfDayMinutes);
 
     setDurationMinutes('fullDayHours', 'fullDayMinutes', shift.fullDayMinutes);
+
+    document.getElementById('selfieCheckIn').checked = shift.selfieCheckIn === true;
+
+    /* --------------------------------------------------------
+       Weekly Off
+    -------------------------------------------------------- */
 
     const weeklyOff = shift.weeklyOff || [];
 
@@ -328,6 +429,30 @@
     });
 
     openShiftModal(id);
+  }
+
+  /* ==========================================================
+     Break Time
+  ========================================================== */
+
+  function toggleBreakTime() {
+    const enabled = document.getElementById('breakEnabled')?.checked;
+
+    const fields = document.getElementById('breakFields');
+
+    if (!fields) {
+      return;
+    }
+
+    fields.style.display = enabled ? 'flex' : 'none';
+
+    if (!enabled) {
+      document.getElementById('breakStartTime').value = '';
+
+      document.getElementById('breakEndTime').value = '';
+    }
+
+    updateAttendancePreview();
   }
 
   /* ==========================================================
@@ -344,7 +469,7 @@
     const button = document.getElementById('saveShiftBtn');
 
     /* --------------------------------------------------------
-       Basic validation
+       Basic Validation
     -------------------------------------------------------- */
 
     if (!name) {
@@ -364,13 +489,131 @@
     const [endHour, endMinute] = end.split(':').map(Number);
 
     /* --------------------------------------------------------
-       Shift duration
+       Shift Duration
     -------------------------------------------------------- */
 
     const shiftDurationMinutes = getShiftDurationMinutes(startHour, startMinute, endHour, endMinute);
 
+    if (shiftDurationMinutes <= 0) {
+      AppAlert.warning('Invalid shift duration.');
+
+      return;
+    }
+
     /* --------------------------------------------------------
-       UI -> minutes
+       Break
+    -------------------------------------------------------- */
+
+    const breakEnabled = document.getElementById('breakEnabled')?.checked;
+
+    let breakStartHour = null;
+    let breakStartMinute = null;
+    let breakEndHour = null;
+    let breakEndMinute = null;
+
+    if (breakEnabled) {
+      const breakStart = document.getElementById('breakStartTime')?.value;
+
+      const breakEnd = document.getElementById('breakEndTime')?.value;
+
+      if (!breakStart || !breakEnd) {
+        AppAlert.warning('Break start time and break end time are required.');
+
+        return;
+      }
+
+      [breakStartHour, breakStartMinute] = breakStart.split(':').map(Number);
+
+      [breakEndHour, breakEndMinute] = breakEnd.split(':').map(Number);
+
+      const shiftStartMinutes = startHour * 60 + startMinute;
+
+      const shiftEndMinutes = endHour * 60 + endMinute;
+
+      const breakStartMinutes = breakStartHour * 60 + breakStartMinute;
+
+      const breakEndMinutes = breakEndHour * 60 + breakEndMinute;
+
+      /*
+       * Break must have a duration.
+       */
+
+      if (breakStartMinutes === breakEndMinutes) {
+        AppAlert.warning('Break start and end time cannot be the same.');
+
+        return;
+      }
+
+      /*
+       * Break duration.
+       */
+
+      const breakDurationMinutes = getShiftDurationMinutes(
+        breakStartHour,
+        breakStartMinute,
+        breakEndHour,
+        breakEndMinute
+      );
+
+      /*
+       * Normal shift.
+       */
+
+      if (shiftEndMinutes > shiftStartMinutes) {
+        if (breakStartMinutes < shiftStartMinutes || breakEndMinutes > shiftEndMinutes) {
+          AppAlert.warning('Break time must be within the shift time.');
+
+          return;
+        }
+      } else {
+        /*
+         * Overnight shift.
+         *
+         * Convert the break into
+         * the same timeline as the shift.
+         */
+
+        const normalizedShiftEnd = shiftEndMinutes + 24 * 60;
+
+        let normalizedBreakStart = breakStartMinutes;
+
+        let normalizedBreakEnd = breakEndMinutes;
+
+        if (normalizedBreakStart < shiftStartMinutes) {
+          normalizedBreakStart += 24 * 60;
+        }
+
+        if (normalizedBreakEnd < shiftStartMinutes) {
+          normalizedBreakEnd += 24 * 60;
+        }
+
+        if (normalizedBreakStart < shiftStartMinutes || normalizedBreakEnd > normalizedShiftEnd) {
+          AppAlert.warning('Break time must be within the shift time.');
+
+          return;
+        }
+
+        /*
+         * Prevent an invalid overnight
+         * break range.
+         */
+
+        if (normalizedBreakEnd <= normalizedBreakStart) {
+          AppAlert.warning('Break end time must be after break start time.');
+
+          return;
+        }
+      }
+
+      if (breakDurationMinutes >= shiftDurationMinutes) {
+        AppAlert.warning('Break duration must be less than the shift duration.');
+
+        return;
+      }
+    }
+
+    /* --------------------------------------------------------
+       UI -> Minutes
     -------------------------------------------------------- */
 
     const graceMinutes = getDurationMinutes('graceHours', 'graceMinutes');
@@ -380,7 +623,7 @@
     const fullDayMinutes = getDurationMinutes('fullDayHours', 'fullDayMinutes');
 
     /* --------------------------------------------------------
-       Minute validation
+       Minute Validation
     -------------------------------------------------------- */
 
     if (
@@ -392,12 +635,8 @@
     }
 
     /* --------------------------------------------------------
-       Attendance rules validation
+       Attendance Rules
     -------------------------------------------------------- */
-
-    /*
-     * Grace must be smaller than the shift.
-     */
 
     if (graceMinutes >= shiftDurationMinutes) {
       AppAlert.warning(`Grace must be less than the shift duration (${formatDuration(shiftDurationMinutes)}).`);
@@ -405,20 +644,11 @@
       return;
     }
 
-    /*
-     * Half Day cannot be equal to or greater
-     * than Full Day.
-     */
-
     if (halfDayMinutes >= fullDayMinutes) {
       AppAlert.warning('Half Day duration must be less than Full Day duration.');
 
       return;
     }
-
-    /*
-     * Half Day cannot exceed shift duration.
-     */
 
     if (halfDayMinutes > shiftDurationMinutes) {
       AppAlert.warning(
@@ -428,10 +658,6 @@
       return;
     }
 
-    /*
-     * Full Day cannot exceed shift duration.
-     */
-
     if (fullDayMinutes > shiftDurationMinutes) {
       AppAlert.warning(
         `Full Day duration cannot be more than the shift duration (${formatDuration(shiftDurationMinutes)}).`
@@ -440,19 +666,11 @@
       return;
     }
 
-    /*
-     * Grace must be smaller than Half Day.
-     */
-
     if (graceMinutes >= halfDayMinutes) {
       AppAlert.warning('Grace must be less than Half Day duration.');
 
       return;
     }
-
-    /*
-     * Grace must be smaller than Full Day.
-     */
 
     if (graceMinutes >= fullDayMinutes) {
       AppAlert.warning('Grace must be less than Full Day duration.');
@@ -473,10 +691,11 @@
       endHour,
       endMinute,
 
-      /*
-       * IMPORTANT:
-       * DTO remains minute based.
-       */
+      breakStartHour,
+      breakStartMinute,
+
+      breakEndHour,
+      breakEndMinute,
 
       graceMinutes,
 
@@ -487,7 +706,13 @@
       weeklyOff: [...document.querySelectorAll('#shiftModal .weekly-off input:checked')].map(
         (input) => WEEK_DAYS[Number(input.value)]
       ),
+
+      selfieCheckIn: document.getElementById('selfieCheckIn')?.checked === true,
     };
+
+    /* --------------------------------------------------------
+       API
+    -------------------------------------------------------- */
 
     try {
       button.disabled = true;
@@ -525,7 +750,7 @@
   ========================================================== */
 
   async function deleteShift(id) {
-    const shift = shifts.find((s) => s.id === id);
+    const shift = shifts.find((item) => item.id === id);
 
     if (!shift) {
       return;
@@ -584,6 +809,56 @@
       shiftDuration = getShiftDurationMinutes(startHour, startMinute, endHour, endMinute);
     }
 
+    /* --------------------------------------------------------
+       Break
+    -------------------------------------------------------- */
+
+    const breakEnabled = document.getElementById('breakEnabled')?.checked;
+
+    let breakDuration = 0;
+
+    if (breakEnabled) {
+      const breakStart = document.getElementById('breakStartTime')?.value;
+
+      const breakEnd = document.getElementById('breakEndTime')?.value;
+
+      if (breakStart && breakEnd) {
+        const [breakStartHour, breakStartMinute] = breakStart.split(':').map(Number);
+
+        const [breakEndHour, breakEndMinute] = breakEnd.split(':').map(Number);
+
+        breakDuration = getShiftDurationMinutes(breakStartHour, breakStartMinute, breakEndHour, breakEndMinute);
+      }
+    }
+
+    /* --------------------------------------------------------
+       Working Duration
+    -------------------------------------------------------- */
+
+    const workingDuration = Math.max(0, shiftDuration - breakDuration);
+
+    /* --------------------------------------------------------
+       Shift Summary
+    -------------------------------------------------------- */
+
+    const shiftDurationText = document.getElementById('shiftDurationText');
+
+    if (shiftDurationText) {
+      if (!shiftDuration) {
+        shiftDurationText.textContent = 'Set start and end time';
+      } else if (breakDuration) {
+        shiftDurationText.textContent = `${formatDuration(shiftDuration)} shift • ${formatDuration(
+          breakDuration
+        )} break • ${formatDuration(workingDuration)} working`;
+      } else {
+        shiftDurationText.textContent = `${formatDuration(shiftDuration)} shift`;
+      }
+    }
+
+    /* --------------------------------------------------------
+       Attendance Rules
+    -------------------------------------------------------- */
+
     const grace = getDurationMinutes('graceHours', 'graceMinutes');
 
     const half = getDurationMinutes('halfDayHours', 'halfDayMinutes');
@@ -591,17 +866,7 @@
     const full = getDurationMinutes('fullDayHours', 'fullDayMinutes');
 
     /* --------------------------------------------------------
-       Shift duration
-    -------------------------------------------------------- */
-
-    const shiftDurationText = document.getElementById('shiftDurationText');
-
-    if (shiftDurationText) {
-      shiftDurationText.textContent = shiftDuration ? formatDuration(shiftDuration) : 'Set start and end time';
-    }
-
-    /* --------------------------------------------------------
-       Rule hints
+       Rule Hints
     -------------------------------------------------------- */
 
     const graceHint = document.getElementById('graceRuleHint');
@@ -661,6 +926,10 @@
     return Math.max(0, hours) * 60 + Math.max(0, minutes);
   }
 
+  /* ==========================================================
+     Set Duration
+  ========================================================== */
+
   function setDurationMinutes(hoursId, minutesId, totalMinutes) {
     const total = Math.max(0, Number(totalMinutes) || 0);
 
@@ -693,8 +962,7 @@
     let duration = endTotal - startTotal;
 
     /*
-     * If end time is earlier than start time,
-     * treat it as an overnight shift.
+     * Overnight shift.
      *
      * Example:
      * 22:00 -> 06:00
@@ -706,6 +974,23 @@
     }
 
     return duration;
+  }
+
+  /* ==========================================================
+     Break Detection
+  ========================================================== */
+
+  function hasShiftBreak(shift) {
+    return (
+      shift.breakStartHour !== null &&
+      shift.breakStartHour !== undefined &&
+      shift.breakStartMinute !== null &&
+      shift.breakStartMinute !== undefined &&
+      shift.breakEndHour !== null &&
+      shift.breakEndHour !== undefined &&
+      shift.breakEndMinute !== null &&
+      shift.breakEndMinute !== undefined
+    );
   }
 
   /* ==========================================================
@@ -745,6 +1030,7 @@
 
     if (value < 0) {
       input.value = 0;
+
       value = 0;
     }
 

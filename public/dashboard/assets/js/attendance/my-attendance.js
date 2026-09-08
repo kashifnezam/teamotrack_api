@@ -5,10 +5,6 @@
      TeamoTrack • My Attendance
   ========================================================== */
 
-  /* ========================================================
-     STATE
-  ======================================================== */
-
   let records = [];
 
   let summary = {};
@@ -17,27 +13,19 @@
 
   let todayAttendance = null;
 
-  let undoCountdownTimer = null;
-
   let actionInProgress = false;
 
   let regularizationRequests = [];
 
-  /*
-   * This is the attendance row currently being
-   * regularized.
-   *
-   * IMPORTANT:
-   * The date is always derived from this record.
-   * The employee never chooses the date manually.
-   */
   let selectedRegularizationRecord = null;
 
   let regularizationModal = null;
 
-  /* ========================================================
+  let checkoutHistoryModal = null;
+
+  /* ==========================================================
      CONSTANTS
-  ======================================================== */
+  ========================================================== */
 
   const INDIA_TIME_ZONE = 'Asia/Kolkata';
 
@@ -45,6 +33,8 @@
     MISSED_CHECK_IN: 'MISSED_CHECK_IN',
     MISSED_CHECK_OUT: 'MISSED_CHECK_OUT',
     MISSED_BOTH: 'MISSED_BOTH',
+
+    BREAK_ERROR: 'BREAK_ERROR',
 
     WRONG_CHECK_IN: 'WRONG_CHECK_IN',
     WRONG_CHECK_OUT: 'WRONG_CHECK_OUT',
@@ -55,9 +45,9 @@
     OTHER: 'OTHER',
   };
 
-  /* ========================================================
+  /* ==========================================================
      INITIALIZE
-  ======================================================== */
+  ========================================================== */
 
   window.initializeMyAttendancePage = async function () {
     setCurrentMonth();
@@ -68,19 +58,29 @@
 
     initializeRegularizationModal();
 
+    initializeCheckoutHistoryModal();
+
     await loadAttendance();
   };
 
-  /* ========================================================
+  /* ==========================================================
      EVENTS
-  ======================================================== */
+  ========================================================== */
 
   function bindEvents() {
     document.getElementById('attendanceCheckInBtn')?.addEventListener('click', handleCheckIn);
 
     document.getElementById('attendanceCheckOutBtn')?.addEventListener('click', handleCheckOut);
 
-    document.getElementById('attendanceUndoCheckoutBtn')?.addEventListener('click', handleUndoCheckout);
+    document.getElementById('attendanceCheckoutAgainBtn')?.addEventListener('click', handleCheckOut);
+
+    document.getElementById('attendanceStartBreakBtn')?.addEventListener('click', handleStartBreak);
+
+    document.getElementById('attendanceEndBreakBtn')?.addEventListener('click', handleEndBreak);
+
+    document.getElementById('attendanceMoreBtn')?.addEventListener('click', toggleMoreMenu);
+
+    document.getElementById('attendanceViewCheckoutHistoryBtn')?.addEventListener('click', openCheckoutHistory);
 
     document.getElementById('myAttendanceRefreshBtn')?.addEventListener('click', () =>
       loadAttendance({
@@ -99,11 +99,59 @@
     document.getElementById('regularizationReason')?.addEventListener('input', updateRegularizationCharacterCount);
 
     document.getElementById('regularizationType')?.addEventListener('change', handleRegularizationTypeChange);
+
+    document.addEventListener('click', function (event) {
+      const wrapper = document.getElementById('attendanceMoreWrapper');
+
+      if (!wrapper) {
+        return;
+      }
+
+      if (!wrapper.contains(event.target)) {
+        closeMoreMenu();
+      }
+    });
   }
 
-  /* ========================================================
+  /* ==========================================================
+     CHECKOUT MENU
+  ========================================================== */
+
+  function toggleMoreMenu(event) {
+    event?.stopPropagation();
+
+    const menu = document.getElementById('attendanceMoreMenu');
+
+    const button = document.getElementById('attendanceMoreBtn');
+
+    if (!menu || !button) {
+      return;
+    }
+
+    const isHidden = menu.hidden;
+
+    menu.hidden = !isHidden;
+
+    button.setAttribute('aria-expanded', String(isHidden));
+  }
+
+  function closeMoreMenu() {
+    const menu = document.getElementById('attendanceMoreMenu');
+
+    const button = document.getElementById('attendanceMoreBtn');
+
+    if (menu) {
+      menu.hidden = true;
+    }
+
+    if (button) {
+      button.setAttribute('aria-expanded', 'false');
+    }
+  }
+
+  /* ==========================================================
      REGULARIZATION MODAL
-  ======================================================== */
+  ========================================================== */
 
   function initializeRegularizationModal() {
     const element = document.getElementById('attendanceRegularizationModal');
@@ -113,17 +161,13 @@
     }
 
     if (typeof bootstrap === 'undefined') {
-      console.warn('Bootstrap is not available. Regularization modal cannot initialize.');
+      console.warn('Bootstrap is not available.');
 
       return;
     }
 
     regularizationModal = bootstrap.Modal.getOrCreateInstance(element);
 
-    /*
-     * When the Bootstrap modal closes,
-     * clear the selected attendance record.
-     */
     element.addEventListener('hidden.bs.modal', function () {
       selectedRegularizationRecord = null;
 
@@ -131,9 +175,89 @@
     });
   }
 
-  /* ========================================================
+  /* ==========================================================
+     CHECKOUT HISTORY MODAL
+  ========================================================== */
+
+  function initializeCheckoutHistoryModal() {
+    const element = document.getElementById('attendanceCheckoutHistoryModal');
+
+    if (!element) {
+      return;
+    }
+
+    if (typeof bootstrap === 'undefined') {
+      return;
+    }
+
+    checkoutHistoryModal = bootstrap.Modal.getOrCreateInstance(element);
+  }
+
+  function openCheckoutHistory() {
+    closeMoreMenu();
+
+    const record = todayAttendance;
+
+    const body = document.getElementById('attendanceCheckoutHistoryBody');
+
+    if (!body) {
+      return;
+    }
+
+    const history = Array.isArray(record?.checkoutHistory) ? record.checkoutHistory : [];
+
+    if (!history.length) {
+      body.innerHTML = `
+        <div class="attendance-history-empty">
+          No checkout history.
+        </div>
+      `;
+
+      checkoutHistoryModal?.show();
+
+      return;
+    }
+
+    const sorted = [...history].reverse();
+
+    body.innerHTML = sorted
+      .map((item, index) => {
+        const time = item.checkOutTime || item.recordedAt || null;
+
+        return `
+          <div class="attendance-checkout-history-item">
+
+            <div class="attendance-checkout-history-index">
+              ${history.length - index}
+            </div>
+
+            <div class="attendance-checkout-history-main">
+
+              <strong>
+                ${escapeHtml(formatTime(time))}
+              </strong>
+
+              <span>
+                ${escapeHtml(formatMinutes(item.workingMinutes))} working time
+              </span>
+
+            </div>
+
+            <div class="attendance-checkout-history-status">
+              ${item.action === 'checkout_cancelled' ? 'Cancelled' : 'Checkout'}
+            </div>
+
+          </div>
+        `;
+      })
+      .join('');
+
+    checkoutHistoryModal?.show();
+  }
+
+  /* ==========================================================
      LOAD ATTENDANCE
-  ======================================================== */
+  ========================================================== */
 
   async function loadAttendance(options = {}) {
     if (isLoading && !options.force) {
@@ -177,19 +301,11 @@
 
       summary = data.summary || {};
 
-      /*
-       * Load regularization requests
-       * for exactly the same month.
-       */
       await loadRegularizationRequests(month, year);
 
       renderSummary(summary);
 
       renderRecords();
-
-      if (!options.silent) {
-        AppAlert.close();
-      }
 
       if (isCurrentMonth(year, month)) {
         const todayKey = getTodayKey();
@@ -201,6 +317,10 @@
         todayAttendance = null;
 
         renderTodayUnavailable();
+      }
+
+      if (!options.silent) {
+        AppAlert.close();
       }
 
       return data;
@@ -219,9 +339,9 @@
     }
   }
 
-  /* ========================================================
-     LOAD REGULARIZATION REQUESTS
-  ======================================================== */
+  /* ==========================================================
+     REGULARIZATION REQUESTS
+  ========================================================== */
 
   async function loadRegularizationRequests(month, year) {
     try {
@@ -237,17 +357,9 @@
     } catch (error) {
       console.error('Regularization request load failed:', error);
 
-      /*
-       * Attendance page must remain usable
-       * even if regularization loading fails.
-       */
       regularizationRequests = [];
     }
   }
-
-  /* ========================================================
-     FIND REGULARIZATION FOR DATE
-  ======================================================== */
 
   function getRegularizationForDate(attendanceDate) {
     const dateKey = normalizeDateOnly(attendanceDate);
@@ -262,9 +374,6 @@
       return null;
     }
 
-    /*
-     * Pending / approved takes priority.
-     */
     const active = matching.find((request) =>
       ['pending', 'approved'].includes(String(request.status || '').toLowerCase())
     );
@@ -272,27 +381,205 @@
     return active || matching[matching.length - 1];
   }
 
-  /* ========================================================
+  function getShiftBreakWindow(record) {
+    const shift = record?.shiftSnapshot;
+
+    if (!shift) {
+      return null;
+    }
+
+    const startHour = Number(shift.breakStartHour);
+    const startMinute = Number(shift.breakStartMinute);
+    const endHour = Number(shift.breakEndHour);
+    const endMinute = Number(shift.breakEndMinute);
+
+    if (
+      !Number.isFinite(startHour) ||
+      !Number.isFinite(startMinute) ||
+      !Number.isFinite(endHour) ||
+      !Number.isFinite(endMinute)
+    ) {
+      return null;
+    }
+
+    const date = normalizeDateOnly(record.date);
+
+    if (!date) {
+      return null;
+    }
+
+    const start = parseIndiaDatetimeLocal(
+      `${date}T${String(startHour).padStart(2, '0')}:${String(startMinute).padStart(2, '0')}`
+    );
+
+    let end = parseIndiaDatetimeLocal(
+      `${date}T${String(endHour).padStart(2, '0')}:${String(endMinute).padStart(2, '0')}`
+    );
+
+    if (!start || !end) {
+      return null;
+    }
+
+    if (end.getTime() <= start.getTime()) {
+      end = new Date(end.getTime() + 24 * 60 * 60 * 1000);
+    }
+
+    return {
+      start,
+      end,
+    };
+  }
+
+  function getBreakIssue(record) {
+    if (!record) {
+      return null;
+    }
+
+    const window = getShiftBreakWindow(record);
+
+    /*
+     * No configured scheduled break means there is
+     * no break regularization issue to calculate.
+     */
+    if (!window) {
+      return null;
+    }
+
+    const currentBreak = record.currentBreak;
+
+    /*
+     * ============================================================
+     * INCOMPLETE BREAK
+     * ============================================================
+     */
+
+    if (currentBreak?.active === true) {
+      return {
+        type: 'INCOMPLETE_BREAK',
+
+        title: 'Incomplete Break',
+
+        message: 'A break was started but has not been ended.',
+      };
+    }
+
+    const history = Array.isArray(record.breakHistory) ? record.breakHistory : [];
+
+    /*
+     * No break is not automatically treated as an error.
+     *
+     * A configured break can legitimately be skipped.
+     */
+    if (!history.length) {
+      return null;
+    }
+
+    /*
+     * This attendance model supports one scheduled break.
+     */
+    const breakItem = history[history.length - 1];
+
+    const start = getRecordDate(breakItem?.startTime);
+
+    const end = getRecordDate(breakItem?.endTime);
+
+    if (!start || !end) {
+      return {
+        type: 'INVALID_BREAK_TIME',
+
+        title: 'Invalid Break Time',
+
+        message: 'The recorded break time is incomplete or invalid.',
+      };
+    }
+
+    /*
+     * ============================================================
+     * WRONG BREAK WINDOW
+     * ============================================================
+     */
+
+    if (
+      start.getTime() < window.start.getTime() ||
+      start.getTime() > window.end.getTime() ||
+      end.getTime() > window.end.getTime()
+    ) {
+      return {
+        type: 'WRONG_BREAK_TIME',
+
+        title: 'Break Outside Scheduled Window',
+
+        message: 'The recorded break does not match the scheduled break window.',
+      };
+    }
+
+    /*
+     * ============================================================
+     * EXCESS BREAK
+     * ============================================================
+     */
+
+    const actualMinutes = Math.max(0, Math.round((end.getTime() - start.getTime()) / 60000));
+
+    const scheduledMinutes = Math.max(0, Math.round((window.end.getTime() - window.start.getTime()) / 60000));
+
+    if (actualMinutes > scheduledMinutes) {
+      return {
+        type: 'EXCESS_BREAK',
+
+        title: 'Excess Break',
+
+        message:
+          `Recorded break is ${formatMinutes(actualMinutes)} ` +
+          `while the scheduled break is ${formatMinutes(scheduledMinutes)}.`,
+      };
+    }
+
+    return null;
+  }
+
+  function renderRegularizationBreakIssue(record) {
+    const container = document.getElementById('regularizationBreakIssue');
+
+    const title = document.getElementById('regularizationBreakIssueTitle');
+
+    const message = document.getElementById('regularizationBreakIssueMessage');
+
+    if (!container) {
+      return;
+    }
+
+    const issue = getBreakIssue(record);
+
+    if (!issue) {
+      container.hidden = true;
+
+      setText('regularizationBreakIssueTitle', 'Break Issue');
+
+      setText('regularizationBreakIssueMessage', '');
+
+      return;
+    }
+
+    container.hidden = false;
+
+    setText(title?.id, issue.title);
+
+    setText(message?.id, issue.message);
+  }
+  /* ==========================================================
      OPEN REGULARIZATION
-  ======================================================== */
+  ========================================================== */
 
   function openRegularization(record) {
     if (!record) {
       return;
     }
 
-    /*
-     * The clicked attendance record is
-     * the source of truth.
-     */
     const existingRequest = getRegularizationForDate(record.date);
 
     const existingStatus = String(existingRequest?.status || '').toLowerCase();
 
-    /*
-     * Pending and approved requests cannot
-     * be submitted again.
-     */
     if (existingRequest && ['pending', 'approved'].includes(existingStatus)) {
       AppAlert.error(
         existingStatus === 'approved'
@@ -303,42 +590,43 @@
       return;
     }
 
-    /*
-     * Store the complete clicked attendance
-     * record.
-     */
     selectedRegularizationRecord = record;
 
-    /*
-     * Date is DISPLAY ONLY.
-     *
-     * There is intentionally no date input.
-     */
     setText('regularizationDateLabel', formatDate(record.date));
 
-    /*
-     * Show current attendance values.
-     */
     setText('regularizationCurrentCheckIn', formatTime(record.checkInTime));
 
     setText('regularizationCurrentCheckOut', formatTime(record.checkOutTime));
 
-    setText('regularizationCurrentWorking', formatMinutes(record.workingMinutes));
+    setText('regularizationCurrentWorking', formatMinutes(Number(record.workingMinutes ?? 0)));
+
+    setText(
+      'regularizationCurrentBreak',
+      formatMinutes(Number(record.totalBreakMinutes ?? getBreakHistoryMinutes(record.breakHistory)))
+    );
 
     setText('regularizationCurrentStatus', formatStatus(record.status));
 
     resetRegularizationForm();
 
-    /*
-     * resetRegularizationForm clears the form,
-     * so restore the date label afterward.
-     */
+    const breakIssue = getBreakIssue(record);
+
+    if (breakIssue) {
+      const type = document.getElementById('regularizationType');
+
+      if (type) {
+        type.value = REGULARIZATION_TYPES.BREAK_ERROR;
+      }
+    }
+
     setText('regularizationDateLabel', formatDate(record.date));
 
-    /*
-     * Apply type-specific field rules.
-     */
+    renderRegularizationBreakIssue(record);
+
     handleRegularizationTypeChange();
+    if (breakIssue && breakIssue.type !== 'INCOMPLETE_BREAK') {
+      prefillRegularizationBreak(record);
+    }
 
     if (!regularizationModal) {
       initializeRegularizationModal();
@@ -347,10 +635,6 @@
     regularizationModal?.show();
   }
 
-  /* ========================================================
-     RESET REGULARIZATION FORM
-  ======================================================== */
-
   function resetRegularizationForm() {
     const type = document.getElementById('regularizationType');
 
@@ -358,7 +642,15 @@
 
     const checkOut = document.getElementById('regularizationCheckOut');
 
+    const breakStart = document.getElementById('regularizationBreakStart');
+
+    const breakEnd = document.getElementById('regularizationBreakEnd');
+
     const reason = document.getElementById('regularizationReason');
+
+    const breakSection = document.getElementById('regularizationBreakSection');
+
+    const breakIssue = document.getElementById('regularizationBreakIssue');
 
     if (type) {
       type.value = '';
@@ -376,6 +668,26 @@
       checkOut.required = false;
     }
 
+    if (breakStart) {
+      breakStart.value = '';
+      breakStart.disabled = false;
+      breakStart.required = false;
+    }
+
+    if (breakEnd) {
+      breakEnd.value = '';
+      breakEnd.disabled = false;
+      breakEnd.required = false;
+    }
+
+    if (breakSection) {
+      breakSection.hidden = true;
+    }
+
+    if (breakIssue) {
+      breakIssue.hidden = true;
+    }
+
     if (reason) {
       reason.value = '';
     }
@@ -388,18 +700,13 @@
       submitButton.disabled = false;
 
       submitButton.innerHTML = `
-        <i class="bi bi-send"></i>
-
-        <span>
-          Submit Request
-        </span>
-      `;
+      <i class="bi bi-send"></i>
+      <span>
+        Submit Request
+      </span>
+    `;
     }
   }
-
-  /* ========================================================
-     REGULARIZATION TYPE
-  ======================================================== */
 
   function handleRegularizationTypeChange() {
     const type = document.getElementById('regularizationType')?.value;
@@ -408,9 +715,12 @@
 
     const checkOut = document.getElementById('regularizationCheckOut');
 
-    /*
-     * Reset first.
-     */
+    const breakStart = document.getElementById('regularizationBreakStart');
+
+    const breakEnd = document.getElementById('regularizationBreakEnd');
+
+    const breakSection = document.getElementById('regularizationBreakSection');
+
     if (checkIn) {
       checkIn.disabled = false;
       checkIn.required = false;
@@ -421,14 +731,30 @@
       checkOut.required = false;
     }
 
+    if (breakStart) {
+      breakStart.disabled = false;
+      breakStart.required = false;
+    }
+
+    if (breakEnd) {
+      breakEnd.disabled = false;
+      breakEnd.required = false;
+    }
+
+    if (breakSection) {
+      breakSection.hidden = true;
+    }
+
     if (!type) {
       return;
     }
 
     /*
-     * MISSED_CHECK_IN
-     * WRONG_CHECK_IN
+     * ============================================================
+     * CHECK-IN
+     * ============================================================
      */
+
     if (type === REGULARIZATION_TYPES.MISSED_CHECK_IN || type === REGULARIZATION_TYPES.WRONG_CHECK_IN) {
       if (checkIn) {
         checkIn.disabled = false;
@@ -445,9 +771,11 @@
     }
 
     /*
-     * MISSED_CHECK_OUT
-     * WRONG_CHECK_OUT
+     * ============================================================
+     * CHECK-OUT
+     * ============================================================
      */
+
     if (type === REGULARIZATION_TYPES.MISSED_CHECK_OUT || type === REGULARIZATION_TYPES.WRONG_CHECK_OUT) {
       if (checkIn) {
         checkIn.disabled = true;
@@ -464,9 +792,11 @@
     }
 
     /*
-     * MISSED_BOTH
-     * WRONG_BOTH
+     * ============================================================
+     * BOTH
+     * ============================================================
      */
+
     if (type === REGULARIZATION_TYPES.MISSED_BOTH || type === REGULARIZATION_TYPES.WRONG_BOTH) {
       if (checkIn) {
         checkIn.disabled = false;
@@ -482,13 +812,55 @@
     }
 
     /*
-     * SYSTEM_ERROR
-     * LOCATION_ERROR
-     * OTHER
-     *
-     * Backend allows one or both values
-     * for these types.
+     * ============================================================
+     * BREAK ERROR
+     * ============================================================
      */
+
+    if (type === REGULARIZATION_TYPES.BREAK_ERROR) {
+      if (checkIn) {
+        checkIn.disabled = true;
+        checkIn.required = false;
+        checkIn.value = '';
+      }
+
+      if (checkOut) {
+        checkOut.disabled = true;
+        checkOut.required = false;
+        checkOut.value = '';
+      }
+
+      if (breakSection) {
+        breakSection.hidden = false;
+      }
+
+      renderRegularizationBreakSchedule();
+
+      return;
+    }
+    function renderRegularizationBreakSchedule() {
+      const element = document.getElementById('regularizationBreakSchedule');
+
+      if (!element) {
+        return;
+      }
+
+      const window = getShiftBreakWindow(selectedRegularizationRecord);
+
+      if (!window) {
+        element.textContent = 'No scheduled break configured';
+
+        return;
+      }
+
+      element.textContent = `Scheduled: ${formatTime(window.start)} - ${formatTime(window.end)}`;
+    }
+    /*
+     * ============================================================
+     * SYSTEM / LOCATION / OTHER
+     * ============================================================
+     */
+
     if (
       type === REGULARIZATION_TYPES.SYSTEM_ERROR ||
       type === REGULARIZATION_TYPES.LOCATION_ERROR ||
@@ -506,28 +878,17 @@
     }
   }
 
-  /* ========================================================
+  /* ==========================================================
      SUBMIT REGULARIZATION
-  ======================================================== */
+  ========================================================== */
 
   async function handleSubmitRegularization() {
-    /*
-     * There MUST be a selected attendance record.
-     */
     if (!selectedRegularizationRecord) {
       AppAlert.error('Attendance record not found.');
 
       return;
     }
 
-    /*
-     * IMPORTANT:
-     *
-     * Date comes ONLY from the attendance
-     * record whose Regularize button was clicked.
-     *
-     * The user cannot change it.
-     */
     const date = normalizeDateOnly(selectedRegularizationRecord.date);
 
     const type = document.getElementById('regularizationType')?.value;
@@ -536,11 +897,17 @@
 
     const checkOut = document.getElementById('regularizationCheckOut')?.value;
 
+    const breakStart = document.getElementById('regularizationBreakStart')?.value;
+
+    const breakEnd = document.getElementById('regularizationBreakEnd')?.value;
+
     const reason = document.getElementById('regularizationReason')?.value?.trim();
 
-    /* ======================================================
-       BASIC VALIDATION
-    ====================================================== */
+    /*
+     * ============================================================
+     * BASIC VALIDATION
+     * ============================================================
+     */
 
     if (!date) {
       AppAlert.error('Attendance date could not be determined.');
@@ -566,15 +933,17 @@
       return;
     }
 
-    if (reason.length > 500) {
-      AppAlert.error('Reason cannot exceed 500 characters.');
+    if (reason.length > 1000) {
+      AppAlert.error('Reason cannot exceed 1000 characters.');
 
       return;
     }
 
-    /* ======================================================
-       TYPE-SPECIFIC VALIDATION
-    ====================================================== */
+    /*
+     * ============================================================
+     * CHECK-IN / CHECK-OUT VALIDATION
+     * ============================================================
+     */
 
     const requiresCheckIn = [
       REGULARIZATION_TYPES.MISSED_CHECK_IN,
@@ -603,51 +972,100 @@
     }
 
     /*
-     * For SYSTEM_ERROR / LOCATION_ERROR /
-     * OTHER, both times are optional.
-     *
-     * However, at least one correction
-     * must be supplied.
+     * ============================================================
+     * BREAK VALIDATION
+     * ============================================================
      */
-    if (!requiresCheckIn && !requiresCheckOut && !checkIn && !checkOut) {
-      AppAlert.error('Please provide at least one attendance time to correct.');
 
-      return;
+    if (type === REGULARIZATION_TYPES.BREAK_ERROR) {
+      if (!breakStart) {
+        AppAlert.error('Please provide the requested break start time.');
+
+        return;
+      }
+
+      if (!breakEnd) {
+        AppAlert.error('Please provide the requested break end time.');
+
+        return;
+      }
+
+      const breakStartDate = parseIndiaDatetimeLocal(combineAttendanceDateAndTime(date, breakStart));
+
+      const breakEndDate = parseIndiaDatetimeLocal(combineAttendanceDateAndTime(date, breakEnd));
+
+      if (!breakStartDate || !breakEndDate) {
+        AppAlert.error('Invalid break start or end time.');
+
+        return;
+      }
+
+      if (breakEndDate.getTime() <= breakStartDate.getTime()) {
+        AppAlert.error('Break end time must be after break start time.');
+
+        return;
+      }
+
+      const breakWindow = getShiftBreakWindow(selectedRegularizationRecord);
+
+      if (!breakWindow) {
+        AppAlert.error('No scheduled break is configured for this attendance record.');
+
+        return;
+      }
+
+      if (breakStartDate.getTime() < breakWindow.start.getTime()) {
+        AppAlert.error(`Break cannot start before ${formatTime(breakWindow.start)}.`);
+
+        return;
+      }
+
+      if (breakStartDate.getTime() > breakWindow.end.getTime()) {
+        AppAlert.error(`Break cannot start after ${formatTime(breakWindow.end)}.`);
+
+        return;
+      }
+
+      if (breakEndDate.getTime() > breakWindow.end.getTime()) {
+        AppAlert.error(`Break cannot end after ${formatTime(breakWindow.end)}.`);
+
+        return;
+      }
     }
 
-    /* ======================================================
-       DATE VALIDATION
-    ====================================================== */
-
     /*
-     * Any entered time MUST belong to the
-     * attendance date that was clicked.
+     * ============================================================
+     * NORMAL CHECK-IN / CHECK-OUT DATETIME
+     * ============================================================
      */
-    const checkInDateTime = combineAttendanceDateAndTime(date, checkIn);
-    const checkOutDateTime = combineAttendanceDateAndTime(date, checkOut);
 
-    /* ======================================================
-       CHECK-IN / CHECK-OUT ORDER
-    ====================================================== */
+    const checkInDateTime = combineAttendanceDateAndTime(date, checkIn);
+
+    const checkOutDateTime = combineAttendanceDateAndTime(date, checkOut);
 
     if (checkIn && checkOut) {
       const checkInDate = parseIndiaDatetimeLocal(checkInDateTime);
+
       const checkOutDate = parseIndiaDatetimeLocal(checkOutDateTime);
 
       if (!checkInDate || !checkOutDate) {
         AppAlert.error('Invalid check-in or check-out time.');
+
         return;
       }
 
       if (checkOutDate.getTime() <= checkInDate.getTime()) {
         AppAlert.error('Check-out time must be after check-in time.');
+
         return;
       }
     }
 
-    /* ======================================================
-       DUPLICATE ACTIVE REQUEST
-    ====================================================== */
+    /*
+     * ============================================================
+     * DUPLICATE REQUEST
+     * ============================================================
+     */
 
     const existingRequest = getRegularizationForDate(selectedRegularizationRecord.date);
 
@@ -657,22 +1075,24 @@
       return;
     }
 
-    /* ======================================================
-       PAYLOAD
-    ====================================================== */
+    /*
+     * ============================================================
+     * BREAK DATETIME
+     * ============================================================
+     */
+
+    const breakStartDateTime =
+      type === REGULARIZATION_TYPES.BREAK_ERROR ? combineAttendanceDateAndTime(date, breakStart) : null;
+
+    const breakEndDateTime =
+      type === REGULARIZATION_TYPES.BREAK_ERROR ? combineAttendanceDateAndTime(date, breakEnd) : null;
 
     /*
-     * Backend DTO expects:
-     *
-     * date
-     * type
-     * checkInTime
-     * checkOutTime
-     * reason
-     *
-     * The date is derived from the clicked
-     * attendance record.
+     * ============================================================
+     * PAYLOAD
+     * ============================================================
      */
+
     const payload = {
       date: indiaDateToIso(date),
 
@@ -682,12 +1102,12 @@
 
       checkOutTime: checkOutDateTime ? indiaLocalDateTimeToIso(checkOutDateTime) : null,
 
+      breakStartTime: breakStartDateTime ? indiaLocalDateTimeToIso(breakStartDateTime) : null,
+
+      breakEndTime: breakEndDateTime ? indiaLocalDateTimeToIso(breakEndDateTime) : null,
+
       reason,
     };
-
-    /* ======================================================
-       SUBMIT
-    ====================================================== */
 
     const button = document.getElementById('submitAttendanceRegularizationBtn');
 
@@ -696,16 +1116,16 @@
         button.disabled = true;
 
         button.innerHTML = `
-          <span
-            class="spinner-border spinner-border-sm"
-            role="status"
-            aria-hidden="true"
-          ></span>
+        <span
+          class="spinner-border spinner-border-sm"
+          role="status"
+          aria-hidden="true"
+        ></span>
 
-          <span>
-            Submitting...
-          </span>
-        `;
+        <span>
+          Submitting...
+        </span>
+      `;
       }
 
       const response = await Api.post('/attendance-regularization', payload);
@@ -714,10 +1134,6 @@
 
       regularizationModal?.hide();
 
-      /*
-       * Reload regularization requests
-       * and attendance records.
-       */
       const monthValue = document.getElementById('myAttendanceMonth')?.value;
 
       if (monthValue) {
@@ -736,19 +1152,19 @@
         button.disabled = false;
 
         button.innerHTML = `
-          <i class="bi bi-send"></i>
+        <i class="bi bi-send"></i>
 
-          <span>
-            Submit Request
-          </span>
-        `;
+        <span>
+          Submit Request
+        </span>
+      `;
       }
     }
   }
 
-  /* ========================================================
+  /* ==========================================================
      CHECK IN
-  ======================================================== */
+  ========================================================== */
 
   async function handleCheckIn() {
     if (actionInProgress) {
@@ -766,7 +1182,6 @@
 
       if (location) {
         payload.lat = location.lat;
-
         payload.lng = location.lng;
       }
 
@@ -797,11 +1212,11 @@
     }
   }
 
-  /* ========================================================
-     CHECK OUT
-  ======================================================== */
+  /* ==========================================================
+     START BREAK
+  ========================================================== */
 
-  async function handleCheckOut() {
+  async function handleStartBreak() {
     if (actionInProgress) {
       return;
     }
@@ -811,13 +1226,114 @@
 
       const location = await getCurrentLocation();
 
-      setActionLoading('attendanceCheckOutBtn', true, 'Checking out...');
+      setActionLoading('attendanceStartBreakBtn', true, 'Starting break...');
 
       const payload = {};
 
       if (location) {
         payload.lat = location.lat;
+        payload.lng = location.lng;
+      }
 
+      const data = await Api.post('/attendance/start-break', payload);
+
+      if (data) {
+        updateTodayFromApiResponse(data);
+
+        AppAlert.success(data.message || 'Break started successfully.');
+      }
+
+      await loadAttendance({
+        force: true,
+        silent: true,
+      });
+    } catch (error) {
+      console.error('Start break failed:', error);
+
+      AppAlert.error(getApiErrorMessage(error, 'Unable to start break'));
+    } finally {
+      actionInProgress = false;
+
+      setActionLoading('attendanceStartBreakBtn', false, 'Start Break');
+
+      if (todayAttendance) {
+        renderTodayAttendance();
+      }
+    }
+  }
+
+  /* ==========================================================
+     END BREAK
+  ========================================================== */
+
+  async function handleEndBreak() {
+    if (actionInProgress) {
+      return;
+    }
+
+    try {
+      actionInProgress = true;
+
+      const location = await getCurrentLocation();
+
+      setActionLoading('attendanceEndBreakBtn', true, 'Ending break...');
+
+      const payload = {};
+
+      if (location) {
+        payload.lat = location.lat;
+        payload.lng = location.lng;
+      }
+
+      const data = await Api.post('/attendance/end-break', payload);
+
+      if (data) {
+        updateTodayFromApiResponse(data);
+
+        AppAlert.success(data.message || 'Break ended successfully.');
+      }
+
+      await loadAttendance({
+        force: true,
+        silent: true,
+      });
+    } catch (error) {
+      console.error('End break failed:', error);
+
+      AppAlert.error(getApiErrorMessage(error, 'Unable to end break'));
+    } finally {
+      actionInProgress = false;
+
+      setActionLoading('attendanceEndBreakBtn', false, 'End Break');
+
+      if (todayAttendance) {
+        renderTodayAttendance();
+      }
+    }
+  }
+
+  /* ==========================================================
+     CHECK OUT
+  ========================================================== */
+
+  async function handleCheckOut() {
+    if (actionInProgress) {
+      return;
+    }
+
+    closeMoreMenu();
+
+    try {
+      actionInProgress = true;
+
+      const location = await getCurrentLocation();
+
+      setCheckoutLoading(true);
+
+      const payload = {};
+
+      if (location) {
+        payload.lat = location.lat;
         payload.lng = location.lng;
       }
 
@@ -840,7 +1356,7 @@
     } finally {
       actionInProgress = false;
 
-      setActionLoading('attendanceCheckOutBtn', false, 'Check Out');
+      setCheckoutLoading(false);
 
       if (todayAttendance) {
         renderTodayAttendance();
@@ -848,64 +1364,43 @@
     }
   }
 
-  /* ========================================================
-     UNDO CHECK OUT
-  ======================================================== */
+  function setCheckoutLoading(loading) {
+    const button = document.getElementById('attendanceCheckOutBtn');
 
-  async function handleUndoCheckout() {
-    if (actionInProgress) {
+    const again = document.getElementById('attendanceCheckoutAgainBtn');
+
+    if (loading) {
+      if (button) {
+        button.disabled = true;
+
+        button.innerHTML = `
+          <span
+            class="spinner-border spinner-border-sm"
+            role="status"
+            aria-hidden="true"
+          ></span>
+
+          <span>
+            Checking out...
+          </span>
+        `;
+      }
+
+      if (again) {
+        again.disabled = true;
+      }
+
       return;
     }
 
-    const confirmed = await AppAlert.confirm(
-      'Undo Checkout',
-      'Are you sure you want to undo your checkout? You will be marked as working again.'
-    );
-
-    if (!confirmed) {
-      return;
-    }
-
-    try {
-      actionInProgress = true;
-
-      setActionLoading('attendanceUndoCheckoutBtn', true, 'Undoing...');
-
-      const data = await Api.post('/attendance/undo-check-out', {});
-
-      if (data) {
-        updateTodayFromApiResponse(data);
-
-        AppAlert.success(data.message || 'Checkout cancelled successfully.');
-      }
-
-      await loadAttendance({
-        force: true,
-        silent: true,
-      });
-    } catch (error) {
-      console.error('Undo checkout failed:', error);
-
-      AppAlert.error(getApiErrorMessage(error, 'Unable to undo checkout'));
-
-      await loadAttendance({
-        force: true,
-        silent: true,
-      });
-    } finally {
-      actionInProgress = false;
-
-      setActionLoading('attendanceUndoCheckoutBtn', false, 'Undo Checkout');
-
-      if (todayAttendance) {
-        renderTodayAttendance();
-      }
+    if (again) {
+      again.disabled = false;
     }
   }
 
-  /* ========================================================
+  /* ==========================================================
      GEOLOCATION
-  ======================================================== */
+  ========================================================== */
 
   async function getCurrentLocation() {
     if (!navigator.geolocation) {
@@ -939,9 +1434,9 @@
     });
   }
 
-  /* ========================================================
+  /* ==========================================================
      UPDATE TODAY
-  ======================================================== */
+  ========================================================== */
 
   function updateTodayFromApiResponse(data) {
     if (!data) {
@@ -953,8 +1448,10 @@
       data.attendance ||
       data.checkInTime !== undefined ||
       data.checkOutTime !== undefined ||
-      data.status !== undefined
-        ? data
+      data.status !== undefined ||
+      data.checkoutCount !== undefined ||
+      data.currentBreak !== undefined
+        ? data.record || data.attendance || data
         : null;
 
     if (!record) {
@@ -984,9 +1481,35 @@
     renderRecords();
   }
 
-  /* ========================================================
+  function prefillRegularizationBreak(record) {
+    const breakStart = document.getElementById('regularizationBreakStart');
+
+    const breakEnd = document.getElementById('regularizationBreakEnd');
+
+    if (!breakStart || !breakEnd) {
+      return;
+    }
+
+    const history = Array.isArray(record?.breakHistory) ? record.breakHistory : [];
+
+    const lastBreak = history[history.length - 1];
+
+    const start = getRecordDate(lastBreak?.startTime);
+
+    const end = getRecordDate(lastBreak?.endTime);
+
+    if (start) {
+      breakStart.value = formatTimeInput(start);
+    }
+
+    if (end) {
+      breakEnd.value = formatTimeInput(end);
+    }
+  }
+
+  /* ==========================================================
      TODAY
-  ======================================================== */
+  ========================================================== */
 
   function renderTodayDate() {
     setText(
@@ -1001,15 +1524,23 @@
   }
 
   function renderTodayAttendance() {
-    stopUndoCountdown();
-
     const record = todayAttendance;
 
     const checkInBtn = document.getElementById('attendanceCheckInBtn');
 
     const checkOutBtn = document.getElementById('attendanceCheckOutBtn');
 
-    const undoBtn = document.getElementById('attendanceUndoCheckoutBtn');
+    const startBreakBtn = document.getElementById('attendanceStartBreakBtn');
+
+    const endBreakBtn = document.getElementById('attendanceEndBreakBtn');
+
+    const moreWrapper = document.getElementById('attendanceMoreWrapper');
+
+    const breakInfo = document.getElementById('attendanceBreakInfo');
+
+    const checkoutInfo = document.getElementById('attendanceCheckoutInfo');
+
+    const progressSection = document.getElementById('attendanceWorkBreakSection');
 
     if (!record) {
       setText('myAttendanceStatusText', 'NOT MARKED');
@@ -1020,11 +1551,27 @@
 
       setText('myCheckOut', '--');
 
+      setText('myCheckoutCount', '0');
+
       setText('myWorkingTime', '--');
+
+      setText('myBreakTime', '0m');
 
       setText('myPunctuality', '--');
 
       setText('attendanceShiftTime', '--');
+
+      setText('attendanceBreakScheduleTime', '--');
+
+      const schedule = document.getElementById('attendanceBreakSchedule');
+
+      if (schedule) {
+        schedule.hidden = true;
+      }
+
+      if (progressSection) {
+        progressSection.hidden = true;
+      }
 
       if (checkInBtn) {
         checkInBtn.disabled = false;
@@ -1036,13 +1583,35 @@
         checkOutBtn.hidden = false;
       }
 
-      if (undoBtn) {
-        undoBtn.hidden = true;
+      if (moreWrapper) {
+        moreWrapper.hidden = true;
       }
 
-      hideCorrectionNote();
+      if (startBreakBtn) {
+        startBreakBtn.hidden = true;
+        startBreakBtn.disabled = false;
+      }
+
+      if (endBreakBtn) {
+        endBreakBtn.hidden = true;
+        endBreakBtn.disabled = false;
+      }
+
+      if (breakInfo) {
+        breakInfo.hidden = true;
+      }
+
+      if (checkoutInfo) {
+        checkoutInfo.hidden = true;
+      }
+
+      setText('attendanceBreakMessage', '');
+
+      setText('attendanceCheckoutInfoText', '');
 
       setText('attendanceActionMessage', 'Your attendance for today has not been marked.');
+
+      closeMoreMenu();
 
       return;
     }
@@ -1053,7 +1622,43 @@
 
     const hasCheckOut = !!record.checkOutTime;
 
-    if (hasCheckIn && !hasCheckOut) {
+    const hasActiveBreak = record.currentBreak?.active === true;
+
+    const breakHistory = Array.isArray(record.breakHistory) ? record.breakHistory : [];
+
+    const hasCompletedBreak = breakHistory.length > 0;
+
+    const checkoutCount = Number(record.checkoutCount ?? 0);
+
+    const breakMinutes = Number(record.totalBreakMinutes ?? getBreakHistoryMinutes(breakHistory));
+
+    const workingMinutes = Number(record.workingMinutes ?? 0);
+
+    setText('myCheckIn', formatTime(record.checkInTime));
+
+    setText('myCheckOut', formatTime(record.checkOutTime));
+
+    setText('myCheckoutCount', checkoutCount);
+
+    setText('myWorkingTime', formatMinutes(workingMinutes));
+
+    setText('myBreakTime', formatMinutes(breakMinutes));
+
+    setText('myPunctuality', formatPunctuality(record.punctuality));
+
+    renderBreakSchedule(record.shiftSnapshot);
+
+    renderWorkBreakProgress(workingMinutes, breakMinutes);
+
+    /* ======================================================
+       STATUS
+    ====================================================== */
+
+    if (hasCheckIn && hasActiveBreak) {
+      setText('myAttendanceStatusText', 'ON BREAK');
+
+      setStatusClass('status-working');
+    } else if (hasCheckIn) {
       setText('myAttendanceStatusText', 'WORKING');
 
       setStatusClass('status-working');
@@ -1063,13 +1668,9 @@
       setStatusClass(getStatusClass(record.status));
     }
 
-    setText('myCheckIn', formatTime(record.checkInTime));
-
-    setText('myCheckOut', formatTime(record.checkOutTime));
-
-    setText('myWorkingTime', formatMinutes(record.workingMinutes));
-
-    setText('myPunctuality', formatPunctuality(record.punctuality));
+    /* ======================================================
+       CHECK IN
+    ====================================================== */
 
     if (checkInBtn) {
       checkInBtn.disabled = hasCheckIn || isTerminalNonAttendanceStatus(record.status);
@@ -1077,66 +1678,140 @@
       checkInBtn.hidden = hasCheckIn;
     }
 
-    if (hasCheckIn && !hasCheckOut) {
-      if (checkOutBtn) {
-        checkOutBtn.disabled = false;
-        checkOutBtn.hidden = false;
-      }
+    /* ======================================================
+       START BREAK
+    ====================================================== */
 
-      if (undoBtn) {
-        undoBtn.hidden = true;
-      }
+    /*
+     * A second break is not available
+     * after the scheduled break has
+     * already been completed.
+     */
+    const canStartBreak =
+      hasCheckIn && !hasActiveBreak && !hasCompletedBreak && !isTerminalNonAttendanceStatus(record.status);
 
-      hideCorrectionNote();
+    if (startBreakBtn) {
+      startBreakBtn.hidden = !canStartBreak;
 
-      setText('attendanceActionMessage', 'You are currently checked in. Check out when your workday is complete.');
+      startBreakBtn.disabled = !canStartBreak;
+    }
+
+    /* ======================================================
+       END BREAK
+    ====================================================== */
+
+    if (endBreakBtn) {
+      endBreakBtn.hidden = !hasCheckIn || !hasActiveBreak;
+
+      endBreakBtn.disabled = !hasCheckIn || !hasActiveBreak;
+    }
+
+    /* ======================================================
+       CHECKOUT
+    ====================================================== */
+
+    /*
+     * First checkout is a normal visible
+     * button.
+     *
+     * Once one checkout exists, the main
+     * checkout button disappears and
+     * "Check Out Again" moves into the
+     * three-dot menu.
+     */
+    if (checkOutBtn) {
+      checkOutBtn.hidden = !hasCheckIn || hasCheckOut || isTerminalNonAttendanceStatus(record.status);
+
+      checkOutBtn.disabled =
+        !hasCheckIn || hasActiveBreak || hasCheckOut || isTerminalNonAttendanceStatus(record.status);
+    }
+
+    if (moreWrapper) {
+      moreWrapper.hidden = !hasCheckIn || !hasCheckOut || isTerminalNonAttendanceStatus(record.status);
+    }
+
+    /* ======================================================
+       BREAK INFORMATION
+    ====================================================== */
+
+    if (breakInfo) {
+      breakInfo.hidden = !hasActiveBreak;
+    }
+
+    if (hasActiveBreak) {
+      const breakStart = formatTime(record.currentBreak?.startTime);
+
+      const scheduledEnd = formatTime(record.currentBreak?.scheduledEndTime);
+
+      setText('attendanceBreakMessage', `Break started at ${breakStart}. End by ${scheduledEnd}.`);
+    } else if (hasCompletedBreak) {
+      const lastBreak = breakHistory[breakHistory.length - 1];
+
+      setText('attendanceBreakMessage', `Break completed at ${formatTime(lastBreak?.endTime)}.`);
+    } else {
+      setText('attendanceBreakMessage', '');
+    }
+
+    /* ======================================================
+       CHECKOUT INFORMATION
+    ====================================================== */
+
+    if (checkoutInfo) {
+      checkoutInfo.hidden = !hasCheckOut;
+    }
+
+    if (hasCheckOut) {
+      setText(
+        'attendanceCheckoutInfoText',
+        `Latest checkout: ${formatTime(record.checkOutTime)} • ${checkoutCount} checkout${
+          checkoutCount === 1 ? '' : 's'
+        } recorded`
+      );
+    } else {
+      setText('attendanceCheckoutInfoText', '');
+    }
+
+    /* ======================================================
+       ACTION MESSAGE
+    ====================================================== */
+
+    if (hasActiveBreak) {
+      setText('attendanceActionMessage', 'You are currently on break. End your break before checking out.');
+
+      return;
+    }
+
+    if (hasCheckIn && hasCompletedBreak && hasCheckOut) {
+      setText(
+        'attendanceActionMessage',
+        'Your scheduled break is complete. Additional checkouts are available from the three-dot menu.'
+      );
+
+      return;
+    }
+
+    if (hasCheckIn && hasCompletedBreak) {
+      setText('attendanceActionMessage', 'Your scheduled break is complete. You can continue working or check out.');
 
       return;
     }
 
     if (hasCheckIn && hasCheckOut) {
-      if (checkOutBtn) {
-        checkOutBtn.disabled = true;
-        checkOutBtn.hidden = true;
-      }
-
-      const undoUntil = getRecordDate(record.checkoutUndoUntil);
-
-      if (undoUntil && Date.now() < undoUntil.getTime()) {
-        if (undoBtn) {
-          undoBtn.hidden = false;
-          undoBtn.disabled = false;
-        }
-
-        showUndoCountdown(undoUntil);
-
-        setText(
-          'attendanceActionMessage',
-          'Checkout recorded. Made a mistake? You can undo your checkout before the correction window expires.'
-        );
-
-        return;
-      }
-
-      if (undoBtn) {
-        undoBtn.hidden = true;
-      }
-
-      showCorrectionNote(
-        'Checkout correction is now locked. Please contact your manager or HR if the checkout time is incorrect.'
+      setText(
+        'attendanceActionMessage',
+        'You are still working. Use the three-dot menu if you need to check out again.'
       );
-
-      setText('attendanceActionMessage', "Today's attendance has been completed.");
 
       return;
     }
 
-    if (checkOutBtn) {
-      checkOutBtn.disabled = true;
-    }
+    if (hasCheckIn) {
+      setText(
+        'attendanceActionMessage',
+        'You are currently checked in. Start your scheduled break or check out when needed.'
+      );
 
-    if (undoBtn) {
-      undoBtn.hidden = true;
+      return;
     }
 
     if (record.status === 'leave') {
@@ -1150,59 +1825,19 @@
     }
   }
 
-  /* ========================================================
-     TODAY UNAVAILABLE
-  ======================================================== */
-
-  function renderTodayUnavailable() {
-    stopUndoCountdown();
-
-    setText('myAttendanceStatusText', 'CURRENT MONTH ONLY');
-
-    setStatusClass('status-not-marked');
-
-    setText('myCheckIn', '--');
-
-    setText('myCheckOut', '--');
-
-    setText('myWorkingTime', '--');
-
-    setText('myPunctuality', '--');
-
-    setText('attendanceShiftTime', '--');
-
-    const checkInBtn = document.getElementById('attendanceCheckInBtn');
-
-    const checkOutBtn = document.getElementById('attendanceCheckOutBtn');
-
-    const undoBtn = document.getElementById('attendanceUndoCheckoutBtn');
-
-    if (checkInBtn) {
-      checkInBtn.disabled = true;
-      checkInBtn.hidden = true;
-    }
-
-    if (checkOutBtn) {
-      checkOutBtn.disabled = true;
-      checkOutBtn.hidden = true;
-    }
-
-    if (undoBtn) {
-      undoBtn.hidden = true;
-    }
-
-    hideCorrectionNote();
-
-    setText('attendanceActionMessage', 'Select the current month to manage today’s attendance.');
-  }
-
-  /* ========================================================
+  /* ==========================================================
      SHIFT
-  ======================================================== */
+  ========================================================== */
 
   function renderShift(shift) {
     if (!shift) {
       setText('attendanceShiftTime', '--');
+
+      const schedule = document.getElementById('attendanceBreakSchedule');
+
+      if (schedule) {
+        schedule.hidden = true;
+      }
 
       return;
     }
@@ -1212,11 +1847,101 @@
     const end = formatHourMinute(shift.endHour, shift.endMinute);
 
     setText('attendanceShiftTime', `${start} - ${end}`);
+
+    renderBreakSchedule(shift);
   }
 
-  /* ========================================================
+  function renderBreakSchedule(shift) {
+    const schedule = document.getElementById('attendanceBreakSchedule');
+
+    if (!schedule) {
+      return;
+    }
+
+    const hasBreak =
+      shift &&
+      shift.breakStartHour != null &&
+      shift.breakStartMinute != null &&
+      shift.breakEndHour != null &&
+      shift.breakEndMinute != null;
+
+    if (!hasBreak) {
+      schedule.hidden = true;
+
+      setText('attendanceBreakScheduleTime', '--');
+
+      return;
+    }
+
+    const start = formatHourMinute(shift.breakStartHour, shift.breakStartMinute);
+
+    const end = formatHourMinute(shift.breakEndHour, shift.breakEndMinute);
+
+    setText('attendanceBreakScheduleTime', `${start} - ${end}`);
+
+    schedule.hidden = false;
+  }
+
+  /* ==========================================================
+     WORK / BREAK PROGRESS
+  ========================================================== */
+
+  function renderWorkBreakProgress(workingMinutes, breakMinutes) {
+    const section = document.getElementById('attendanceWorkBreakSection');
+
+    if (!section) {
+      return;
+    }
+
+    const work = Math.max(0, Number(workingMinutes) || 0);
+
+    const breakTime = Math.max(0, Number(breakMinutes) || 0);
+
+    const total = work + breakTime;
+
+    if (total <= 0) {
+      section.hidden = true;
+
+      return;
+    }
+
+    section.hidden = false;
+
+    let workPercent = (work / total) * 100;
+
+    let breakPercent = (breakTime / total) * 100;
+
+    if (breakTime <= 0) {
+      workPercent = 100;
+      breakPercent = 0;
+    }
+
+    const workSegment = document.getElementById('attendanceWorkSegment');
+
+    const breakSegment = document.getElementById('attendanceBreakSegment');
+
+    if (workSegment) {
+      workSegment.style.width = `${workPercent}%`;
+    }
+
+    if (breakSegment) {
+      breakSegment.style.width = `${breakPercent}%`;
+    }
+
+    setText('attendanceWorkSegmentLabel', work >= 45 ? formatMinutes(work) : '');
+
+    setText('attendanceBreakSegmentLabel', breakTime >= 15 ? formatMinutes(breakTime) : '');
+
+    setText('attendanceWorkBreakTotal', `${formatMinutes(work)} working • ${formatMinutes(breakTime)} break`);
+
+    setText('attendanceWorkLegend', formatMinutes(work));
+
+    setText('attendanceBreakLegend', formatMinutes(breakTime));
+  }
+
+  /* ==========================================================
      SUMMARY
-  ======================================================== */
+  ========================================================== */
 
   function renderSummary(data) {
     setText('myPresentCount', data.totalPresent || 0);
@@ -1232,9 +1957,9 @@
     setText('myTotalWorking', formatMinutes(data.totalWorkingMinutes || 0));
   }
 
-  /* ========================================================
+  /* ==========================================================
      TABLE
-  ======================================================== */
+  ========================================================== */
 
   function renderRecords() {
     const tbody = document.getElementById('myAttendanceTable');
@@ -1286,13 +2011,11 @@
         </td>
 
         <td>
-          ${escapeHtml(formatTime(record.checkOutTime))}
+          ${renderCheckoutCell(record)}
         </td>
 
         <td>
-          <strong>
-            ${escapeHtml(formatMinutes(record.workingMinutes))}
-          </strong>
+          ${renderWorkBreakCell(record)}
         </td>
 
         <td>
@@ -1311,9 +2034,105 @@
     `;
   }
 
-  /* ========================================================
+  /* ==========================================================
+     CHECKOUT TABLE CELL
+  ========================================================== */
+
+  function renderCheckoutCell(record) {
+    const latestCheckout = formatTime(record.checkOutTime);
+
+    const count = Number(record.checkoutCount ?? 0);
+
+    if (count <= 0 && latestCheckout === '--') {
+      return '--';
+    }
+
+    return `
+      <div class="attendance-checkout-cell">
+
+        <strong>
+          ${escapeHtml(latestCheckout)}
+        </strong>
+
+        ${
+          count > 1
+            ? `
+              <small>
+                ${count} checkouts
+              </small>
+            `
+            : ''
+        }
+
+      </div>
+    `;
+  }
+
+  /* ==========================================================
+     WORK / BREAK TABLE CELL
+  ========================================================== */
+
+  function renderWorkBreakCell(record) {
+    const work = Math.max(0, Number(record.workingMinutes ?? 0));
+
+    const breakMinutes = Math.max(0, Number(record.totalBreakMinutes ?? getBreakHistoryMinutes(record.breakHistory)));
+
+    const total = work + breakMinutes;
+
+    if (total <= 0) {
+      return `
+        <div class="attendance-work-break-cell empty">
+          <span>
+            --
+          </span>
+        </div>
+      `;
+    }
+
+    const workPercent = breakMinutes > 0 ? Math.min(100, (work / total) * 100) : 100;
+
+    const breakPercent = breakMinutes > 0 ? Math.min(100, (breakMinutes / total) * 100) : 0;
+
+    return `
+      <div class="attendance-work-break-cell">
+
+        <div class="attendance-row-time">
+          <strong>
+            ${escapeHtml(formatMinutes(work))}
+          </strong>
+
+          ${
+            breakMinutes > 0
+              ? `
+                <span>
+                  ${escapeHtml(formatMinutes(breakMinutes))} break
+                </span>
+              `
+              : ''
+          }
+        </div>
+
+        <div class="attendance-row-progress">
+
+          <div
+            class="attendance-row-work"
+            style="width:${workPercent}%"
+          ></div>
+
+          <div
+            class="attendance-row-break"
+            style="width:${breakPercent}%"
+          ></div>
+
+        </div>
+
+      </div>
+    `;
+  }
+
+  /* ==========================================================
      REGULARIZATION ACTION
-  ======================================================== */
+  ========================================================== */
 
   function renderRegularizationAction(record, request) {
     if (request) {
@@ -1321,71 +2140,101 @@
 
       if (status === 'pending') {
         return `
-          <span
-            class="attendance-regularization-status pending"
-          >
-            <i class="bi bi-hourglass-split"></i>
-            Pending
-          </span>
-        `;
+        <span
+          class="attendance-regularization-status pending"
+        >
+          <i class="bi bi-hourglass-split"></i>
+          Pending
+        </span>
+      `;
       }
 
       if (status === 'approved') {
         return `
-          <span
-            class="attendance-regularization-status approved"
-          >
-            <i class="bi bi-check-circle-fill"></i>
-            Approved
-          </span>
-        `;
+        <span
+          class="attendance-regularization-status approved"
+        >
+          <i class="bi bi-check-circle-fill"></i>
+          Approved
+        </span>
+      `;
       }
 
       if (status === 'rejected') {
         return `
-          <button
-            type="button"
-            class="attendance-regularize-btn"
-            onclick="window.openAttendanceRegularization('${escapeJs(record.id)}')"
-            title="Submit another correction request"
-          >
-            <i class="bi bi-arrow-repeat"></i>
-            Re-submit
-          </button>
-        `;
+        <button
+          type="button"
+          class="attendance-regularize-btn"
+          onclick="window.openAttendanceRegularization('${escapeJs(record.id)}')"
+          title="Submit another correction request"
+        >
+          <i class="bi bi-arrow-repeat"></i>
+          Re-submit
+        </button>
+      `;
       }
 
       if (status === 'cancelled') {
         return `
-          <button
-            type="button"
-            class="attendance-regularize-btn"
-            onclick="window.openAttendanceRegularization('${escapeJs(record.id)}')"
-            title="Submit attendance correction"
-          >
-            <i class="bi bi-pencil-square"></i>
-            Regularize
-          </button>
-        `;
+        <button
+          type="button"
+          class="attendance-regularize-btn"
+          onclick="window.openAttendanceRegularization('${escapeJs(record.id)}')"
+          title="Submit attendance correction"
+        >
+          <i class="bi bi-pencil-square"></i>
+          Regularize
+        </button>
+      `;
       }
     }
 
-    return `
-      <button
-        type="button"
-        class="attendance-regularize-btn"
-        onclick="window.openAttendanceRegularization('${escapeJs(record.id)}')"
-        title="Submit attendance correction"
-      >
-        <i class="bi bi-pencil-square"></i>
-        Regularize
-      </button>
-    `;
-  }
+    /*
+     * ============================================================
+     * BREAK ISSUE
+     * ============================================================
+     */
 
-  /* ========================================================
-     GLOBAL REGULARIZATION HANDLER
-  ======================================================== */
+    const breakIssue = getBreakIssue(record);
+
+    if (breakIssue) {
+      return `
+      <div class="attendance-regularization-break-action">
+
+        <span
+          class="attendance-break-issue-badge"
+          title="${escapeHtml(breakIssue.message)}"
+        >
+          <i class="bi bi-exclamation-triangle-fill"></i>
+          Break Issue
+        </span>
+
+        <button
+          type="button"
+          class="attendance-regularize-btn break"
+          onclick="window.openAttendanceRegularization('${escapeJs(record.id)}')"
+          title="Correct break attendance"
+        >
+          <i class="bi bi-pencil-square"></i>
+          Correct
+        </button>
+
+      </div>
+    `;
+    }
+
+    return `
+    <button
+      type="button"
+      class="attendance-regularize-btn"
+      onclick="window.openAttendanceRegularization('${escapeJs(record.id)}')"
+      title="Submit attendance correction"
+    >
+      <i class="bi bi-pencil-square"></i>
+      Regularize
+    </button>
+  `;
+  }
 
   window.openAttendanceRegularization = function (recordId) {
     const record = records.find((item) => String(item.id) === String(recordId));
@@ -1399,9 +2248,9 @@
     openRegularization(record);
   };
 
-  /* ========================================================
+  /* ==========================================================
      ATTENDANCE BADGE
-  ======================================================== */
+  ========================================================== */
 
   function attendanceBadge(record) {
     let label = formatStatus(record.status);
@@ -1431,9 +2280,9 @@
     `;
   }
 
-  /* ========================================================
+  /* ==========================================================
      PUNCTUALITY
-  ======================================================== */
+  ========================================================== */
 
   function punctualityBadge(punctuality) {
     if (!punctuality) {
@@ -1461,87 +2310,95 @@
     `;
   }
 
-  /* ========================================================
-     UNDO COUNTDOWN
-  ======================================================== */
+  /* ==========================================================
+     TODAY UNAVAILABLE
+  ========================================================== */
 
-  function showUndoCountdown(undoUntil) {
-    stopUndoCountdown();
+  function renderTodayUnavailable() {
+    setText('myAttendanceStatusText', 'CURRENT MONTH ONLY');
 
-    const update = () => {
-      const remaining = undoUntil.getTime() - Date.now();
+    setStatusClass('status-not-marked');
 
-      if (remaining <= 0) {
-        stopUndoCountdown();
+    setText('myCheckIn', '--');
 
-        const undoBtn = document.getElementById('attendanceUndoCheckoutBtn');
+    setText('myCheckOut', '--');
 
-        if (undoBtn) {
-          undoBtn.hidden = true;
-        }
+    setText('myCheckoutCount', '0');
 
-        showCorrectionNote(
-          'Checkout correction is now locked. Please contact your manager or HR if the checkout time is incorrect.'
-        );
+    setText('myWorkingTime', '--');
 
-        setText('attendanceActionMessage', "Today's attendance has been completed.");
+    setText('myBreakTime', '0m');
 
-        return;
-      }
+    setText('myPunctuality', '--');
 
-      const totalSeconds = Math.ceil(remaining / 1000);
+    setText('attendanceShiftTime', '--');
 
-      const minutes = Math.floor(totalSeconds / 60);
+    setText('attendanceBreakScheduleTime', '--');
 
-      const seconds = totalSeconds % 60;
+    const checkInBtn = document.getElementById('attendanceCheckInBtn');
 
-      setText('attendanceUndoCountdown', `${minutes}:${String(seconds).padStart(2, '0')}`);
-    };
+    const checkOutBtn = document.getElementById('attendanceCheckOutBtn');
 
-    update();
+    const startBreakBtn = document.getElementById('attendanceStartBreakBtn');
 
-    undoCountdownTimer = window.setInterval(update, 1000);
-  }
+    const endBreakBtn = document.getElementById('attendanceEndBreakBtn');
 
-  function stopUndoCountdown() {
-    if (undoCountdownTimer) {
-      window.clearInterval(undoCountdownTimer);
+    const moreWrapper = document.getElementById('attendanceMoreWrapper');
 
-      undoCountdownTimer = null;
+    const breakInfo = document.getElementById('attendanceBreakInfo');
+
+    const checkoutInfo = document.getElementById('attendanceCheckoutInfo');
+
+    const progressSection = document.getElementById('attendanceWorkBreakSection');
+
+    if (checkInBtn) {
+      checkInBtn.disabled = true;
+      checkInBtn.hidden = true;
     }
 
-    setText('attendanceUndoCountdown', '');
-  }
-
-  /* ========================================================
-     CORRECTION NOTE
-  ======================================================== */
-
-  function showCorrectionNote(message) {
-    const note = document.getElementById('attendanceCorrectionNote');
-
-    if (!note) {
-      return;
+    if (checkOutBtn) {
+      checkOutBtn.disabled = true;
+      checkOutBtn.hidden = true;
     }
 
-    note.hidden = false;
-
-    setText('attendanceCorrectionNoteText', message);
-  }
-
-  function hideCorrectionNote() {
-    const note = document.getElementById('attendanceCorrectionNote');
-
-    if (note) {
-      note.hidden = true;
+    if (startBreakBtn) {
+      startBreakBtn.disabled = true;
+      startBreakBtn.hidden = true;
     }
 
-    setText('attendanceCorrectionNoteText', '');
+    if (endBreakBtn) {
+      endBreakBtn.disabled = true;
+      endBreakBtn.hidden = true;
+    }
+
+    if (moreWrapper) {
+      moreWrapper.hidden = true;
+    }
+
+    if (breakInfo) {
+      breakInfo.hidden = true;
+    }
+
+    if (checkoutInfo) {
+      checkoutInfo.hidden = true;
+    }
+
+    if (progressSection) {
+      progressSection.hidden = true;
+    }
+
+    setText('attendanceBreakMessage', '');
+
+    setText('attendanceCheckoutInfoText', '');
+
+    setText('attendanceActionMessage', 'Select the current month to manage today’s attendance.');
+
+    closeMoreMenu();
   }
 
-  /* ========================================================
+  /* ==========================================================
      CHARACTER COUNT
-  ======================================================== */
+  ========================================================== */
 
   function updateRegularizationCharacterCount() {
     const textarea = document.getElementById('regularizationReason');
@@ -1553,20 +2410,46 @@
     setText('regularizationReasonCount', textarea.value.length);
   }
 
-  /* ========================================================
-     STATUS HELPERS
-  ======================================================== */
+  /* ==========================================================
+     BREAK HELPERS
+  ========================================================== */
+
+  function getBreakHistoryMinutes(history) {
+    if (!Array.isArray(history)) {
+      return 0;
+    }
+
+    return history.reduce((total, item) => {
+      const stored = Number(item?.durationMinutes);
+
+      if (Number.isFinite(stored)) {
+        return total + Math.max(0, stored);
+      }
+
+      const start = getRecordDate(item?.startTime);
+
+      const end = getRecordDate(item?.endTime);
+
+      if (!start || !end) {
+        return total;
+      }
+
+      const minutes = Math.round((end.getTime() - start.getTime()) / 60000);
+
+      return total + Math.max(0, minutes);
+    }, 0);
+  }
+
+  /* ==========================================================
+     STATUS
+  ========================================================== */
 
   function formatStatus(status) {
     const labels = {
       present: 'PRESENT',
-
       absent: 'ABSENT',
-
       leave: 'LEAVE',
-
       weekly_off: 'WEEKLY OFF',
-
       holiday: 'HOLIDAY',
     };
 
@@ -1581,13 +2464,9 @@
   function getStatusClass(status) {
     const classes = {
       present: 'status-completed',
-
       absent: 'status-absent',
-
       leave: 'status-leave',
-
       weekly_off: 'status-weekly-off',
-
       holiday: 'status-holiday',
     };
 
@@ -1616,9 +2495,9 @@
     return value === 'late' ? 'Late' : 'On Time';
   }
 
-  /* ========================================================
-     DATE / TIME DISPLAY
-  ======================================================== */
+  /* ==========================================================
+     DATE / TIME
+  ========================================================== */
 
   function formatDate(value) {
     const date = getRecordDate(value);
@@ -1633,6 +2512,18 @@
       month: 'short',
       year: 'numeric',
     });
+  }
+
+  function formatTimeInput(date) {
+    if (!date || Number.isNaN(date.getTime())) {
+      return '';
+    }
+
+    const hours = String(date.getHours()).padStart(2, '0');
+
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+
+    return `${hours}:${minutes}`;
   }
 
   function formatTime(value) {
@@ -1666,6 +2557,10 @@
 
     const mins = safeMinutes % 60;
 
+    if (hours === 0) {
+      return `${mins}m`;
+    }
+
     return `${hours}h ${mins}m`;
   }
 
@@ -1697,9 +2592,9 @@
     }).format(date);
   }
 
-  /* ========================================================
-     FIRESTORE / API DATE PARSING
-  ======================================================== */
+  /* ==========================================================
+     FIRESTORE DATE
+  ========================================================== */
 
   function getRecordDate(value) {
     if (!value) {
@@ -1779,9 +2674,9 @@
     }
   }
 
-  /* ========================================================
-     INDIA DATE/TIME CONVERSION
-  ======================================================== */
+  /* ==========================================================
+     INDIA DATE/TIME
+  ========================================================== */
 
   function indiaDateToIso(dateKey) {
     if (!dateKey || !/^\d{4}-\d{2}-\d{2}$/.test(dateKey)) {
@@ -1825,16 +2720,6 @@
     return new Date(iso);
   }
 
-  function getIndiaDateKeyFromDatetimeLocal(value) {
-    if (!value) {
-      return '';
-    }
-
-    const match = /^(\d{4}-\d{2}-\d{2})T/.exec(value);
-
-    return match ? match[1] : '';
-  }
-
   function combineAttendanceDateAndTime(dateKey, timeValue) {
     if (!dateKey || !timeValue) {
       return null;
@@ -1851,9 +2736,9 @@
     return `${dateKey}T${timeValue}`;
   }
 
-  /* ========================================================
-     UI HELPERS
-  ======================================================== */
+  /* ==========================================================
+     UI
+  ========================================================== */
 
   function setText(id, value) {
     const element = document.getElementById(id);
@@ -1891,33 +2776,15 @@
     const iconMap = {
       attendanceCheckInBtn: 'bi-box-arrow-in-right',
 
-      attendanceCheckOutBtn: 'bi-box-arrow-right',
+      attendanceStartBreakBtn: 'bi-pause-circle',
 
-      attendanceUndoCheckoutBtn: 'bi-arrow-counterclockwise',
+      attendanceEndBreakBtn: 'bi-play-circle',
     };
 
-    if (id === 'attendanceUndoCheckoutBtn') {
-      button.innerHTML = `
-        <i
-          class="bi ${iconMap[id]}"
-        ></i>
-
-        <span>
-          Undo Checkout
-        </span>
-
-        <small
-          id="attendanceUndoCountdown"
-        ></small>
-      `;
-
-      return;
-    }
+    const icon = iconMap[id] || 'bi-check-circle';
 
     button.innerHTML = `
-      <i
-        class="bi ${iconMap[id]}"
-      ></i>
+      <i class="bi ${icon}"></i>
 
       <span>
         ${escapeHtml(label)}
@@ -1941,9 +2808,9 @@
     }
   }
 
-  /* ========================================================
+  /* ==========================================================
      API ERROR
-  ======================================================== */
+  ========================================================== */
 
   function getApiErrorMessage(error, fallback) {
     const message = error?.response?.message;
@@ -1967,9 +2834,9 @@
     return fallback;
   }
 
-  /* ========================================================
+  /* ==========================================================
      ESCAPE
-  ======================================================== */
+  ========================================================== */
 
   function escapeHtml(value) {
     return String(value ?? '')

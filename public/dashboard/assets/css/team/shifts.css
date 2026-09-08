@@ -178,6 +178,21 @@
   font-variant-numeric: tabular-nums;
 }
 
+.shift-break {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+  color: var(--text-muted);
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.shift-break i {
+  color: var(--primary);
+  font-size: 10px;
+}
+
 /* ==========================================================
    DURATION BADGES
 ========================================================== */
@@ -289,7 +304,7 @@
 }
 
 .shift-modal .modal-header {
-  padding: 20px 22px;
+  padding: 18px 22px;
   border-bottom: 1px solid var(--border-color);
   background: var(--surface);
 }
@@ -315,67 +330,65 @@
 }
 
 .shift-modal .modal-body {
-  padding: 22px;
+  padding: 20px 22px;
   background: var(--surface);
 }
 
 .shift-modal .modal-footer {
-  padding: 14px 22px;
+  padding: 12px 22px;
   background: var(--surface-soft);
   border-top: 1px solid var(--border-color);
 }
 
 /* ==========================================================
-   FORM SECTIONS
+   CONFIGURATION BLOCKS
 ========================================================== */
 
-.form-section {
-  padding: 18px;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
-  background: var(--surface);
+.config-block {
+  padding: 0 0 18px;
 }
 
-.form-section + .form-section {
-  margin-top: 16px;
+.config-block + .config-block {
+  padding-top: 18px;
+  border-top: 1px solid var(--border-color);
 }
 
-.form-section-header {
+.config-heading {
   display: flex;
-  align-items: flex-start;
-  gap: 11px;
-  margin-bottom: 18px;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 15px;
 }
 
-.section-icon {
-  width: 34px;
-  height: 34px;
-  flex: 0 0 34px;
+.config-icon {
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 9px;
+  border-radius: 8px;
   background: rgba(37, 99, 235, 0.08);
   color: var(--primary);
-  font-size: 15px;
+  font-size: 13px;
 }
 
-.rules-icon {
+.config-icon.rules {
   background: rgba(16, 185, 129, 0.08);
   color: #059669;
 }
 
-.form-section-header h6 {
-  margin: 1px 0 3px;
+.config-heading h6 {
+  margin: 0 0 2px;
   color: var(--text-primary);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: var(--fw-semibold);
 }
 
-.form-section-header p {
+.config-heading p {
   margin: 0;
   color: var(--text-muted);
-  font-size: 12px;
+  font-size: 11px;
 }
 
 /* ==========================================================
@@ -384,17 +397,17 @@
 
 .shift-modal .form-label {
   color: var(--text-secondary);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: var(--fw-semibold);
-  margin-bottom: 6px;
+  margin-bottom: 5px;
 }
 
 .shift-modal .form-control {
-  height: 40px;
+  height: 38px;
   border-color: var(--border-color);
   background: var(--surface);
   color: var(--text-primary);
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .shift-modal .form-control:focus {
@@ -407,153 +420,183 @@
 }
 
 /* ==========================================================
-   SHIFT DURATION PREVIEW
+   WORKING TIME
 ========================================================== */
 
-.shift-duration-preview {
+.time-row {
   display: flex;
-  align-items: center;
-  gap: 11px;
-  padding: 11px 13px;
-  border: 1px dashed var(--border-color);
-  border-radius: var(--radius-sm);
-  background: var(--surface-soft);
+  align-items: flex-end;
+  gap: 10px;
 }
 
-.preview-icon {
-  width: 30px;
-  height: 30px;
-  flex: 0 0 30px;
+.time-field {
+  flex: 1;
+  min-width: 0;
+}
+
+.time-arrow {
+  width: 20px;
+  height: 38px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
-  background: var(--surface);
-  color: var(--primary);
-  font-size: 14px;
-}
-
-.preview-content {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
-
-.preview-content span {
   color: var(--text-muted);
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.preview-content strong {
-  color: var(--text-primary);
-  font-size: 13px;
-  font-weight: var(--fw-semibold);
-}
-
-/* ==========================================================
-   GRACE INFORMATION
-========================================================== */
-
-.grace-info {
-  display: flex;
-  align-items: flex-start;
-  gap: 11px;
-  padding: 13px 14px;
-  border: 1px solid rgba(37, 99, 235, 0.14);
-  border-radius: var(--radius-sm);
-  background: rgba(37, 99, 235, 0.045);
-}
-
-.grace-info-icon {
-  width: 30px;
-  height: 30px;
-  flex: 0 0 30px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 8px;
-  background: rgba(37, 99, 235, 0.09);
-  color: var(--primary);
-}
-
-.grace-info strong {
-  display: block;
-  margin-bottom: 3px;
-  color: var(--text-primary);
   font-size: 12px;
-  font-weight: var(--fw-semibold);
-}
-
-.grace-info p {
-  color: var(--text-secondary);
-  font-size: 11px;
-  line-height: 1.55;
 }
 
 /* ==========================================================
-   RULE CARDS
+   BREAK TOGGLE
 ========================================================== */
 
-.rule-card {
-  height: 100%;
-  padding: 14px;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-sm);
-  background: var(--surface);
-  transition: var(--transition-fast);
-}
-
-.rule-card:focus-within {
-  border-color: rgba(37, 99, 235, 0.3);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.05);
-}
-
-.rule-card-header {
+.break-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  margin-bottom: 12px;
+  gap: 16px;
+  margin-top: 13px;
 }
 
-.rule-title {
+.break-toggle {
   display: inline-flex;
   align-items: center;
   gap: 7px;
+  margin: 0;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.break-toggle input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.break-checkbox {
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-color);
+  border-radius: 5px;
+  background: var(--surface);
+  color: transparent;
+  font-size: 11px;
+  transition: var(--transition-fast);
+}
+
+.break-toggle:hover .break-checkbox {
+  border-color: rgba(37, 99, 235, 0.35);
+}
+
+.break-toggle input:checked + .break-checkbox {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: #fff;
+}
+
+.break-label {
   color: var(--text-primary);
+  font-size: 11px;
+  font-weight: var(--fw-medium);
+}
+
+/* ==========================================================
+   BREAK FIELDS
+========================================================== */
+
+.break-fields {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  flex: 1;
+  max-width: 300px;
+}
+
+.break-time-field {
+  flex: 1;
+  min-width: 0;
+}
+
+.break-time-label {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--text-muted);
+  font-size: 9px;
+  font-weight: var(--fw-medium);
+}
+
+.break-separator {
+  height: 38px;
+  display: flex;
+  align-items: center;
+  color: var(--text-muted);
   font-size: 12px;
+}
+
+/* ==========================================================
+   SCHEDULE SUMMARY
+========================================================== */
+
+.schedule-summary {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 12px;
+  padding: 9px 11px;
+  border-radius: 7px;
+  background: var(--surface-soft);
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.schedule-summary i {
+  color: var(--primary);
+  font-size: 12px;
+}
+
+/* ==========================================================
+   ATTENDANCE RULES
+========================================================== */
+
+.rules-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.rule-field {
+  padding: 11px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.rule-field-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.rule-field-header label {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 11px;
   font-weight: var(--fw-semibold);
 }
 
-.rule-dot,
-.summary-dot {
-  width: 7px;
-  height: 7px;
-  display: inline-block;
-  border-radius: 50%;
-}
-
-.grace-dot {
-  background: var(--primary);
-}
-
-.half-dot {
-  background: #f59e0b;
-}
-
-.full-dot {
-  background: #10b981;
-}
-
-.rule-label {
+.rule-field-header > span {
   color: var(--text-muted);
-  font-size: 10px;
+  font-size: 9px;
 }
+
+/* ==========================================================
+   INFO BUTTON
+========================================================== */
 
 .info-btn {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   padding: 0;
   display: inline-flex;
   align-items: center;
@@ -561,6 +604,7 @@
   border: 0;
   background: transparent;
   color: var(--text-muted);
+  font-size: 11px;
   cursor: pointer;
 }
 
@@ -569,91 +613,70 @@
 }
 
 /* ==========================================================
-   DURATION INPUT
+   COMPACT DURATION
 ========================================================== */
 
-.duration-input {
+.compact-duration {
   display: flex;
   align-items: flex-start;
-  gap: 7px;
+  gap: 5px;
 }
 
-.duration-input > div {
+.duration-part {
   flex: 1;
   min-width: 0;
 }
 
-.duration-input > span {
-  margin-top: 10px;
-  color: var(--text-muted);
-  font-size: 13px;
-  font-weight: var(--fw-semibold);
-}
-
-.duration-input small {
-  display: block;
-  margin-top: 4px;
-  color: var(--text-muted);
-  font-size: 10px;
-}
-
-.duration-input input {
+.compact-duration input {
+  width: 100%;
   text-align: center;
   font-variant-numeric: tabular-nums;
 }
 
-/* ==========================================================
-   RULE HINT
-========================================================== */
+.compact-duration > span {
+  margin-top: 10px;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.duration-part small {
+  display: block;
+  margin-top: 4px;
+  color: var(--text-muted);
+  font-size: 9px;
+  text-align: center;
+}
 
 .rule-hint {
-  min-height: 16px;
-  margin-top: 8px;
+  min-height: 14px;
+  margin-top: 5px;
+  color: var(--text-muted);
+  font-size: 9px;
+}
+
+/* ==========================================================
+   RULE SUMMARY
+========================================================== */
+
+.rule-summary {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin-top: 10px;
   color: var(--text-muted);
   font-size: 10px;
 }
 
-/* ==========================================================
-   ATTENDANCE SUMMARY
-========================================================== */
-
-.attendance-summary {
-  margin-top: 14px;
-  padding: 12px 14px;
-  border-radius: var(--radius-sm);
-  background: var(--surface-soft);
+.rule-summary span {
+  position: relative;
 }
 
-.summary-title {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 8px;
-  color: var(--text-secondary);
-  font-size: 11px;
-  font-weight: var(--fw-semibold);
-}
-
-.summary-title i {
-  color: #f59e0b;
-}
-
-.summary-items {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 7px;
-}
-
-.summary-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 5px 8px;
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  background: var(--surface);
-  color: var(--text-secondary);
-  font-size: 10px;
+.rule-summary span + span::before {
+  content: '•';
+  position: absolute;
+  left: -10px;
+  color: var(--border-color);
 }
 
 /* ==========================================================
@@ -663,7 +686,7 @@
 .weekly-off {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 7px;
 }
 
 .weekly-off label {
@@ -681,13 +704,14 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 52px;
-  padding: 8px 10px;
+  min-width: 46px;
+  height: 34px;
+  padding: 0 9px;
   border: 1px solid var(--border-color);
-  border-radius: 8px;
+  border-radius: 7px;
   background: var(--surface);
   color: var(--text-secondary);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: var(--fw-medium);
   transition: var(--transition-fast);
 }
@@ -714,7 +738,7 @@
 }
 
 .shift-modal .btn-primary {
-  min-height: 38px;
+  min-height: 36px;
 }
 
 /* ==========================================================
@@ -749,7 +773,7 @@
   }
 
   .shift-modal .modal-body {
-    padding: 15px;
+    padding: 17px;
   }
 
   .shift-modal .modal-header {
@@ -757,25 +781,42 @@
   }
 
   .shift-modal .modal-footer {
-    padding: 12px 15px;
+    padding: 12px 17px;
   }
 
-  .form-section {
-    padding: 14px;
+  .break-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 9px;
+  }
+
+  .break-fields {
+    width: 100%;
+    max-width: none;
   }
 }
 
 @media (max-width: 575px) {
-  .rule-card {
-    padding: 13px;
+  .shift-modal .modal-dialog {
+    margin: 10px;
   }
 
-  .summary-items {
+  .rules-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .rule-field {
+    padding: 10px;
+  }
+
+  .rule-summary {
     flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
   }
 
-  .summary-item {
-    width: 100%;
+  .rule-summary span + span::before {
+    display: none;
   }
 
   .weekly-off {
@@ -783,6 +824,14 @@
   }
 
   .weekly-off label span {
-    min-width: 48px;
+    min-width: 44px;
+  }
+
+  .time-row {
+    gap: 7px;
+  }
+
+  .time-arrow {
+    width: 14px;
   }
 }

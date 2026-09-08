@@ -25,10 +25,36 @@ export interface ShiftConfig {
 
   graceMinutes: number;
 
+  breakStartHour?: number | null;
+  breakStartMinute?: number | null;
+
+  breakEndHour?: number | null;
+  breakEndMinute?: number | null;
+
   halfDayMinutes: number;
   fullDayMinutes: number;
 
   weeklyOff: string[];
+}
+
+export interface BreakHistoryItem {
+  id: string;
+
+  startTime: number;
+
+  endTime?: number;
+
+  durationMinutes?: number;
+
+  startLocation?: {
+    lat: number;
+    lng: number;
+  };
+
+  endLocation?: {
+    lat: number;
+    lng: number;
+  };
 }
 
 export interface Staff {

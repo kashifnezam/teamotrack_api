@@ -209,6 +209,7 @@ export class AttendanceService {
     dto: {
       lat?: number;
       lng?: number;
+      selfieUrl?: string;
     }
   ) {
     const user = await this.getUser(userId);
@@ -236,6 +237,15 @@ export class AttendanceService {
         this.validateLocation(dto.lat, dto.lng);
       }
     }
+
+    /*
+     * Validate selfie URL when supplied.
+     *
+     * The actual selfie validation happens on the
+     * mobile side. Backend only stores the URL.
+     */
+    const selfieUrl =
+      typeof dto.selfieUrl === 'string' && dto.selfieUrl.trim().length > 0 ? dto.selfieUrl.trim() : undefined;
 
     const date = this.todayIndia();
 
@@ -371,6 +381,19 @@ export class AttendanceService {
         };
       }
 
+      /*
+       * Save the selfie captured during
+       * check-in.
+       *
+       * This is only present when the shift
+       * has selfieCheckIn enabled and the
+       * Flutter app successfully uploaded
+       * the selfie.
+       */
+      if (selfieUrl) {
+        data.checkInSelfieUrl = selfieUrl;
+      }
+
       transaction.set(ref, data, {
         merge: true,
       });
@@ -414,6 +437,13 @@ export class AttendanceService {
 
       workingMinutes: 0,
 
+      /*
+       * Return the selfie URL when one was
+       * captured so the Flutter app can use
+       * the complete attendance response.
+       */
+      checkInSelfieUrl: selfieUrl ?? null,
+
       message: result.message,
     };
   }
@@ -454,19 +484,12 @@ export class AttendanceService {
     let result:
       | {
           checkInTime: Date;
-
           checkOutTime: Date;
-
           workingMinutes: number;
-
           status: AttendanceStatus;
-
           attendanceType: 'full_day' | 'half_day' | null;
-
           punctuality: 'on_time' | 'late';
-
-          checkoutUndoUntil: Date;
-
+          checkoutCount: number;
           message: string;
         }
       | undefined;
@@ -475,7 +498,7 @@ export class AttendanceService {
       const snapshot = await transaction.get(ref);
 
       if (!snapshot.exists) {
-        throw new NotFoundException('No attendance check-in found for today');
+        throw new NotFoundException('No attendance record found for today');
       }
 
       const existing = snapshot.data() ?? {};
@@ -485,28 +508,11 @@ export class AttendanceService {
       }
 
       /*
-       * Already checked out.
+       * Do not allow checkout while
+       * an employee is currently on break.
        */
-      if (existing.checkOutTime) {
-        const previousCheckout = this.toDate(existing.checkOutTime);
-
-        if (previousCheckout) {
-          const undoUntil = new Date(
-            previousCheckout.getTime() + AttendanceService.CHECKOUT_UNDO_WINDOW_MINUTES * 60 * 1000
-          );
-
-          if (new Date() <= undoUntil) {
-            throw new ConflictException(
-              `You have already checked out at ${this.formatTimeForMessage(
-                previousCheckout
-              )}. You can undo the checkout for ${AttendanceService.CHECKOUT_UNDO_WINDOW_MINUTES} minutes.`
-            );
-          }
-        }
-
-        throw new ConflictException(
-          'You have already checked out today. Checkout can no longer be changed from the employee app.'
-        );
+      if (existing.currentBreak?.active === true) {
+        throw new BadRequestException('Please end your break before checking out');
       }
 
       const checkIn = this.toDate(existing.checkInTime);
@@ -515,10 +521,6 @@ export class AttendanceService {
         throw new InternalServerErrorException('Invalid check-in time');
       }
 
-      /*
-       * Checkout MUST use the
-       * historical shift snapshot.
-       */
       const shift = this.shiftFromSnapshot(existing.shiftSnapshot);
 
       if (!shift) {
@@ -528,17 +530,24 @@ export class AttendanceService {
       const checkOut = new Date();
 
       /*
-       * Early check-in does not
-       * count toward working minutes.
+       * Early check-in does not count
+       * toward working time.
        */
       const shiftStart = this.shiftStartForDate(checkIn, shift);
 
       const effectiveCheckIn = checkIn.getTime() < shiftStart.getTime() ? shiftStart : checkIn;
 
-      const workingMinutes = Math.max(0, Math.round((checkOut.getTime() - effectiveCheckIn.getTime()) / 60000));
+      /*
+       * Calculate all completed breaks.
+       */
+      const breakMinutes = this.getCompletedBreakMinutes(existing.breakHistory);
+
+      const elapsedMinutes = Math.max(0, Math.round((checkOut.getTime() - effectiveCheckIn.getTime()) / 60000));
+
+      const workingMinutes = Math.max(0, elapsedMinutes - breakMinutes);
 
       /*
-       * Central classification.
+       * Classify attendance.
        */
       const classification = this.classifyWorkingMinutes(workingMinutes, shift);
 
@@ -548,14 +557,16 @@ export class AttendanceService {
 
       const punctuality = this.isLate(checkIn, shift) ? 'late' : 'on_time';
 
-      const undoUntil = new Date(checkOut.getTime() + AttendanceService.CHECKOUT_UNDO_WINDOW_MINUTES * 60 * 1000);
-
       /*
-       * Audit history.
+       * Keep EVERY checkout.
        */
       const checkoutHistory = Array.isArray(existing.checkoutHistory) ? [...existing.checkoutHistory] : [];
 
+      const checkoutCount = Number(existing.checkoutCount ?? 0) + 1;
+
       checkoutHistory.push({
+        id: `${Date.now()}_${checkoutCount}`,
+
         action: 'checkout',
 
         performedBy: userId,
@@ -572,8 +583,6 @@ export class AttendanceService {
 
         recordedAt: Timestamp.fromDate(checkOut),
 
-        undoUntil: Timestamp.fromDate(undoUntil),
-
         ...(dto.lat != null && dto.lng != null
           ? {
               location: {
@@ -584,11 +593,21 @@ export class AttendanceService {
           : {}),
       });
 
+      /*
+       * Keep the history bounded.
+       */
       const limitedHistory = checkoutHistory.slice(-AttendanceService.CHECKOUT_HISTORY_LIMIT);
 
       const update: FirebaseFirestore.DocumentData = {
-        checkOutTime: FieldValue.serverTimestamp(),
+        /*
+         * This is ALWAYS the latest checkout.
+         */
+        checkOutTime: Timestamp.fromDate(checkOut),
 
+        /*
+         * Recalculate using all
+         * completed breaks.
+         */
         workingMinutes,
 
         status,
@@ -597,11 +616,15 @@ export class AttendanceService {
 
         punctuality,
 
-        checkoutUndoUntil: Timestamp.fromDate(undoUntil),
+        /*
+         * Number of checkout attempts.
+         */
+        checkoutCount,
 
-        checkoutCount: Number(existing.checkoutCount ?? 0) + 1,
-
-        lastCheckoutAt: FieldValue.serverTimestamp(),
+        /*
+         * Audit trail.
+         */
+        lastCheckoutAt: Timestamp.fromDate(checkOut),
 
         checkoutHistory: limitedHistory,
 
@@ -609,40 +632,14 @@ export class AttendanceService {
       };
 
       /*
-       * Preserve half-day leave.
-       */
-      if (existing.leaveDuration === 'half_day') {
-        update.leaveDuration = 'half_day';
-
-        if (existing.leaveTypeId) {
-          update.leaveTypeId = existing.leaveTypeId;
-        }
-
-        if (existing.leaveRequestId) {
-          update.leaveRequestId = existing.leaveRequestId;
-        }
-
-        if (existing.leaveStatus) {
-          update.leaveStatus = existing.leaveStatus;
-        }
-      }
-
-      /*
-       * Checkout location.
+       * Preserve checkout location
+       * as the latest location.
        */
       if (dto.lat != null && dto.lng != null) {
         update.checkOutLocation = {
           lat: Number(dto.lat),
           lng: Number(dto.lng),
         };
-      }
-
-      /*
-       * Never replace historical
-       * shift snapshot.
-       */
-      if (!existing.shiftSnapshot) {
-        update.shiftSnapshot = shift;
       }
 
       transaction.set(ref, update, {
@@ -662,9 +659,9 @@ export class AttendanceService {
 
         punctuality,
 
-        checkoutUndoUntil: undoUntil,
+        checkoutCount,
 
-        message: 'Check-out recorded successfully. You can undo this checkout for 10 minutes.',
+        message: 'Check-out recorded successfully.',
       };
     });
 
@@ -691,12 +688,523 @@ export class AttendanceService {
 
       workingMinutes: result.workingMinutes,
 
-      checkoutUndoUntil: result.checkoutUndoUntil.toISOString(),
-
-      canUndoCheckout: true,
+      checkoutCount: result.checkoutCount,
 
       message: result.message,
     };
+  }
+
+  async startBreak(
+    userId: string,
+    dto: {
+      lat?: number;
+      lng?: number;
+    }
+  ) {
+    const user = await this.getUser(userId);
+
+    this.assertAttendanceStaff(user);
+
+    const rootId = this.getRootId(user);
+
+    if (!rootId) {
+      throw new BadRequestException('Invalid hierarchy: rootId missing');
+    }
+
+    if (user.isTrackingEnable === true) {
+      this.validateLocation(dto.lat, dto.lng);
+    } else if (dto.lat != null || dto.lng != null) {
+      this.validateLocation(dto.lat, dto.lng);
+    }
+
+    const date = this.todayIndia();
+
+    const recordId = this.dateKey(date);
+
+    const ref = this.attendanceRecordRef(userId, date);
+
+    const breakStart = new Date();
+
+    let result:
+      | {
+          breakStartTime: Date;
+          breakEndTime: Date;
+          totalBreakMinutes: number;
+        }
+      | undefined;
+
+    await this.db.runTransaction(async (transaction) => {
+      const snapshot = await transaction.get(ref);
+
+      if (!snapshot.exists) {
+        throw new NotFoundException('No attendance record found for today');
+      }
+
+      const existing = snapshot.data() ?? {};
+
+      if (!existing.checkInTime) {
+        throw new BadRequestException('You have not checked in today');
+      }
+
+      /*
+       * A break cannot be started while
+       * another break is active.
+       */
+      if (existing.currentBreak?.active === true) {
+        throw new ConflictException('You are already on break');
+      }
+
+      /*
+       * The employee can have only ONE
+       * scheduled break per attendance day.
+       *
+       * Once the break has already been
+       * completed, another break cannot
+       * be started.
+       */
+      const existingBreakHistory = Array.isArray(existing.breakHistory) ? existing.breakHistory : [];
+
+      if (existingBreakHistory.length > 0) {
+        throw new ConflictException('Your scheduled break has already been completed today');
+      }
+
+      /*
+       * IMPORTANT:
+       *
+       * Always use the historical shift snapshot.
+       *
+       * We must NOT read the current shifts
+       * collection because the shift may have
+       * changed after the employee checked in.
+       */
+      const shift = this.shiftFromSnapshot(existing.shiftSnapshot);
+
+      if (!shift) {
+        throw new InternalServerErrorException('Historical shift information is missing from attendance record');
+      }
+
+      /*
+       * The attendance record must contain
+       * the configured break window.
+       */
+      if (!this.hasConfiguredBreak(shift)) {
+        throw new BadRequestException('No scheduled break is configured for your shift');
+      }
+
+      const scheduledBreakStart = this.breakStartForDate(breakStart, shift);
+
+      const scheduledBreakEnd = this.breakEndForDate(breakStart, shift);
+
+      /*
+       * Break cannot start before the
+       * scheduled break starts.
+       */
+      if (breakStart.getTime() < scheduledBreakStart.getTime()) {
+        throw new BadRequestException(`Your break starts at ${this.formatIndiaTime(scheduledBreakStart)}`);
+      }
+
+      /*
+       * Break cannot start after the
+       * scheduled break has ended.
+       */
+      if (breakStart.getTime() > scheduledBreakEnd.getTime()) {
+        throw new BadRequestException(`Your scheduled break ended at ${this.formatIndiaTime(scheduledBreakEnd)}`);
+      }
+
+      /*
+       * Make sure the break does not
+       * accidentally cross the shift end.
+       */
+      const shiftEnd = this.shiftEndForDate(breakStart, shift);
+
+      if (breakStart.getTime() >= shiftEnd.getTime()) {
+        throw new BadRequestException('Your shift has already ended');
+      }
+
+      const currentBreak: FirebaseFirestore.DocumentData = {
+        active: true,
+
+        startTime: Timestamp.fromDate(breakStart),
+
+        startedBy: userId,
+
+        scheduledStartTime: Timestamp.fromDate(scheduledBreakStart),
+
+        scheduledEndTime: Timestamp.fromDate(scheduledBreakEnd),
+
+        ...(dto.lat != null && dto.lng != null
+          ? {
+              startLocation: {
+                lat: Number(dto.lat),
+                lng: Number(dto.lng),
+              },
+            }
+          : {}),
+      };
+
+      const totalBreakMinutes = this.getCompletedBreakMinutes(existingBreakHistory);
+
+      transaction.set(
+        ref,
+        {
+          currentBreak,
+
+          totalBreakMinutes,
+
+          updatedAt: FieldValue.serverTimestamp(),
+        },
+        {
+          merge: true,
+        }
+      );
+
+      result = {
+        breakStartTime: breakStart,
+
+        breakEndTime: scheduledBreakEnd,
+
+        totalBreakMinutes,
+      };
+    });
+
+    if (!result) {
+      throw new InternalServerErrorException('Unable to start break');
+    }
+
+    return {
+      id: recordId,
+
+      staffId: userId,
+
+      date,
+
+      breakStartTime: result.breakStartTime.toISOString(),
+
+      breakEndTime: null,
+
+      scheduledBreakEndTime: result.breakEndTime.toISOString(),
+
+      breakActive: true,
+
+      totalBreakMinutes: result.totalBreakMinutes,
+
+      message: 'Break started successfully.',
+    };
+  }
+
+  async endBreak(
+    userId: string,
+    dto: {
+      lat?: number;
+      lng?: number;
+    }
+  ) {
+    const user = await this.getUser(userId);
+
+    this.assertAttendanceStaff(user);
+
+    const rootId = this.getRootId(user);
+
+    if (!rootId) {
+      throw new BadRequestException('Invalid hierarchy: rootId missing');
+    }
+
+    if (user.isTrackingEnable === true) {
+      this.validateLocation(dto.lat, dto.lng);
+    } else if (dto.lat != null || dto.lng != null) {
+      this.validateLocation(dto.lat, dto.lng);
+    }
+
+    const date = this.todayIndia();
+
+    const recordId = this.dateKey(date);
+
+    const ref = this.attendanceRecordRef(userId, date);
+
+    const breakEnd = new Date();
+
+    let result:
+      | {
+          breakStartTime: Date;
+          breakEndTime: Date;
+          breakDurationMinutes: number;
+          totalBreakMinutes: number;
+        }
+      | undefined;
+
+    await this.db.runTransaction(async (transaction) => {
+      const snapshot = await transaction.get(ref);
+
+      if (!snapshot.exists) {
+        throw new NotFoundException('No attendance record found for today');
+      }
+
+      const existing = snapshot.data() ?? {};
+
+      if (!existing.checkInTime) {
+        throw new BadRequestException('You have not checked in today');
+      }
+
+      /*
+       * End Break is possible ONLY when
+       * a break is currently active.
+       *
+       * After this request succeeds,
+       * currentBreak is deleted.
+       *
+       * Therefore another End Break request
+       * will always fail here.
+       */
+      const currentBreak = existing.currentBreak;
+
+      if (!currentBreak || currentBreak.active !== true) {
+        throw new ConflictException('You are not currently on break');
+      }
+
+      /*
+       * Historical shift.
+       */
+      const shift = this.shiftFromSnapshot(existing.shiftSnapshot);
+
+      if (!shift) {
+        throw new InternalServerErrorException('Historical shift information is missing from attendance record');
+      }
+
+      if (!this.hasConfiguredBreak(shift)) {
+        throw new BadRequestException('No scheduled break is configured for your shift');
+      }
+
+      const breakStart = this.toDate(currentBreak.startTime);
+
+      if (!breakStart) {
+        throw new InternalServerErrorException('Invalid break start time');
+      }
+
+      /*
+       * End cannot happen before
+       * the break started.
+       */
+      if (breakEnd.getTime() <= breakStart.getTime()) {
+        throw new BadRequestException('Break end time must be after break start time');
+      }
+
+      /*
+       * The scheduled break window is used
+       * as the maximum allowed break end.
+       *
+       * If employee tries to end after the
+       * scheduled break window, reject it.
+       */
+      const scheduledBreakEnd = this.breakEndForDate(breakStart, shift);
+
+      if (breakEnd.getTime() > scheduledBreakEnd.getTime()) {
+        throw new BadRequestException(`Break must end by ${this.formatIndiaTime(scheduledBreakEnd)}`);
+      }
+
+      const breakDurationMinutes = Math.max(0, Math.round((breakEnd.getTime() - breakStart.getTime()) / 60000));
+
+      /*
+       * Existing completed breaks.
+       */
+      const breakHistory = Array.isArray(existing.breakHistory) ? [...existing.breakHistory] : [];
+
+      /*
+       * Only one completed scheduled break
+       * is permitted.
+       */
+      if (breakHistory.length > 0) {
+        throw new ConflictException('Your scheduled break has already been completed today');
+      }
+
+      breakHistory.push({
+        id: `${Date.now()}_${breakHistory.length + 1}`,
+
+        startTime: Timestamp.fromDate(breakStart),
+
+        endTime: Timestamp.fromDate(breakEnd),
+
+        durationMinutes: breakDurationMinutes,
+
+        scheduledStartTime:
+          currentBreak.scheduledStartTime ?? Timestamp.fromDate(this.breakStartForDate(breakStart, shift)),
+
+        scheduledEndTime: currentBreak.scheduledEndTime ?? Timestamp.fromDate(scheduledBreakEnd),
+
+        ...(currentBreak.startLocation
+          ? {
+              startLocation: currentBreak.startLocation,
+            }
+          : {}),
+
+        ...(dto.lat != null && dto.lng != null
+          ? {
+              endLocation: {
+                lat: Number(dto.lat),
+                lng: Number(dto.lng),
+              },
+            }
+          : {}),
+      });
+
+      const limitedHistory = breakHistory.slice(-50);
+
+      const totalBreakMinutes = this.getCompletedBreakMinutes(limitedHistory);
+
+      transaction.set(
+        ref,
+        {
+          /*
+           * IMPORTANT:
+           *
+           * Delete currentBreak completely.
+           *
+           * This makes another End Break
+           * impossible until another break
+           * is explicitly started.
+           */
+          currentBreak: FieldValue.delete(),
+
+          breakHistory: limitedHistory,
+
+          totalBreakMinutes,
+
+          updatedAt: FieldValue.serverTimestamp(),
+        },
+        {
+          merge: true,
+        }
+      );
+
+      result = {
+        breakStartTime: breakStart,
+
+        breakEndTime: breakEnd,
+
+        breakDurationMinutes,
+
+        totalBreakMinutes,
+      };
+    });
+
+    if (!result) {
+      throw new InternalServerErrorException('Unable to end break');
+    }
+
+    return {
+      id: recordId,
+
+      staffId: userId,
+
+      date,
+
+      breakStartTime: result.breakStartTime.toISOString(),
+
+      breakEndTime: result.breakEndTime.toISOString(),
+
+      breakDurationMinutes: result.breakDurationMinutes,
+
+      totalBreakMinutes: result.totalBreakMinutes,
+
+      breakActive: false,
+
+      message: 'Break ended successfully.',
+    };
+  }
+
+  private hasConfiguredBreak(shift: ShiftConfig): boolean {
+    return (
+      shift.breakStartHour != null &&
+      shift.breakStartMinute != null &&
+      shift.breakEndHour != null &&
+      shift.breakEndMinute != null
+    );
+  }
+
+  private breakStartForDate(date: Date, shift: ShiftConfig): Date {
+    if (!this.hasConfiguredBreak(shift)) {
+      throw new BadRequestException('No scheduled break is configured for this shift');
+    }
+
+    const localDate = this.getIndiaDateParts(date);
+
+    return new Date(
+      `${localDate}T${String(shift.breakStartHour).padStart(2, '0')}:${String(shift.breakStartMinute).padStart(
+        2,
+        '0'
+      )}:00+05:30`
+    );
+  }
+
+  private breakEndForDate(date: Date, shift: ShiftConfig): Date {
+    if (!this.hasConfiguredBreak(shift)) {
+      throw new BadRequestException('No scheduled break is configured for this shift');
+    }
+
+    const localDate = this.getIndiaDateParts(date);
+
+    const startMinutes = Number(shift.breakStartHour) * 60 + Number(shift.breakStartMinute);
+
+    const endMinutes = Number(shift.breakEndHour) * 60 + Number(shift.breakEndMinute);
+
+    /*
+     * Support overnight break configuration.
+     */
+    if (endMinutes <= startMinutes) {
+      const start = new Date(
+        `${localDate}T${String(shift.breakStartHour).padStart(2, '0')}:${String(shift.breakStartMinute).padStart(
+          2,
+          '0'
+        )}:00+05:30`
+      );
+
+      return new Date(start.getTime() + 24 * 60 * 60 * 1000);
+    }
+
+    return new Date(
+      `${localDate}T${String(shift.breakEndHour).padStart(2, '0')}:${String(shift.breakEndMinute).padStart(
+        2,
+        '0'
+      )}:00+05:30`
+    );
+  }
+
+  private formatIndiaTime(date: Date): string {
+    return new Intl.DateTimeFormat('en-IN', {
+      timeZone: AttendanceService.TIME_ZONE,
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    }).format(date);
+  }
+
+  private getCompletedBreakMinutes(breakHistory: any[]): number {
+    if (!Array.isArray(breakHistory)) {
+      return 0;
+    }
+
+    return breakHistory.reduce((total, item) => {
+      /*
+       * Prefer the stored duration.
+       */
+      if (Number.isFinite(Number(item.durationMinutes))) {
+        return total + Math.max(0, Number(item.durationMinutes));
+      }
+
+      /*
+       * Fallback for older records.
+       */
+      const start = this.toDate(item.startTime);
+
+      const end = this.toDate(item.endTime);
+
+      if (!start || !end) {
+        return total;
+      }
+
+      const minutes = Math.round((end.getTime() - start.getTime()) / 60000);
+
+      return total + Math.max(0, minutes);
+    }, 0);
   }
 
   // ============================================================
@@ -1018,6 +1526,14 @@ export class AttendanceService {
 
       endMinute: Number(data.endMinute ?? 0),
 
+      breakStartHour: data.breakStartHour != null ? Number(data.breakStartHour) : null,
+
+      breakStartMinute: data.breakStartMinute != null ? Number(data.breakStartMinute) : null,
+
+      breakEndHour: data.breakEndHour != null ? Number(data.breakEndHour) : null,
+
+      breakEndMinute: data.breakEndMinute != null ? Number(data.breakEndMinute) : null,
+
       graceMinutes: Number(data.graceMinutes ?? 0),
 
       halfDayMinutes: Number(data.halfDayMinutes ?? 240),
@@ -1131,16 +1647,6 @@ export class AttendanceService {
 
     throw new ForbiddenException('You are not authorized to view this attendance');
   }
-
-  // private getHrAuthorizedStaffIds(user: any): Set<string> {
-  //   const values = [
-  //     ...(Array.isArray(user.authorizedStaffIds) ? user.authorizedStaffIds : []),
-
-  //     ...(Array.isArray(user.staffIds) ? user.staffIds : []),
-  //   ];
-
-  //   return new Set(values.filter((x) => typeof x === 'string'));
-  // }
 
   private async loadRootUsers(rootId: string): Promise<any[]> {
     const snapshot = await this.db.collection('user').where('rootId', '==', rootId).get();
@@ -1447,8 +1953,20 @@ export class AttendanceService {
         : {}),
 
       /*
-       * Leave information is now
-       * stored directly on attendance.
+       * Check-in selfie.
+       *
+       * Stored when the shift requires selfie
+       * attendance and the employee successfully
+       * uploads a selfie during check-in.
+       */
+      ...(data.checkInSelfieUrl
+        ? {
+            checkInSelfieUrl: data.checkInSelfieUrl,
+          }
+        : {}),
+
+      /*
+       * Leave information.
        */
       ...(data.leaveRequestId
         ? {
@@ -1474,27 +1992,42 @@ export class AttendanceService {
           }
         : {}),
 
+      /*
+       * Historical shift snapshot.
+       *
+       * This includes break configuration
+       * when the attendance record was created
+       * after break settings were added.
+       */
       ...(data.shiftSnapshot
         ? {
             shiftSnapshot: data.shiftSnapshot,
           }
         : {}),
 
+      /*
+       * Multiple checkout support.
+       */
+      checkoutCount: Number(data.checkoutCount ?? 0),
+
+      checkoutHistory: Array.isArray(data.checkoutHistory) ? data.checkoutHistory : [],
+
+      /*
+       * Break tracking.
+       */
+      ...(data.currentBreak
+        ? {
+            currentBreak: data.currentBreak,
+          }
+        : {}),
+
+      breakHistory: Array.isArray(data.breakHistory) ? data.breakHistory : [],
+
+      totalBreakMinutes: Number(data.totalBreakMinutes ?? 0),
+
       ...(data.checkoutUndoUntil
         ? {
             checkoutUndoUntil: data.checkoutUndoUntil,
-          }
-        : {}),
-
-      ...(data.checkoutCount != null
-        ? {
-            checkoutCount: Number(data.checkoutCount),
-          }
-        : {}),
-
-      ...(Array.isArray(data.checkoutHistory)
-        ? {
-            checkoutHistory: data.checkoutHistory,
           }
         : {}),
     };
@@ -1522,21 +2055,5 @@ export class AttendanceService {
 
       totalWorkingMinutes: records.reduce((sum, x) => sum + (Number(x.workingMinutes) || 0), 0),
     };
-  }
-
-  // ============================================================
-  // MESSAGE FORMAT
-  // ============================================================
-
-  private formatTimeForMessage(date: Date): string {
-    return new Intl.DateTimeFormat('en-IN', {
-      hour: '2-digit',
-
-      minute: '2-digit',
-
-      hour12: true,
-
-      timeZone: AttendanceService.TIME_ZONE,
-    }).format(date);
   }
 }

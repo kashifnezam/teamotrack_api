@@ -114,11 +114,15 @@ export class ShiftsService {
     console.log(`[SHIFT DELETE] START id=${id}`);
 
     const userStart = performance.now();
+
     const user = await this.getUser(userId);
+
     console.log(`[SHIFT DELETE] getUser: ${(performance.now() - userStart).toFixed(0)}ms`);
 
     const authStart = performance.now();
+
     await this.authorize(user, 'shift.delete');
+
     console.log(`[SHIFT DELETE] authorize: ${(performance.now() - authStart).toFixed(0)}ms`);
 
     const rootId = this.getRootId(user);
@@ -126,7 +130,9 @@ export class ShiftsService {
     const ref = this.db.collection('shifts').doc(id);
 
     const shiftStart = performance.now();
+
     const doc = await ref.get();
+
     console.log(`[SHIFT DELETE] shift.get: ${(performance.now() - shiftStart).toFixed(0)}ms`);
 
     if (!doc.exists || doc.data()?.rootId !== rootId) {
@@ -162,47 +168,30 @@ export class ShiftsService {
       id,
     };
   }
+
   // ==================================================
   // AUTHORIZATION
   // ==================================================
 
   private async authorize(user: any, permission: string) {
-    /*
-     * Root authority.
-     */
     if (this.isRoot(user)) {
       return;
     }
 
-    /*
-     * HR does not manage
-     * organizational shift configuration.
-     */
     if (user.role === 'hr') {
       throw new BadRequestException('HR cannot manage shifts');
     }
 
-    /*
-     * Field Executive cannot
-     * manage anything.
-     */
     if (user.role === 'field_executive') {
       throw new BadRequestException('Executive has no management permission');
     }
 
-    /*
-     * Manager permission.
-     */
     const permissions = await this.getPermissions(user.uid);
 
     if (permissions[permission] !== true) {
       throw new BadRequestException('Permission denied');
     }
 
-    /*
-     * Parent authority must also
-     * contain the same permission.
-     */
     await this.verifyAuthorityChain(user, permission);
   }
 
@@ -224,10 +213,6 @@ export class ShiftsService {
         throw new BadRequestException('Invalid hierarchy');
       }
 
-      /*
-       * Root authority ends
-       * the chain.
-       */
       if (this.isRoot(parent)) {
         return;
       }
@@ -298,6 +283,10 @@ export class ShiftsService {
       throw new BadRequestException('Shift name is required');
     }
 
+    // ----------------------------------------------
+    // Shift time
+    // ----------------------------------------------
+
     if (
       dto.startHour < 0 ||
       dto.startHour > 23 ||
@@ -310,6 +299,67 @@ export class ShiftsService {
     ) {
       throw new BadRequestException('Invalid shift time');
     }
+
+    // ----------------------------------------------
+    // Break time
+    // ----------------------------------------------
+
+    const breakValues = [dto.breakStartHour, dto.breakStartMinute, dto.breakEndHour, dto.breakEndMinute];
+
+    const hasBreak = breakValues.some((value) => value !== undefined && value !== null);
+
+    const hasCompleteBreak =
+      dto.breakStartHour !== undefined &&
+      dto.breakStartHour !== null &&
+      dto.breakStartMinute !== undefined &&
+      dto.breakStartMinute !== null &&
+      dto.breakEndHour !== undefined &&
+      dto.breakEndHour !== null &&
+      dto.breakEndMinute !== undefined &&
+      dto.breakEndMinute !== null;
+
+    /*
+     * Break is optional, but if one break value is supplied,
+     * all four values must be supplied.
+     */
+    if (hasBreak && !hasCompleteBreak) {
+      throw new BadRequestException('Complete break start and end time are required');
+    }
+
+    if (hasCompleteBreak) {
+      if (
+        dto.breakStartHour! < 0 ||
+        dto.breakStartHour! > 23 ||
+        dto.breakEndHour! < 0 ||
+        dto.breakEndHour! > 23 ||
+        dto.breakStartMinute! < 0 ||
+        dto.breakStartMinute! > 59 ||
+        dto.breakEndMinute! < 0 ||
+        dto.breakEndMinute! > 59
+      ) {
+        throw new BadRequestException('Invalid break time');
+      }
+
+      const shiftStart = dto.startHour * 60 + dto.startMinute;
+
+      const shiftEnd = dto.endHour * 60 + dto.endMinute;
+
+      const breakStart = dto.breakStartHour! * 60 + dto.breakStartMinute!;
+
+      const breakEnd = dto.breakEndHour! * 60 + dto.breakEndMinute!;
+
+      if (breakStart >= breakEnd) {
+        throw new BadRequestException('Break start time must be before break end time');
+      }
+
+      if (breakStart < shiftStart || breakEnd > shiftEnd) {
+        throw new BadRequestException('Break time must be within shift time');
+      }
+    }
+
+    // ----------------------------------------------
+    // Attendance duration
+    // ----------------------------------------------
 
     if (dto.halfDayMinutes < 0 || dto.fullDayMinutes < 0 || dto.halfDayMinutes > dto.fullDayMinutes) {
       throw new BadRequestException('Invalid attendance duration');
@@ -332,6 +382,14 @@ export class ShiftsService {
 
       endMinute: data.endMinute ?? 0,
 
+      breakStartHour: data.breakStartHour ?? null,
+
+      breakStartMinute: data.breakStartMinute ?? null,
+
+      breakEndHour: data.breakEndHour ?? null,
+
+      breakEndMinute: data.breakEndMinute ?? null,
+
       graceMinutes: data.graceMinutes ?? 0,
 
       halfDayMinutes: data.halfDayMinutes ?? 0,
@@ -339,6 +397,8 @@ export class ShiftsService {
       fullDayMinutes: data.fullDayMinutes ?? 0,
 
       weeklyOff: data.weeklyOff ?? [],
+
+      selfieCheckIn: data.selfieCheckIn ?? false,
     };
   }
 }
