@@ -3,188 +3,263 @@
 ========================================================== */
 
 .executives-page {
-    padding: 24px;
-    min-height: calc(100vh - var(--header-height));
-    background: var(--bg-color);
-}
+  padding: 24px;
 
+  min-height: calc(100vh - var(--header-height));
+
+  background: var(--bg-color);
+}
 
 /* ==========================================================
    Header
 ========================================================== */
 
 .executives-page .page-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-    margin-bottom: 18px;
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  gap: 16px;
+
+  margin-bottom: 18px;
 }
 
 .executives-page .page-header h4 {
-    color: var(--text-primary);
-    font-weight: var(--fw-semibold);
+  color: var(--text-primary);
+
+  font-weight: var(--fw-semibold);
 }
 
 .executives-page .page-header p {
-    font-size: 13px;
+  font-size: 13px;
 }
 
 .executives-page .page-header .text-primary {
-    font-size: 11px;
-    letter-spacing: .04em;
-}
+  font-size: 11px;
 
+  letter-spacing: 0.04em;
+}
 
 /* ==========================================================
    Filters
 ========================================================== */
 
 .executives-page .filter-card {
-    background: var(--surface);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-md);
-    padding: 14px;
-    margin-bottom: 14px;
-    box-shadow: var(--shadow-sm);
+  background: var(--surface);
+
+  border: 1px solid var(--border-color);
+
+  border-radius: var(--radius-md);
+
+  padding: 14px;
+
+  margin-bottom: 14px;
+
+  box-shadow: var(--shadow-sm);
 }
 
 .executives-page .search-box {
-    position: relative;
+  position: relative;
 }
 
 .executives-page .search-box i {
-    position: absolute;
-    left: 13px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--text-muted);
-    z-index: 2;
+  position: absolute;
+
+  left: 13px;
+
+  top: 50%;
+
+  transform: translateY(-50%);
+
+  color: var(--text-muted);
+
+  z-index: 2;
 }
 
 .executives-page .search-box input {
-    padding-left: 38px;
+  padding-left: 38px;
 }
 
 .executive-count {
-    color: var(--text-secondary);
-    font-size: 14px;
+  color: var(--text-secondary);
+
+  font-size: 14px;
 }
 
 .executive-count strong {
-    color: var(--text-primary);
-    font-size: 18px;
-    font-weight: var(--fw-semibold);
-    margin-right: 4px;
-}
+  color: var(--text-primary);
 
+  font-size: 18px;
+
+  font-weight: var(--fw-semibold);
+
+  margin-right: 4px;
+}
 
 /* ==========================================================
    Card
 ========================================================== */
 
 .executive-card {
-    background: var(--surface);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-md);
-    box-shadow: var(--shadow-sm);
-    overflow: hidden;
+  background: var(--surface);
+
+  border: 1px solid var(--border-color);
+
+  border-radius: var(--radius-md);
+
+  box-shadow: var(--shadow-sm);
+
+  overflow: hidden;
 }
 
 .executive-card-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 14px 16px;
-    border-bottom: 1px solid var(--border-color);
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  gap: 12px;
+
+  padding: 14px 16px;
+
+  border-bottom: 1px solid var(--border-color);
 }
 
 .executive-card-header h6 {
-    color: var(--text-primary);
-    font-weight: var(--fw-semibold);
+  color: var(--text-primary);
+
+  font-weight: var(--fw-semibold);
 }
 
 .executive-card-header small {
-    color: var(--text-muted);
-    font-size: 12px;
-}
+  color: var(--text-muted);
 
+  font-size: 12px;
+}
 
 /* ==========================================================
    Table
 ========================================================== */
 
 .executive-card .table-responsive {
-    max-height: calc(100vh - 285px);
-    overflow: auto;
+  max-height: calc(100vh - 285px);
+
+  overflow: auto;
 }
 
 .executive-card .table {
-    margin: 0;
+  margin: 0;
 }
 
 .executive-card .table th {
-    background: var(--surface-soft);
-    color: var(--text-secondary);
-    font-size: 12px;
-    font-weight: 600;
-    white-space: nowrap;
-    border-bottom: 1px solid var(--border-color);
+  background: var(--surface-soft);
+
+  color: var(--text-secondary);
+
+  font-size: 12px;
+
+  font-weight: 600;
+
+  white-space: nowrap;
+
+  border-bottom: 1px solid var(--border-color);
 }
 
 .executive-card .table td,
 .executive-card .table th {
-    padding: 13px 15px;
+  padding: 13px 15px;
 }
 
 .executive-card .table td {
-    color: var(--text-primary);
-    font-size: 14px;
-    vertical-align: middle;
+  color: var(--text-primary);
+
+  font-size: 14px;
+
+  vertical-align: middle;
 }
 
 .executive-card .table tbody tr {
-    transition: var(--transition-fast);
+  transition: var(--transition-fast);
 }
 
 .executive-card .table tbody tr:hover {
-    background: var(--surface-soft);
+  background: var(--surface-soft);
 }
-
 
 /* ==========================================================
    Executive
 ========================================================== */
 
 .exec-name {
-    color: var(--text-primary);
-    font-weight: 600;
-    white-space: nowrap;
+  color: var(--text-primary);
+
+  font-weight: 600;
+
+  white-space: nowrap;
 }
 
 .exec-email {
-    color: var(--text-muted);
-    font-size: 12px;
-    margin-top: 2px;
-}
+  color: var(--text-muted);
 
+  font-size: 12px;
+
+  margin-top: 2px;
+}
 
 /* ==========================================================
    Parent
 ========================================================== */
 
 .exec-parent {
-    color: var(--text-primary);
-    font-weight: 500;
+  color: var(--text-primary);
+
+  font-weight: 500;
 }
 
 .exec-parent-label {
-    color: var(--text-muted);
-    font-size: 11px;
-    margin-top: 2px;
+  color: var(--text-muted);
+
+  font-size: 11px;
+
+  margin-top: 2px;
 }
 
+/* ==========================================================
+   Team
+========================================================== */
+
+.exec-team {
+  color: var(--text-primary);
+
+  font-weight: 500;
+
+  white-space: nowrap;
+}
+
+/* ==========================================================
+   Shift
+========================================================== */
+
+.exec-shift {
+  display: inline-flex;
+
+  align-items: center;
+
+  color: var(--text-primary);
+
+  font-weight: 500;
+
+  white-space: nowrap;
+}
+
+.exec-shift i {
+  color: var(--primary);
+
+  font-size: 13px;
+}
 
 /* ==========================================================
    Badges
@@ -192,243 +267,500 @@
 
 .status-badge,
 .tracking-badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 5px 9px;
-    border-radius: 20px;
-    font-size: 11px;
-    font-weight: 600;
-    white-space: nowrap;
+  display: inline-flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  padding: 5px 9px;
+
+  border-radius: 20px;
+
+  font-size: 11px;
+
+  font-weight: 600;
+
+  white-space: nowrap;
 }
 
 .status-active {
-    color: #15803d;
-    background: #dcfce7;
+  color: #15803d;
+
+  background: #dcfce7;
 }
 
 .status-inactive {
-    color: #dc2626;
-    background: #fee2e2;
+  color: #dc2626;
+
+  background: #fee2e2;
 }
 
 .tracking-on {
-    color: #1d4ed8;
-    background: #dbeafe;
+  color: #1d4ed8;
+
+  background: #dbeafe;
 }
 
 .tracking-off {
-    color: #64748b;
-    background: #f1f5f9;
-}
+  color: #64748b;
 
+  background: #f1f5f9;
+}
 
 /* ==========================================================
    Action
 ========================================================== */
 
 .executive-card .action-btn {
-    width: 34px;
-    height: 34px;
-    padding: 0;
-    border: 0;
-    border-radius: 8px;
-    background: var(--surface-soft);
-    color: var(--text-secondary);
-    transition: var(--transition-fast);
+  width: 34px;
+
+  height: 34px;
+
+  padding: 0;
+
+  border: 0;
+
+  border-radius: 8px;
+
+  background: var(--surface-soft);
+
+  color: var(--text-secondary);
+
+  transition: var(--transition-fast);
 }
 
 .executive-card .action-btn:hover {
-    background: rgba(37, 99, 235, .10);
-    color: var(--primary);
-}
+  background: rgba(37, 99, 235, 0.1);
 
+  color: var(--primary);
+}
 
 /* ==========================================================
    Empty
 ========================================================== */
 
 .executive-card .empty-state {
-    padding: 50px 20px !important;
-    text-align: center;
-    color: var(--text-muted);
-}
+  padding: 50px 20px !important;
 
+  text-align: center;
+
+  color: var(--text-muted);
+}
 
 /* ==========================================================
    Executive Modal
 ========================================================== */
 
 .teamo-executive-modal {
-    border: 0;
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-lg);
-    overflow: hidden;
+  border: 0;
+
+  border-radius: var(--radius-lg);
+
+  box-shadow: var(--shadow-lg);
+
+  overflow: hidden;
 }
 
 .teamo-executive-header {
-    padding: 18px 20px;
-    border-bottom: 1px solid var(--border-color);
+  padding: 18px 20px;
+
+  border-bottom: 1px solid var(--border-color);
 }
 
 .executive-modal-eyebrow {
-    color: var(--primary);
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: .05em;
-    margin-bottom: 3px;
+  color: var(--primary);
+
+  font-size: 10px;
+
+  font-weight: 600;
+
+  letter-spacing: 0.05em;
+
+  margin-bottom: 3px;
 }
 
 .teamo-executive-header .modal-title {
-    color: var(--text-primary);
-    font-weight: var(--fw-semibold);
+  color: var(--text-primary);
+
+  font-weight: var(--fw-semibold);
 }
 
 .executive-modal-subtitle {
-    color: var(--text-muted);
-    font-size: 12px;
-    margin-top: 3px;
+  color: var(--text-muted);
+
+  font-size: 12px;
+
+  margin-top: 3px;
 }
 
 .teamo-executive-modal .modal-body {
-    padding: 20px;
+  padding: 20px;
 }
 
 .teamo-executive-modal .modal-body label {
-    display: block;
-    margin-bottom: 6px;
-    color: var(--text-primary);
-    font-size: 12px;
-    font-weight: 600;
+  display: block;
+
+  margin-bottom: 6px;
+
+  color: var(--text-primary);
+
+  font-size: 12px;
+
+  font-weight: 600;
 }
 
 .teamo-executive-modal .form-control,
 .teamo-executive-modal .form-select {
-    min-height: 42px;
-    border-color: var(--border-color);
-    color: var(--text-primary);
-    background: var(--surface);
+  min-height: 42px;
+
+  border-color: var(--border-color);
+
+  color: var(--text-primary);
+
+  background: var(--surface);
 }
 
 .teamo-executive-modal .form-control:focus,
 .teamo-executive-modal .form-select:focus {
-    border-color: var(--primary);
-    box-shadow: 0 0 0 .2rem rgba(37, 99, 235, .10);
+  border-color: var(--primary);
+
+  box-shadow: 0 0 0 0.2rem rgba(37, 99, 235, 0.1);
 }
 
-.teamo-executive-modal .form-select:disabled {
-    background: var(--surface-soft);
-    color: var(--text-secondary);
-    cursor: not-allowed;
+.teamo-executive-modal .form-select:disabled,
+.teamo-executive-modal .form-control:disabled {
+  background: var(--surface-soft);
+
+  color: var(--text-secondary);
+
+  cursor: not-allowed;
 }
 
 .teamo-executive-modal .form-text {
-    color: var(--text-muted);
-    font-size: 11px;
-    margin-top: 5px;
+  color: var(--text-muted);
+
+  font-size: 11px;
+
+  margin-top: 5px;
 }
+
+/* ==========================================================
+   Shift Display
+========================================================== */
+
+.teamo-executive-modal #shiftDisplay {
+  font-weight: 500;
+
+  cursor: not-allowed;
+}
+
+.teamo-executive-modal .shift-display-wrapper {
+  position: relative;
+}
+
+.teamo-executive-modal .shift-display-wrapper i {
+  position: absolute;
+
+  left: 13px;
+
+  top: 50%;
+
+  transform: translateY(-50%);
+
+  color: var(--primary);
+
+  z-index: 2;
+
+  pointer-events: none;
+}
+
+.teamo-executive-modal .shift-display-wrapper input {
+  padding-left: 36px;
+}
+
+/* ==========================================================
+   Footer
+========================================================== */
 
 .teamo-executive-footer {
-    padding: 14px 20px;
-    border-top: 1px solid var(--border-color);
-}
+  padding: 14px 20px;
 
+  border-top: 1px solid var(--border-color);
+}
 
 /* ==========================================================
    Mobile
 ========================================================== */
 
 @media (max-width: 992px) {
+  .executives-page {
+    padding: 20px;
+  }
 
-    .executives-page {
-        padding: 20px;
-    }
-
-    .executive-card .table-responsive {
-        max-height: calc(100vh - 260px);
-    }
-
+  .executive-card .table-responsive {
+    max-height: calc(100vh - 260px);
+  }
 }
-
 
 @media (max-width: 768px) {
+  .executives-page {
+    padding: 15px;
+  }
 
-    .executives-page {
-        padding: 15px;
-    }
+  .executives-page .page-header {
+    align-items: flex-start;
+  }
 
-    .executives-page .page-header {
-        align-items: flex-start;
-    }
+  .executives-page .page-header h4 {
+    font-size: 18px;
+  }
 
-    .executives-page .page-header h4 {
-        font-size: 18px;
-    }
+  .executives-page .page-header .btn {
+    padding: 8px 11px;
 
-    .executives-page .page-header .btn {
-        padding: 8px 11px;
-        font-size: 13px;
-        white-space: nowrap;
-    }
+    font-size: 13px;
 
-    .executives-page .filter-card {
-        padding: 12px;
-    }
+    white-space: nowrap;
+  }
 
-    .executive-card .table-responsive {
-        max-height: none;
-    }
+  .executives-page .filter-card {
+    padding: 12px;
+  }
 
-    .executive-card .table {
-        min-width: 850px;
-    }
+  .executive-card .table-responsive {
+    max-height: none;
+  }
 
+  .executive-card .table {
+    min-width: 950px;
+  }
 }
 
+@media (max-width: 576px) {
+  .executives-page {
+    padding: 12px;
+  }
+
+  .executives-page .page-header {
+    flex-direction: column;
+
+    align-items: stretch;
+  }
+
+  .executives-page .page-header .btn {
+    width: 100%;
+  }
+
+  .executive-count {
+    display: block;
+
+    text-align: left;
+
+    padding: 4px 0;
+  }
+
+  .executive-card-header {
+    padding: 12px;
+  }
+
+  .teamo-executive-modal {
+    border-radius: var(--radius-md);
+  }
+
+  .modal-dialog {
+    margin: 10px;
+  }
+
+  .teamo-executive-modal .modal-body {
+    padding: 15px;
+  }
+
+  .teamo-executive-header {
+    padding: 15px;
+  }
+
+  .teamo-executive-footer {
+    padding: 12px 15px;
+  }
+}
+
+/* ==========================================================
+   Executive Permissions
+========================================================== */
+
+.executive-permission-body {
+  padding: 20px;
+}
+
+.executive-permission-header {
+  display: flex;
+
+  align-items: flex-start;
+
+  justify-content: space-between;
+
+  gap: 16px;
+
+  padding: 14px 16px;
+
+  margin-bottom: 18px;
+
+  background: var(--surface-soft);
+
+  border: 1px solid var(--border-color);
+
+  border-radius: var(--radius-md);
+}
+
+.executive-permission-title {
+  color: var(--text-primary);
+
+  font-size: 14px;
+
+  font-weight: var(--fw-semibold);
+
+  margin-bottom: 3px;
+}
+
+.executive-permission-description {
+  color: var(--text-muted);
+
+  font-size: 12px;
+
+  line-height: 1.5;
+}
+
+.executive-permission-badge {
+  display: inline-flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  padding: 5px 9px;
+
+  border-radius: 20px;
+
+  background: rgba(37, 99, 235, 0.1);
+
+  color: var(--primary);
+
+  font-size: 10px;
+
+  font-weight: 700;
+
+  letter-spacing: 0.04em;
+
+  white-space: nowrap;
+}
+
+/* ==========================================================
+   Permission List
+========================================================== */
+
+.executive-permission-list {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 12px;
+}
+
+.executive-permission-group {
+  border: 1px solid var(--border-color);
+
+  border-radius: var(--radius-md);
+
+  overflow: hidden;
+
+  background: var(--surface);
+}
+
+.executive-permission-group-title {
+  padding: 10px 14px;
+
+  background: var(--surface-soft);
+
+  color: var(--text-secondary);
+
+  font-size: 11px;
+
+  font-weight: 700;
+
+  letter-spacing: 0.04em;
+
+  text-transform: uppercase;
+
+  border-bottom: 1px solid var(--border-color);
+}
+
+.executive-permission-item {
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  gap: 16px;
+
+  padding: 14px;
+
+  min-height: 56px;
+}
+
+.executive-permission-item + .executive-permission-item {
+  border-top: 1px solid var(--border-color);
+}
+
+.executive-permission-label {
+  color: var(--text-primary);
+
+  font-size: 13px;
+
+  font-weight: 500;
+}
+
+.executive-permission-key {
+  color: var(--text-muted);
+
+  font-size: 11px;
+
+  margin-top: 2px;
+}
+
+/* ==========================================================
+   Empty Permission State
+========================================================== */
+
+.executive-permission-empty {
+  padding: 30px 20px;
+
+  text-align: center;
+
+  color: var(--text-muted);
+
+  font-size: 13px;
+}
+
+/* ==========================================================
+   Mobile
+========================================================== */
 
 @media (max-width: 576px) {
+  .executive-permission-body {
+    padding: 15px;
+  }
 
-    .executives-page {
-        padding: 12px;
-    }
+  .executive-permission-header {
+    padding: 12px;
+  }
 
-    .executives-page .page-header {
-        flex-direction: column;
-        align-items: stretch;
-    }
+  .executive-permission-item {
+    padding: 12px;
+  }
 
-    .executives-page .page-header .btn {
-        width: 100%;
-    }
-
-    .executive-count {
-        display: block;
-        text-align: left;
-        padding: 4px 0;
-    }
-
-    .executive-card-header {
-        padding: 12px;
-    }
-
-    .teamo-executive-modal {
-        border-radius: var(--radius-md);
-    }
-
-    .modal-dialog {
-        margin: 10px;
-    }
-
-    .teamo-executive-modal .modal-body {
-        padding: 15px;
-    }
-
-    .teamo-executive-header {
-        padding: 15px;
-    }
-
-    .teamo-executive-footer {
-        padding: 12px 15px;
-    }
-
+  .executive-permission-badge {
+    font-size: 9px;
+  }
 }

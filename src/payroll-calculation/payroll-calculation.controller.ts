@@ -7,7 +7,8 @@ import { PayrollCalculationDto } from './dto/payroll-calculation.dto';
 
 import { FirebaseAuthGuard } from '../auth/firebase-auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
-import { RootManagerGuard } from 'src/auth/root-manager.guard';
+import { AllowRoles } from 'src/auth/roles.decorator';
+import { RoleGuard } from 'src/auth/role.guard';
 
 @Controller('payroll-calculations')
 export class PayrollCalculationController {
@@ -28,7 +29,8 @@ export class PayrollCalculationController {
   // GET DATA
   // ==================================================
 
-  @UseGuards(FirebaseAuthGuard, RootManagerGuard)
+  @UseGuards(FirebaseAuthGuard, RoleGuard)
+  @AllowRoles('root_manager')
   @Get('data/:periodId')
   get(@CurrentUser() user: any, @Param('periodId') periodId: string) {
     return this.service.getAll(user.uid, periodId);
@@ -38,7 +40,8 @@ export class PayrollCalculationController {
   // CALCULATE
   // ==================================================
 
-  @UseGuards(FirebaseAuthGuard, RootManagerGuard)
+  @UseGuards(FirebaseAuthGuard, RoleGuard)
+  @AllowRoles('root_manager')
   @Post()
   calculate(@CurrentUser() user: any, @Body() dto: PayrollCalculationDto) {
     return this.service.calculate(user.uid, dto.payrollPeriodId);

@@ -45,7 +45,7 @@
   }
 
   // ==========================================================
-  // EXECUTIVE DROPDOWN EVENTS
+  // EXECUTIVE DROPDOWN
   // ==========================================================
 
   function bindExecutiveDropdown() {
@@ -143,7 +143,7 @@
   }
 
   // ==========================================================
-  // LOAD AUTHORIZED STAFF
+  // LOAD STAFF
   // ==========================================================
 
   async function loadStaff() {
@@ -225,12 +225,6 @@
 
     selectedTeam = select?.value || '';
 
-    /*
-     * Team changed, therefore the
-     * previous executive selection
-     * is no longer guaranteed to be valid.
-     */
-
     clearSelectedStaff();
 
     const filteredStaff = getFilteredStaff();
@@ -267,10 +261,6 @@
       return;
     }
 
-    /*
-     * Remove duplicate staff.
-     */
-
     const unique = new Map();
 
     list.forEach(function (item) {
@@ -286,10 +276,6 @@
     const sorted = Array.from(unique.values()).sort(function (a, b) {
       return String(a.fullName || '').localeCompare(String(b.fullName || ''));
     });
-
-    /*
-     * Render options directly.
-     */
 
     if (!sorted.length) {
       options.innerHTML = `
@@ -308,7 +294,7 @@
   }
 
   // ==========================================================
-  // EXECUTIVE SEARCH / OPTIONS
+  // EXECUTIVE SEARCH
   // ==========================================================
 
   function renderExecutiveOptions(query = '') {
@@ -425,20 +411,11 @@
 
     selectedStaffId = selected.id;
 
-    /*
-     * Keep hidden input synchronized
-     * with the selected executive.
-     */
-
     const hiddenInput = document.getElementById('attendanceStaff');
 
     if (hiddenInput) {
       hiddenInput.value = selected.id;
     }
-
-    /*
-     * Update dropdown trigger.
-     */
 
     const triggerText = document.getElementById('attendanceStaffTriggerText');
 
@@ -446,28 +423,15 @@
       triggerText.textContent = selected.fullName || 'Unknown';
     }
 
-    /*
-     * Show selected executive card.
-     */
-
     showSelectedStaff(selected);
 
-    /*
-     * Clear previous attendance
-     * because executive changed.
-     */
-
     resetAttendanceData();
-
-    /*
-     * Close dropdown.
-     */
 
     closeExecutiveDropdown();
   }
 
   // ==========================================================
-  // CLEAR SELECTED EXECUTIVE
+  // CLEAR STAFF
   // ==========================================================
 
   function clearSelectedStaff() {
@@ -482,7 +446,7 @@
     const triggerText = document.getElementById('attendanceStaffTriggerText');
 
     if (triggerText) {
-      triggerText.textContent = 'Select Executive';
+      triggerText.textContent = 'Select Staff';
     }
 
     document.getElementById('selectedStaffCard')?.classList.add('d-none');
@@ -545,10 +509,6 @@
 
     try {
       AppAlert.loading('Loading attendance...');
-
-      /*
-       * Existing backend contract.
-       */
 
       const data = await Api.post('/attendance/data', {
         staffId,
@@ -614,8 +574,9 @@
     if (!records.length) {
       tbody.innerHTML = `
         <tr>
+
           <td
-            colspan="7"
+            colspan="10"
             class="empty-state"
           >
 
@@ -632,6 +593,7 @@
             </span>
 
           </td>
+
         </tr>
       `;
 
@@ -654,8 +616,19 @@
 
     const working = formatMinutes(Number(record.workingMinutes) || 0);
 
+    /*
+     * Prefer backend-calculated totalBreakMinutes.
+     *
+     * If it is not available, calculate it from breakHistory.
+     */
+    const breakMinutes = getTotalBreakMinutes(record);
+
+    const breakTime = formatMinutes(breakMinutes);
+
     return `
       <tr>
+
+        <!-- DATE -->
 
         <td>
           <span class="attendance-date">
@@ -663,11 +636,24 @@
           </span>
         </td>
 
+
+        <!-- CHECK IN -->
+
         <td>
           <span class="attendance-time">
             ${escapeHtml(checkIn)}
           </span>
         </td>
+
+
+        <!-- CHECK-IN SELFIE -->
+
+        <td class="attendance-selfie-cell">
+          ${renderSelfieThumbnail(record.checkInSelfieUrl, 'check-in')}
+        </td>
+
+
+        <!-- CHECK OUT -->
 
         <td>
           <span class="attendance-time">
@@ -675,19 +661,47 @@
           </span>
         </td>
 
+
+        <!-- CHECK-OUT SELFIE -->
+
+        <td class="attendance-selfie-cell">
+          ${renderSelfieThumbnail(record.checkOutSelfieUrl, 'check-out')}
+        </td>
+
+
+        <!-- WORKING -->
+
         <td>
           <span class="attendance-working">
             ${escapeHtml(working)}
           </span>
         </td>
 
+
+        <!-- BREAK -->
+
+        <td>
+          <span class="attendance-break">
+            ${escapeHtml(breakTime)}
+          </span>
+        </td>
+
+
+        <!-- PUNCTUALITY -->
+
         <td>
           ${punctualityBadge(record)}
         </td>
 
+
+        <!-- ATTENDANCE TYPE -->
+
         <td>
           ${attendanceTypeBadge(record)}
         </td>
+
+
+        <!-- STATUS -->
 
         <td>
           ${statusBadge(record.status)}
@@ -695,6 +709,174 @@
 
       </tr>
     `;
+  }
+
+  // ==========================================================
+  // BREAK TIME
+  // ==========================================================
+
+  function getTotalBreakMinutes(record) {
+    if (!record) {
+      return 0;
+    }
+
+    const totalBreakMinutes = Number(record.totalBreakMinutes);
+
+    if (
+      record.totalBreakMinutes !== null &&
+      record.totalBreakMinutes !== undefined &&
+      Number.isFinite(totalBreakMinutes)
+    ) {
+      return Math.max(0, Math.floor(totalBreakMinutes));
+    }
+
+    return getBreakHistoryMinutes(record.breakHistory);
+  }
+
+  function getBreakHistoryMinutes(history) {
+    if (!Array.isArray(history)) {
+      return 0;
+    }
+
+    return history.reduce(function (total, item) {
+      if (!item) {
+        return total;
+      }
+
+      const duration = Number(item.durationMinutes);
+
+      if (Number.isFinite(duration)) {
+        return total + Math.max(0, Math.floor(duration));
+      }
+
+      const start = toDate(item.startTime);
+
+      const end = toDate(item.endTime);
+
+      if (start && end) {
+        const difference = end.getTime() - start.getTime();
+
+        if (difference > 0) {
+          return total + Math.max(0, Math.floor(difference / 60000));
+        }
+      }
+
+      return total;
+    }, 0);
+  }
+
+  // ==========================================================
+  // SELFIE THUMBNAIL
+  // ==========================================================
+
+  function renderSelfieThumbnail(selfieUrl, selfieType) {
+    const url = String(selfieUrl || '').trim();
+
+    if (!url) {
+      return `
+        <span class="attendance-selfie-empty">
+          —
+        </span>
+      `;
+    }
+
+    const encodedUrl = encodeURIComponent(url);
+
+    const isCheckOut = selfieType === 'check-out';
+
+    const title = isCheckOut ? 'View check-out selfie' : 'View check-in selfie';
+
+    const alt = isCheckOut ? 'Check-out selfie' : 'Check-in selfie';
+
+    return `
+      <button
+        type="button"
+        class="attendance-selfie-btn"
+        title="${escapeHtml(title)}"
+        onclick="viewAttendanceSelfie(
+          decodeURIComponent('${encodedUrl}'),
+          '${selfieType}'
+        )"
+      >
+
+        <img
+          src="${escapeHtml(url)}"
+          alt="${escapeHtml(alt)}"
+          class="attendance-selfie-thumbnail"
+          loading="lazy"
+          onerror="
+            this.style.display='none';
+            this.nextElementSibling.classList.remove('d-none');
+            this.nextElementSibling.style.display='flex';
+          "
+        />
+
+        <span
+          class="attendance-selfie-fallback d-none"
+        >
+          <i class="bi bi-image"></i>
+        </span>
+
+      </button>
+    `;
+  }
+
+  // ==========================================================
+  // SELFIE PREVIEW
+  // ==========================================================
+
+  function viewAttendanceSelfie(url, selfieType = 'check-in') {
+    if (!url) {
+      return;
+    }
+
+    const image = document.getElementById('attendanceSelfiePreview');
+
+    const modalElement = document.getElementById('attendanceSelfieModal');
+
+    const loading = document.getElementById('attendanceSelfieLoading');
+
+    const error = document.getElementById('attendanceSelfieError');
+
+    const modalLabel = document.getElementById('attendanceSelfieModalLabel');
+
+    if (!image || !modalElement) {
+      return;
+    }
+
+    const isCheckOut = selfieType === 'check-out';
+
+    if (modalLabel) {
+      modalLabel.textContent = isCheckOut ? 'Check-Out Selfie' : 'Check-In Selfie';
+    }
+
+    image.alt = isCheckOut ? 'Check-out selfie' : 'Check-in selfie';
+
+    image.classList.add('d-none');
+
+    loading?.classList.remove('d-none');
+
+    error?.classList.add('d-none');
+
+    image.onload = function () {
+      loading?.classList.add('d-none');
+
+      error?.classList.add('d-none');
+
+      image.classList.remove('d-none');
+    };
+
+    image.onerror = function () {
+      loading?.classList.add('d-none');
+
+      image.classList.add('d-none');
+
+      error?.classList.remove('d-none');
+    };
+
+    image.src = url;
+
+    bootstrap.Modal.getOrCreateInstance(modalElement).show();
   }
 
   // ==========================================================
@@ -706,24 +888,11 @@
       .trim()
       .toLowerCase();
 
-    /*
-     * Prefer explicit backend value.
-     *
-     * Expected:
-     * on_time
-     * late
-     * not_applicable
-     */
-
     const explicit = String(record.punctuality || '')
       .trim()
       .toLowerCase();
 
     let value = explicit;
-
-    /*
-     * Backward-compatible fallback.
-     */
 
     if (!value) {
       if (status === 'late') {
@@ -737,7 +906,9 @@
 
     const labels = {
       on_time: 'On Time',
+
       late: 'Late',
+
       not_applicable: '—',
     };
 
@@ -750,9 +921,11 @@
           punctuality-${escapeHtml(value)}
         "
       >
+
         <span class="punctuality-dot"></span>
 
         ${escapeHtml(label)}
+
       </span>
     `;
   }
@@ -762,16 +935,6 @@
   // ==========================================================
 
   function attendanceTypeBadge(record) {
-    /*
-     * Preferred backend property:
-     *
-     * record.attendanceType
-     *
-     * Optional fallback:
-     *
-     * record.type
-     */
-
     const raw = record.attendanceType || record.type || deriveAttendanceType(record.status);
 
     const value = String(raw || '')
@@ -780,10 +943,13 @@
 
     const labels = {
       office: 'Office',
+
       field: 'Field',
+
       remote: 'Remote',
 
       present: 'Present',
+
       late: 'Present',
 
       half_day: 'Half Day',
@@ -825,11 +991,17 @@
 
     const labels = {
       present: 'Present',
+
       late: 'Late',
+
       half_day: 'Half Day',
+
       weekly_off: 'Weekly Off',
+
       holiday: 'Holiday',
+
       leave: 'Leave',
+
       absent: 'Absent',
     };
 
@@ -869,25 +1041,12 @@
   }
 
   // ==========================================================
-  // SCOPE
-  // ==========================================================
-
-  function populateScope(data) {
-    const scope = data.scope;
-
-    if (!scope) {
-      return;
-    }
-
-    setText('attendanceScope', scope.label || 'Authorized Staff');
-  }
-
-  // ==========================================================
   // RESET FILTERS
   // ==========================================================
 
   function resetFilters() {
     selectedTeam = '';
+
     selectedStaffId = '';
 
     const team = document.getElementById('attendanceTeam');
@@ -942,8 +1101,9 @@
 
     tbody.innerHTML = `
       <tr>
+
         <td
-          colspan="7"
+          colspan="10"
           class="empty-state"
         >
 
@@ -960,6 +1120,7 @@
           </span>
 
         </td>
+
       </tr>
     `;
   }
@@ -1005,24 +1166,11 @@
       return null;
     }
 
-    /*
-     * Firestore Timestamp.
-     */
-
     if (typeof value === 'object' && typeof value.toDate === 'function') {
       const date = value.toDate();
 
       return isNaN(date.getTime()) ? null : date;
     }
-
-    /*
-     * Firestore JSON:
-     *
-     * {
-     *   seconds,
-     *   nanoseconds
-     * }
-     */
 
     if (typeof value === 'object' && value.seconds != null) {
       const seconds = Number(value.seconds);
@@ -1034,14 +1182,6 @@
       return new Date(seconds * 1000);
     }
 
-    /*
-     * Older Firebase format:
-     *
-     * {
-     *   _seconds
-     * }
-     */
-
     if (typeof value === 'object' && value._seconds != null) {
       const seconds = Number(value._seconds);
 
@@ -1051,10 +1191,6 @@
 
       return new Date(seconds * 1000);
     }
-
-    /*
-     * ISO / Date string.
-     */
 
     const date = new Date(value);
 
@@ -1184,4 +1320,10 @@
       .replaceAll('"', '&quot;')
       .replaceAll("'", '&#039;');
   }
+
+  // ==========================================================
+  // GLOBAL HTML HANDLERS
+  // ==========================================================
+
+  window.viewAttendanceSelfie = viewAttendanceSelfie;
 })();

@@ -156,17 +156,7 @@ if (window.TeamoTrackApp) {
         case 'hr':
           sidebarFile = '/dashboard/components/sidebar-hr.html';
           break;
-
-        /*
-         * Executive workspace
-         */
         case 'field_executive':
-          sidebarFile = '/dashboard/components/sidebar-executive.html';
-          break;
-
-        /*
-         * Management workspace
-         */
         case 'root_manager':
         case 'manager':
           sidebarFile = '/dashboard/components/sidebar.html';
@@ -374,9 +364,35 @@ if (window.TeamoTrackApp) {
        PAGE SCRIPT
     ================================================== */
 
-    loadPageScript(script) {
+    /* ==================================================
+   PAGE SCRIPT
+================================================== */
+
+    async loadPageScript(script) {
       if (!script) {
-        return Promise.resolve();
+        return;
+      }
+
+      /*
+       * My Attendance uses face-api.js.
+       *
+       * Because this application is an SPA,
+       * my-attendance.js is dynamically injected.
+       *
+       * Therefore face-api.js must be loaded
+       * before the page script.
+       */
+      if (script === '/dashboard/assets/js/attendance/my-attendance.js') {
+        await this.loadExternalScript('https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.min.js');
+
+        /*
+         * Safety check.
+         */
+        if (typeof window.faceapi === 'undefined') {
+          throw new Error('face-api.js loaded, but window.faceapi is unavailable.');
+        }
+
+        console.log('[TeamoTrack] face-api.js loaded successfully.');
       }
 
       return new Promise((resolve, reject) => {
@@ -553,7 +569,7 @@ if (window.TeamoTrackApp) {
 
           description: "View and manage your team's attendance.",
         },
-        
+
         '/attendance-regularization': {
           html: '/dashboard/pages/attendance/attendance-regularization-review.html',
 
@@ -565,7 +581,7 @@ if (window.TeamoTrackApp) {
 
           title: 'Attendance Regularization',
 
-          description: "View and manage attendance regularization requests.",
+          description: 'View and manage attendance regularization requests.',
         },
 
         '/attendance/live': {
@@ -851,6 +867,54 @@ if (window.TeamoTrackApp) {
 
       return pages[path] || null;
     },
+
+    /* ==================================================
+   EXTERNAL SCRIPT
+================================================== */
+
+    loadExternalScript(src) {
+      return new Promise((resolve, reject) => {
+        const existing = document.querySelector(`script[data-external-script="${src}"]`);
+
+        if (existing) {
+          if (existing.dataset.loaded === 'true') {
+            resolve();
+
+            return;
+          }
+
+          existing.addEventListener('load', resolve, { once: true });
+
+          existing.addEventListener(
+            'error',
+            () => {
+              reject(new Error(`Unable to load ${src}`));
+            },
+            { once: true }
+          );
+
+          return;
+        }
+
+        const script = document.createElement('script');
+
+        script.src = src;
+
+        script.dataset.externalScript = src;
+
+        script.onload = () => {
+          script.dataset.loaded = 'true';
+
+          resolve();
+        };
+
+        script.onerror = () => {
+          reject(new Error(`Unable to load ${src}`));
+        };
+
+        document.head.appendChild(script);
+      });
+    },
   };
 
   window.App = App;
@@ -881,28 +945,12 @@ if (window.TeamoTrackApp) {
         };
 
       /* ==================================================
-         FIELD EXECUTIVE
-      ================================================== */
-
-      case 'field_executive':
-        return {
-          html: '/dashboard/pages/executive/dashboard-executive.html',
-
-          js: '/dashboard/assets/js/executive/dashboard-executive.js',
-
-          css: '/dashboard/assets/css/executive/dashboard-executive.css',
-
-          init: 'initializeExecutiveDashboard',
-
-          description: "Here's your attendance and work summary.",
-        };
-
-      /* ==================================================
          MANAGER
       ================================================== */
 
       case 'manager':
       case 'root_manager':
+      case 'field_executive':
         return {
           html: '/dashboard/pages/dashboard.html',
 
@@ -1226,7 +1274,7 @@ if (window.TeamoTrackApp) {
     if (myAttendance && role == 'root_manager') {
       myAttendance.remove();
     }
-    
+
     if (companySetting && role !== 'root_manager') {
       companySetting.remove();
     }

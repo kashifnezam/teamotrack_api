@@ -171,7 +171,6 @@
 
       renderExecutiveOptions('', '');
       AppAlert.close();
-
     } catch (error) {
       console.error('loadExecutives failed:', error);
       AppAlert.error(error.message || 'Unable to load executives');
@@ -373,6 +372,10 @@
     if (selectedText) {
       selectedText.textContent = executive.fullName || executive.name || 'Select Executive';
     }
+
+    setText('trackingMapExecutive', executive.fullName || executive.name || 'Executive');
+
+    setText('trackingStatusText', 'Ready to track');
 
     const teamId = document.getElementById('liveTeam')?.value || '';
 

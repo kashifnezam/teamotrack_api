@@ -7,7 +7,8 @@ import { SalaryStructureDto } from './dto/salary-structure.dto';
 
 import { FirebaseAuthGuard } from '../auth/firebase-auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
-import { RootManagerGuard } from 'src/auth/root-manager.guard';
+import { RoleGuard } from 'src/auth/role.guard';
+import { AllowRoles } from 'src/auth/roles.decorator';
 
 @Controller('salary-structures')
 export class SalaryStructureController {
@@ -27,7 +28,8 @@ export class SalaryStructureController {
   // ==================================================
   // GET DATA
   // ==================================================
-  @UseGuards(FirebaseAuthGuard, RootManagerGuard)
+  @UseGuards(FirebaseAuthGuard, RoleGuard)
+  @AllowRoles('root_manager')
   @Get('data')
   get(@CurrentUser() user: any) {
     return this.service.getAll(user.uid);
@@ -37,7 +39,8 @@ export class SalaryStructureController {
   // CREATE
   // ==================================================
 
-  @UseGuards(FirebaseAuthGuard, RootManagerGuard)
+  @UseGuards(FirebaseAuthGuard, RoleGuard)
+  @AllowRoles('root_manager')
   @Post()
   create(@CurrentUser() user: any, @Body() dto: SalaryStructureDto) {
     return this.service.create(user.uid, dto);
@@ -46,7 +49,8 @@ export class SalaryStructureController {
   // ==================================================
   // UPDATE
   // ==================================================
-  @UseGuards(FirebaseAuthGuard, RootManagerGuard)
+  @UseGuards(FirebaseAuthGuard, RoleGuard)
+  @AllowRoles('root_manager')
   @Patch(':id')
   update(@CurrentUser() user: any, @Param('id') id: string, @Body() dto: SalaryStructureDto) {
     return this.service.update(user.uid, id, dto);
@@ -55,7 +59,8 @@ export class SalaryStructureController {
   // ==================================================
   // DEACTIVATE
   // ==================================================
-  @UseGuards(FirebaseAuthGuard, RootManagerGuard)
+  @UseGuards(FirebaseAuthGuard, RoleGuard)
+  @AllowRoles('root_manager')
   @Patch(':id/deactivate')
   deactivate(@CurrentUser() user: any, @Param('id') id: string) {
     return this.service.deactivate(user.uid, id);
@@ -64,7 +69,8 @@ export class SalaryStructureController {
   // ==================================================
   // REACTIVATE
   // ==================================================
-  @UseGuards(FirebaseAuthGuard, RootManagerGuard)
+  @UseGuards(FirebaseAuthGuard, RoleGuard)
+  @AllowRoles('root_manager')
   @Patch(':id/reactivate')
   reactivate(@CurrentUser() user: any, @Param('id') id: string) {
     return this.service.reactivate(user.uid, id);

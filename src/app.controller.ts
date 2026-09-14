@@ -1,23 +1,23 @@
 import { Controller, Get, Res } from '@nestjs/common';
-import express from 'express';
+
 import type { Response } from 'express';
+import { FRONTEND_SHELL_ROUTES } from './config/frontend-routes';
 
 @Controller()
 export class AppController {
   @Get()
-  home(@Res() res: express.Response) {
-    return res.redirect('/login');
+  home(@Res() res: Response) {
+    return res.redirect('/dashboard');
   }
 
-  // SPA shell
-  @Get("profile")
-  page(@Res() res: Response) {
+  // ==========================================================
+  // SPA SHELL
+  // ==========================================================
 
-    return res.sendFile(
-      'shell.html',
-      {
-        root: './public/dashboard',
-      },
-    );
+  @Get(FRONTEND_SHELL_ROUTES)
+  page(@Res() res: Response) {
+    return res.sendFile('shell.html', {
+      root: './public/dashboard',
+    });
   }
 }

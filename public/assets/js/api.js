@@ -181,6 +181,34 @@ const Api = {
 
     return this.handleResponse(response);
   },
+
+  // ======================================================
+  // POST MULTIPART / FORMDATA
+  // ======================================================
+
+  async postMultipart(url, formData) {
+    const token = await getFreshToken();
+
+    if (!token) {
+      sessionStorage.setItem('loginAlert', 'Login required.');
+
+      window.location.href = '/login';
+
+      return null;
+    }
+
+    const response = await fetch(API_BASE + url, {
+      method: 'POST',
+
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+
+      body: formData,
+    });
+
+    return this.handleResponse(response);
+  },
 };
 
 window.Api = Api;

@@ -7,7 +7,8 @@ import { SalaryAssignmentDto } from './dto/salary-assignment.dto';
 
 import { FirebaseAuthGuard } from '../auth/firebase-auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
-import { RootManagerGuard } from 'src/auth/root-manager.guard';
+import { RoleGuard } from 'src/auth/role.guard';
+import { AllowRoles } from 'src/auth/roles.decorator';
 
 @Controller('salary-assignments')
 export class SalaryAssignmentController {
@@ -27,7 +28,8 @@ export class SalaryAssignmentController {
   // ==================================================
   // GET DATA
   // ==================================================
-  @UseGuards(FirebaseAuthGuard, RootManagerGuard)
+  @UseGuards(FirebaseAuthGuard, RoleGuard)
+  @AllowRoles('root_manager')
   @Get('data')
   get(@CurrentUser() user: any) {
     return this.service.getAll(user.uid);
@@ -36,7 +38,8 @@ export class SalaryAssignmentController {
   // ==================================================
   // GET EMPLOYEE HISTORY
   // ==================================================
-  @UseGuards(FirebaseAuthGuard, RootManagerGuard)
+  @UseGuards(FirebaseAuthGuard, RoleGuard)
+  @AllowRoles('root_manager')
   @Get('employee/:employeeId')
   getEmployee(@CurrentUser() user: any, @Param('employeeId') employeeId: string) {
     return this.service.getEmployee(user.uid, employeeId);
@@ -45,7 +48,8 @@ export class SalaryAssignmentController {
   // ==================================================
   // CREATE
   // ==================================================
-  @UseGuards(FirebaseAuthGuard, RootManagerGuard)
+  @UseGuards(FirebaseAuthGuard, RoleGuard)
+  @AllowRoles('root_manager')
   @Post()
   create(@CurrentUser() user: any, @Body() dto: SalaryAssignmentDto) {
     return this.service.create(user.uid, dto);
@@ -54,7 +58,8 @@ export class SalaryAssignmentController {
   // ==================================================
   // DEACTIVATE
   // ==================================================
-  @UseGuards(FirebaseAuthGuard, RootManagerGuard)
+  @UseGuards(FirebaseAuthGuard, RoleGuard)
+  @AllowRoles('root_manager')
   @Patch(':id/deactivate')
   deactivate(@CurrentUser() user: any, @Param('id') id: string) {
     return this.service.deactivate(user.uid, id);

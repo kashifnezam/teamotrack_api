@@ -1,547 +1,328 @@
-<!-- PAGE CONTENT -->
-<section class="executives-page p-3">
-
-    <div class="container-fluid">
-
-        <!-- ==================================================
-             PAGE HEADER
-        ================================================== -->
-
-        <div class="page-header">
-
-            <div>
-
-                <div class="text-primary small fw-semibold mb-1">
-                    TEAMOTRACK • WORKFORCE
-                </div>
-
-                <h4 class="mb-1">
-                    Executives
-                </h4>
-
-                <p class="text-muted mb-0">
-                    Manage field executives within your team hierarchy.
-                </p>
-
-            </div>
-
-
-            <button
-                type="button"
-                class="btn btn-primary"
-                onclick="openExecutiveModal()"
-            >
-
-                <i class="bi bi-person-plus me-1"></i>
-
-                Add Executive
-
-            </button>
-
-        </div>
-
-
-        <!-- ==================================================
-             FILTER
-        ================================================== -->
-
-        <div class="filter-card">
-
-            <div class="row g-2 align-items-center">
-
-                <div class="col-lg-5 col-md-6">
-
-                    <div class="search-box">
-
-                        <i class="bi bi-search"></i>
-
-                        <input
-                            id="searchInput"
-                            type="search"
-                            name="executiveSearch"
-                            class="form-control"
-                            placeholder="Search executive..."
-                            autocomplete="off"
-                        >
-
-                    </div>
-
-                </div>
-
-
-                <div class="col-lg-3 col-md-6">
-
-                    <select
-                        id="teamFilter"
-                        class="form-select"
-                    >
-
-                        <option value="">
-                            All Teams
-                        </option>
-
-                    </select>
-
-                </div>
-
-
-                <div class="col-lg-4">
-
-                    <span class="executive-count">
-
-                        <strong id="executiveCount">
-                            0
-                        </strong>
-
-                        Executives
-
-                    </span>
-
-                </div>
-
-            </div>
-
-        </div>
-
-
-        <!-- ==================================================
-             EXECUTIVE TABLE
-        ================================================== -->
-
-        <div class="executive-card">
-
-            <div class="executive-card-header">
-
-                <div>
-
-                    <h6 class="mb-1">
-                        Executive List
-                    </h6>
-
-                    <small class="text-muted">
-                        Executives within your management hierarchy
-                    </small>
-
-                </div>
-
-            </div>
-
-
-            <div class="table-responsive">
-
-                <table class="table align-middle mb-0">
-
-                    <thead>
-
-                        <tr>
-
-                            <th>
-                                Executive
-                            </th>
-
-                            <th>
-                                Parent
-                            </th>
-
-                            <th>
-                                Mobile
-                            </th>
-
-                            <th>
-                                Team
-                            </th>
-
-                            <th>
-                                Tracking
-                            </th>
-
-                            <th>
-                                Status
-                            </th>
-
-                            <th class="text-end">
-                                Action
-                            </th>
-
-                        </tr>
-
-                    </thead>
-
-
-                    <tbody id="executiveTable">
-
-                        <tr>
-
-                            <td
-                                colspan="7"
-                                class="empty-state"
-                            >
-
-                                Loading executives...
-
-                            </td>
-
-                        </tr>
-
-                    </tbody>
-
-                </table>
-
-            </div>
-
-        </div>
-
+<!-- ==========================================================
+     EXECUTIVES PAGE
+========================================================== -->
+
+<section class="executives-page">
+  <div class="container-fluid">
+    <!-- ======================================================
+         HEADER
+    ======================================================= -->
+
+    <div class="page-header">
+      <div>
+        <h4 class="mb-1">Executives</h4>
+
+        <p class="text-muted mb-0">Manage your field executives and their task access.</p>
+      </div>
+
+      <button type="button" class="btn btn-primary" onclick="openExecutiveModal()">
+        <i class="bi bi-plus-lg me-1"></i>
+        Add Executive
+      </button>
     </div>
 
-</section>
+    <!-- ======================================================
+         FILTERS
+    ======================================================= -->
 
+    <div class="filter-card">
+      <div class="row g-2 align-items-center">
+        <div class="col-lg-6">
+          <div class="search-box">
+            <i class="bi bi-search"></i>
+
+            <input id="searchInput" type="search" class="form-control" placeholder="Search executive..." />
+          </div>
+        </div>
+
+        <div class="col-lg-3">
+          <select id="teamFilter" class="form-select">
+            <option value="">All Teams</option>
+          </select>
+        </div>
+
+        <div class="col-lg-3 text-lg-end">
+          <span class="executive-count">
+            <strong id="executiveCount">0</strong>
+            Executives
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================================================
+         LIST
+    ======================================================= -->
+
+    <div class="executive-card">
+      <div class="executive-card-header">
+        <h6 class="mb-0">My Executives</h6>
+
+        <small> Field workforce </small>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table align-middle mb-0">
+          <thead>
+            <tr>
+              <th>Executive</th>
+              <th>Parent</th>
+              <th>Mobile</th>
+              <th>Team</th>
+              <th>Shift</th>
+              <th>Tracking</th>
+              <th>Status</th>
+              <th class="text-end">Action</th>
+            </tr>
+          </thead>
+
+          <tbody id="executiveTable">
+            <tr>
+              <td colspan="8" class="empty-state">Loading executives...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
 
 <!-- ==========================================================
      EXECUTIVE MODAL
 ========================================================== -->
 
-<div
-    class="modal fade"
-    id="executiveModal"
-    tabindex="-1"
->
-
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-
-        <div class="modal-content teamo-executive-modal">
-
-            <!-- ==================================================
-                 HEADER
-            ================================================== -->
-
-            <div class="modal-header teamo-executive-header">
-
-                <div>
-
-                    <div class="executive-modal-eyebrow">
-                        TEAMOTRACK • WORKFORCE
-                    </div>
-
-                    <h5
-                        class="modal-title"
-                        id="modalTitle"
-                    >
-                        Add Executive
-                    </h5>
-
-                    <div class="executive-modal-subtitle">
-                        Create and manage a field executive within your hierarchy
-                    </div>
-
-                </div>
-
-
-                <button
-                    type="button"
-                    class="btn-close"
-                    data-bs-dismiss="modal"
-                >
-                </button>
-
-            </div>
-
-
-            <!-- ==================================================
-                 BODY
-            ================================================== -->
-
-            <div class="modal-body">
-
-                <input
-                    type="hidden"
-                    id="executiveId"
-                >
-
-
-                <div class="row g-3">
-
-                    <!-- Full Name -->
-
-                    <div class="col-md-6">
-
-                        <label
-                            for="fullName"
-                            class="form-label"
-                        >
-                            Full Name
-                        </label>
-
-                        <input
-                            id="fullName"
-                            class="form-control"
-                            type="text"
-                            placeholder="Enter full name"
-                            autocomplete="name"
-                        >
-
-                    </div>
-
-
-                    <!-- Parent Manager -->
-
-                    <div class="col-md-6">
-
-                        <label
-                            for="parentId"
-                            class="form-label"
-                        >
-                            Parent Manager
-                        </label>
-
-                        <select
-                            id="parentId"
-                            class="form-select"
-                            disabled
-                        >
-
-                            <option value="">
-                                Select Team first
-                            </option>
-
-                        </select>
-
-                        <div
-                            id="parentHint"
-                            class="form-text"
-                        >
-                            Parent manager is determined by the selected team's manager.
-                        </div>
-
-                    </div>
-
-
-                    <!-- Mobile -->
-
-                    <div class="col-md-6">
-
-                        <label
-                            for="mobile"
-                            class="form-label"
-                        >
-                            Mobile
-                        </label>
-
-                        <input
-                            id="mobile"
-                            class="form-control"
-                            type="text"
-                            placeholder="Enter mobile number"
-                            autocomplete="tel"
-                        >
-
-                    </div>
-
-
-                    <!-- Email -->
-
-                    <div class="col-md-6">
-
-                        <label
-                            for="email"
-                            class="form-label"
-                        >
-                            Email
-                        </label>
-
-                        <input
-                            id="email"
-                            class="form-control"
-                            type="email"
-                            placeholder="name@example.com"
-                            autocomplete="email"
-                        >
-
-                    </div>
-
-
-                    <!-- Password -->
-
-                    <div class="col-md-6">
-
-                        <label
-                            for="password"
-                            class="form-label"
-                        >
-                            Password
-                        </label>
-
-                        <div class="input-group">
-
-                            <input
-                                id="password"
-                                class="form-control"
-                                type="password"
-                                autocomplete="new-password"
-                                placeholder="Enter password"
-                            >
-
-                            <button
-                                type="button"
-                                class="btn btn-outline-secondary"
-                                id="togglePassword"
-                                title="Show password"
-                                aria-label="Show password"
-                            >
-
-                                <i class="bi bi-eye"></i>
-
-                            </button>
-
-                        </div>
-
-                        <div
-                            id="passwordHint"
-                            class="form-text"
-                        >
-                            Required when creating a new executive.
-                        </div>
-
-                    </div>
-
-
-                    <!-- Team -->
-
-                    <div class="col-md-6">
-
-                        <label
-                            for="teamId"
-                            class="form-label"
-                        >
-                            Team
-                        </label>
-
-                        <select
-                            id="teamId"
-                            class="form-select"
-                        >
-
-                            <option value="">
-                                Select Team
-                            </option>
-
-                        </select>
-
-                        <div class="form-text">
-                            The team's manager becomes the executive's parent.
-                        </div>
-
-                    </div>
-
-
-                    <!-- GPS Priority -->
-
-                    <div class="col-md-6">
-
-                        <label
-                            for="gpsPriority"
-                            class="form-label"
-                        >
-                            GPS Priority
-                        </label>
-
-                        <select
-                            id="gpsPriority"
-                            class="form-select"
-                        >
-
-                            <option value="low">
-                                Low
-                            </option>
-
-                            <option value="high">
-                                High
-                            </option>
-
-                        </select>
-
-                    </div>
-
-
-                    <!-- Active -->
-
-                    <div class="col-md-3">
-
-                        <label
-                            for="isActive"
-                            class="form-label"
-                        >
-                            Active
-                        </label>
-
-                        <div class="form-check form-switch">
-
-                            <input
-                                id="isActive"
-                                class="form-check-input"
-                                type="checkbox"
-                                checked
-                            >
-
-                        </div>
-
-                    </div>
-
-
-                    <!-- Tracking -->
-
-                    <div class="col-md-3">
-
-                        <label
-                            for="isTrackingEnable"
-                            class="form-label"
-                        >
-                            Tracking
-                        </label>
-
-                        <div class="form-check form-switch">
-
-                            <input
-                                id="isTrackingEnable"
-                                class="form-check-input"
-                                type="checkbox"
-                            >
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-
-            <!-- ==================================================
-                 FOOTER
-            ================================================== -->
-
-            <div class="modal-footer teamo-executive-footer">
-
-                <button
-                    type="button"
-                    class="btn btn-light"
-                    data-bs-dismiss="modal"
-                >
-                    Cancel
-                </button>
-
-                <button
-                    type="button"
-                    class="btn btn-primary px-4"
-                    id="saveExecutiveBtn"
-                    onclick="saveExecutive()"
-                >
-                    Save Executive
-                </button>
-
-            </div>
-
+<div class="modal fade" id="executiveModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content teamo-executive-modal">
+      <!-- ==================================================
+           HEADER
+      ================================================== -->
+
+      <div class="modal-header teamo-executive-header">
+        <div>
+          <div class="executive-modal-eyebrow">TEAMOTRACK • WORKFORCE</div>
+
+          <h5 class="modal-title" id="modalTitle">Add Executive</h5>
+
+          <div class="executive-modal-subtitle">Create and manage a field executive within your hierarchy</div>
         </div>
 
-    </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
 
+      <!-- ==================================================
+           BODY
+      ================================================== -->
+
+      <div class="modal-body">
+        <input type="hidden" id="executiveId" />
+
+        <div class="row g-3">
+          <!-- Full Name -->
+
+          <div class="col-md-6">
+            <label for="fullName" class="form-label"> Full Name </label>
+
+            <input id="fullName" class="form-control" type="text" placeholder="Enter full name" autocomplete="name" />
+          </div>
+
+          <!-- Parent Manager -->
+
+          <div class="col-md-6">
+            <label for="parentId" class="form-label"> Parent Manager </label>
+
+            <select id="parentId" class="form-select" disabled>
+              <option value="">Select Team first</option>
+            </select>
+
+            <div id="parentHint" class="form-text">Parent manager is determined by the selected team's manager.</div>
+          </div>
+
+          <!-- Mobile -->
+
+          <div class="col-md-6">
+            <label for="mobile" class="form-label"> Mobile </label>
+
+            <input id="mobile" class="form-control" type="text" placeholder="Enter mobile number" autocomplete="tel" />
+          </div>
+
+          <!-- Email -->
+
+          <div class="col-md-6">
+            <label for="email" class="form-label"> Email </label>
+
+            <input id="email" class="form-control" type="email" placeholder="name@example.com" autocomplete="email" />
+          </div>
+
+          <!-- Password -->
+
+          <div class="col-md-6">
+            <label for="password" class="form-label"> Password </label>
+
+            <div class="input-group">
+              <input
+                id="password"
+                class="form-control"
+                type="password"
+                autocomplete="new-password"
+                placeholder="Enter password"
+              />
+
+              <button
+                type="button"
+                class="btn btn-outline-secondary"
+                id="togglePassword"
+                title="Show password"
+                aria-label="Show password"
+              >
+                <i class="bi bi-eye"></i>
+              </button>
+            </div>
+
+            <div id="passwordHint" class="form-text">Required when creating a new executive.</div>
+          </div>
+
+          <!-- Team -->
+
+          <div class="col-md-6">
+            <label for="teamId" class="form-label"> Team </label>
+
+            <select id="teamId" class="form-select">
+              <option value="">Select Team</option>
+            </select>
+
+            <div class="form-text">The team's manager becomes the executive's parent.</div>
+          </div>
+
+          <!-- Shift -->
+
+          <div class="col-md-6">
+            <label for="shiftDisplay" class="form-label"> Shift </label>
+
+            <div class="shift-display-wrapper">
+              <i class="bi bi-clock"></i>
+
+              <input
+                id="shiftDisplay"
+                class="form-control"
+                type="text"
+                placeholder="Select Team first"
+                readonly
+                disabled
+              />
+            </div>
+
+            <div id="shiftHint" class="form-text">Shift is determined by the selected team's shift.</div>
+          </div>
+
+          <!-- GPS Priority -->
+
+          <div class="col-md-6">
+            <label for="gpsPriority" class="form-label"> GPS Priority </label>
+
+            <select id="gpsPriority" class="form-select">
+              <option value="low">Low</option>
+
+              <option value="high">High</option>
+            </select>
+          </div>
+
+          <!-- Active -->
+
+          <div class="col-md-3">
+            <label for="isActive" class="form-label"> Active </label>
+
+            <div class="form-check form-switch">
+              <input id="isActive" class="form-check-input" type="checkbox" checked />
+            </div>
+          </div>
+
+          <!-- Tracking -->
+
+          <div class="col-md-3">
+            <label for="isTrackingEnable" class="form-label"> Tracking </label>
+
+            <div class="form-check form-switch">
+              <input id="isTrackingEnable" class="form-check-input" type="checkbox" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================================================
+           FOOTER
+      ================================================== -->
+
+      <div class="modal-footer teamo-executive-footer">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+
+        <button type="button" class="btn btn-primary px-4" id="saveExecutiveBtn" onclick="saveExecutive()">
+          Save Executive
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==========================================================
+     EXECUTIVE PERMISSION MODAL
+========================================================== -->
+
+<div class="modal fade" id="executivePermissionModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content teamo-executive-modal">
+      <!-- ==================================================
+           HEADER
+      ================================================== -->
+
+      <div class="modal-header teamo-executive-header">
+        <div>
+          <div class="executive-modal-eyebrow">TEAMOTRACK • ACCESS CONTROL</div>
+
+          <h5 class="modal-title">Executive Permissions</h5>
+
+          <div class="executive-modal-subtitle">Control the capabilities available to this executive</div>
+        </div>
+
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <!-- ==================================================
+           BODY
+      ================================================== -->
+
+      <div class="modal-body executive-permission-body">
+        <div class="executive-permission-header">
+          <div>
+            <div class="executive-permission-title">Access &amp; Permissions</div>
+
+            <div class="executive-permission-description">
+              An executive can only receive permissions that are allowed by their parent manager.
+            </div>
+          </div>
+
+          <span class="executive-permission-badge"> EXECUTIVE </span>
+        </div>
+
+        <div id="executivePermissionList" class="executive-permission-list"></div>
+      </div>
+
+      <!-- ==================================================
+           FOOTER
+      ================================================== -->
+
+      <div class="modal-footer teamo-executive-footer">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+
+        <button
+          id="saveExecutivePermissionBtn"
+          type="button"
+          class="btn btn-primary px-4"
+          onclick="saveExecutivePermissions()"
+        >
+          Save Permissions
+        </button>
+      </div>
+    </div>
+  </div>
 </div>

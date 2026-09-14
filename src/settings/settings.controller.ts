@@ -10,7 +10,8 @@ import { SettingsDto } from './dto/settings.dto';
 import { FirebaseAuthGuard } from '../auth/firebase-auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { ChangeEmailDto } from './dto/change.email.dto';
-import { RootManagerGuard } from 'src/auth/root-manager.guard';
+import { RoleGuard } from 'src/auth/role.guard';
+import { AllowRoles } from 'src/auth/roles.decorator';
 
 @Controller('settings')
 export class SettingsController {
@@ -64,7 +65,8 @@ export class SettingsController {
   // ==================================================
 
   @Patch('company')
-  @UseGuards(FirebaseAuthGuard, RootManagerGuard)
+  @UseGuards(FirebaseAuthGuard, RoleGuard)
+  @AllowRoles('root_manager')
   updateCompany(@CurrentUser() user: any, @Body() dto: SettingsDto) {
     return this.service.updateCompany(user.uid, dto);
   }
@@ -74,7 +76,8 @@ export class SettingsController {
   // ==================================================
 
   @Post('company/logo')
-  @UseGuards(FirebaseAuthGuard, RootManagerGuard)
+  @UseGuards(FirebaseAuthGuard, RoleGuard)
+   @AllowRoles('root_manager')
   @UseInterceptors(FileInterceptor('logo'))
   uploadLogo(@CurrentUser() user: any, @UploadedFile() file: any) {
     return this.service.uploadLogo(user.uid, file);

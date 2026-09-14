@@ -864,6 +864,10 @@ export class AttendanceSchedulerService {
       fullDayMinutes: Number(data.fullDayMinutes ?? 480),
 
       weeklyOff: Array.isArray(data.weeklyOff) ? data.weeklyOff : [],
+
+      selfieCheckIn: data.selfieCheckIn === true,
+      
+      selfieCheckOut: data.selfieCheckOut === true,
     };
   }
 

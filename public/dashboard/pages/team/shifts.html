@@ -37,7 +37,7 @@
 
         <div class="col-lg-6 col-md-5 text-md-end">
           <div class="shift-count">
-            <span class="count-number" id="shiftCount"> 0 </span>
+            <span class="count-number" id="shiftCount">0</span>
 
             <span>active shifts</span>
           </div>
@@ -68,6 +68,7 @@
               <th>Half Day</th>
               <th>Full Day</th>
               <th>Selfie Check-In</th>
+              <th>Selfie Check-Out</th>
               <th>Weekly Off</th>
               <th class="text-end">Action</th>
             </tr>
@@ -75,7 +76,7 @@
 
           <tbody id="shiftTable">
             <tr>
-              <td colspan="7" class="empty-state">
+              <td colspan="9" class="empty-state">
                 <div class="empty-icon">
                   <i class="bi bi-calendar3"></i>
                 </div>
@@ -222,11 +223,13 @@
           </div>
 
           <div class="rules-grid">
-            <!-- GRACE -->
+            <!-- ==================================================
+                 GRACE
+            =================================================== -->
 
             <div class="rule-field">
               <div class="rule-field-header">
-                <label> Grace </label>
+                <label>Grace</label>
 
                 <button
                   type="button"
@@ -267,13 +270,15 @@
               <div class="rule-hint" id="graceRuleHint">No grace time</div>
             </div>
 
-            <!-- HALF DAY -->
+            <!-- ==================================================
+                 HALF DAY
+            =================================================== -->
 
             <div class="rule-field">
               <div class="rule-field-header">
-                <label> Half Day </label>
+                <label>Half Day</label>
 
-                <span> Threshold </span>
+                <span>Threshold</span>
               </div>
 
               <div class="compact-duration">
@@ -303,13 +308,15 @@
               <div class="rule-hint" id="halfDayRuleHint">4 hr</div>
             </div>
 
-            <!-- FULL DAY -->
+            <!-- ==================================================
+                 FULL DAY
+            =================================================== -->
 
             <div class="rule-field">
               <div class="rule-field-header">
-                <label> Full Day </label>
+                <label>Full Day</label>
 
-                <span> Threshold </span>
+                <span>Threshold</span>
               </div>
 
               <div class="compact-duration">
@@ -339,7 +346,9 @@
               <div class="rule-hint" id="fullDayRuleHint">8 hr</div>
             </div>
 
-            <!-- SELFIE CHECK-IN -->
+            <!-- ==================================================
+                 SELFIE CHECK-IN
+            =================================================== -->
 
             <div class="rule-field">
               <div class="rule-field-header">
@@ -369,9 +378,44 @@
 
               <div class="rule-hint">Employee must capture a selfie before check-in</div>
             </div>
+
+            <!-- ==================================================
+                 SELFIE CHECK-OUT
+            =================================================== -->
+
+            <div class="rule-field">
+              <div class="rule-field-header">
+                <label> Selfie Check-Out </label>
+
+                <button
+                  type="button"
+                  class="info-btn"
+                  data-bs-toggle="tooltip"
+                  data-bs-placement="top"
+                  title="When enabled, employees assigned to this shift must take a live selfie before checking out."
+                  aria-label="Selfie check-out information"
+                >
+                  <i class="bi bi-info-circle"></i>
+                </button>
+              </div>
+
+              <label class="break-toggle selfie-toggle">
+                <input type="checkbox" id="selfieCheckOut" />
+
+                <span class="break-checkbox">
+                  <i class="bi bi-check"></i>
+                </span>
+
+                <span class="break-label"> Require Selfie </span>
+              </label>
+
+              <div class="rule-hint">Employee must capture a selfie before check-out</div>
+            </div>
           </div>
 
-          <!-- RULE SUMMARY -->
+          <!-- ==================================================
+               RULE SUMMARY
+          =================================================== -->
 
           <div class="rule-summary">
             <span id="summaryGrace"> Grace: 0 min </span>
@@ -402,36 +446,43 @@
           <div class="weekly-off">
             <label>
               <input type="checkbox" value="0" />
+
               <span>Sun</span>
             </label>
 
             <label>
               <input type="checkbox" value="1" />
+
               <span>Mon</span>
             </label>
 
             <label>
               <input type="checkbox" value="2" />
+
               <span>Tue</span>
             </label>
 
             <label>
               <input type="checkbox" value="3" />
+
               <span>Wed</span>
             </label>
 
             <label>
               <input type="checkbox" value="4" />
+
               <span>Thu</span>
             </label>
 
             <label>
               <input type="checkbox" value="5" />
+
               <span>Fri</span>
             </label>
 
             <label>
               <input type="checkbox" value="6" />
+
               <span>Sat</span>
             </label>
           </div>

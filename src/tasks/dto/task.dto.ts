@@ -1,59 +1,40 @@
-import {
-    IsBoolean,
-    IsIn,
-    IsOptional,
-    IsString,
-} from 'class-validator';
+import { IsBoolean, IsIn, IsOptional, IsString } from 'class-validator';
 
 export class TaskDto {
+  @IsString()
+  title!: string;
 
-    @IsString()
-    title!: string;
+  @IsString()
+  description!: string;
 
+  @IsIn(['Low', 'Medium', 'High'])
+  priority!: string;
 
-    @IsString()
-    description!: string;
+  @IsString()
+  startDate!: string;
 
+  @IsString()
+  endDate!: string;
 
-    @IsIn([
-        'Low',
-        'Medium',
-        'High',
-    ])
-    priority!: string;
+  @IsBoolean()
+  @IsOptional()
+  isGeofence?: boolean;
 
+  @IsOptional()
+  startLocation?: {
+    address?: string;
+    lat?: number;
+    lng?: number;
+  };
 
-    @IsString()
-    startDate!: string;
+  @IsOptional()
+  endLocation?: {
+    address?: string;
+    lat?: number;
+    lng?: number;
+  };
 
-
-    @IsString()
-    endDate!: string;
-
-
-    @IsBoolean()
-    @IsOptional()
-    isGeofence?: boolean;
-
-
-    @IsOptional()
-    startLocation?: {
-        address?: string;
-        lat?: number;
-        lng?: number;
-    };
-
-
-    @IsOptional()
-    endLocation?: {
-        address?: string;
-        lat?: number;
-        lng?: number;
-    };
-
-
-    @IsOptional()
-    @IsString()
-    assignedTo?: string;
-
+  @IsOptional()
+  @IsString()
+  assignedTo?: string;
 }

@@ -522,22 +522,22 @@
 ========================================================== */
 
   function editTeam(id) {
+    editingId = id;
+
     const team = teams.find((item) => item.id === id);
 
     if (!team) {
+      editingId = null;
+
       AppAlert.warning('Team is no longer available');
 
       return;
     }
 
     const teamId = document.getElementById('teamId');
-
     const teamName = document.getElementById('teamName');
-
     const leadSelect = document.getElementById('leadId');
-
     const shiftSelect = document.getElementById('shiftId');
-
     const hint = document.getElementById('teamLeadHint');
 
     const executiveCount = Number(team.totalExecutives || 0);
@@ -551,11 +551,9 @@
     }
 
     if (leadSelect) {
-      /*
-       * Existing manager must still be
-       * available to this user.
-       */
       if (team.leadId && !managers.some((manager) => manager.id === team.leadId)) {
+        editingId = null;
+
         AppAlert.warning("You no longer have access to this team's manager");
 
         return;
@@ -563,12 +561,6 @@
 
       leadSelect.value = team.leadId || '';
 
-      /*
-       * Existing team:
-       *
-       * If executives exist, changing the
-       * manager would change their hierarchy.
-       */
       leadSelect.disabled = executiveCount > 0;
 
       if (hint) {
@@ -585,14 +577,6 @@
       shiftSelect.value = team.shiftId || '';
     }
 
-    /*
-     * IMPORTANT:
-     *
-     * Do NOT call openTeamModal(id)
-     * because it should not reset anything.
-     *
-     * Just show the modal.
-     */
     const modalElement = document.getElementById('teamModal');
 
     if (!modalElement) {

@@ -1,6 +1,10 @@
 <section class="attendance-page p-3">
   <div class="container-fluid">
+    <!-- ======================================================
+         PAGE HEADER
+    ======================================================= -->
 
+    <div class="attendance-page-header">
       <div>
         <div class="attendance-eyebrow">ATTENDANCE MANAGEMENT</div>
 
@@ -13,11 +17,15 @@
 
       <div class="attendance-scope">
         <i class="bi bi-shield-check"></i>
-        <span id="attendanceScope">Loading scope...</span>
-      </div>
-    </div> -->
 
-    <!-- FILTER -->
+        <span id="attendanceScope"> Loading scope... </span>
+      </div>
+    </div>
+
+    <!-- ======================================================
+         FILTER
+    ======================================================= -->
+
     <div class="attendance-filter-card">
       <div class="attendance-filter-header">
         <div>
@@ -39,7 +47,7 @@
 
       <div class="row g-3 align-items-end">
         <!-- TEAM -->
-        <!-- TEAM -->
+
         <div class="col-xl-3 col-lg-4 col-md-6">
           <label for="attendanceTeam" class="form-label"> Team </label>
 
@@ -48,7 +56,8 @@
           </select>
         </div>
 
-        <!-- EXECUTIVE -->
+        <!-- STAFF -->
+
         <div class="col-xl-4 col-lg-5 col-md-6">
           <label for="attendanceStaffSearch" class="form-label"> Staff </label>
 
@@ -75,12 +84,12 @@
               <div class="attendance-select-options" id="attendanceStaffOptions"></div>
             </div>
 
-            <!-- Actual selected value -->
             <input type="hidden" id="attendanceStaff" value="" />
           </div>
         </div>
 
         <!-- MONTH -->
+
         <div class="col-xl-3 col-lg-4 col-md-6">
           <label for="attendanceMonth" class="form-label"> Month </label>
 
@@ -88,38 +97,49 @@
         </div>
 
         <!-- LOAD -->
+
         <div class="col-xl-2 col-lg-3 col-md-6">
           <button type="button" class="btn btn-primary attendance-load-btn w-100" id="attendanceLoadBtn">
             <i class="bi bi-bar-chart-line me-1"></i>
+
             View Attendance
           </button>
         </div>
       </div>
     </div>
 
-    <!-- SELECTED EXECUTIVE -->
+    <!-- ======================================================
+         SELECTED STAFF
+    ======================================================= -->
+
     <div id="selectedStaffCard" class="selected-staff-card d-none">
       <div class="selected-staff-avatar">
         <i class="bi bi-person"></i>
       </div>
 
       <div class="selected-staff-info">
-        <strong id="selectedStaffName">--</strong>
+        <strong id="selectedStaffName"> -- </strong>
 
         <div>
-          <span id="selectedStaffRole">--</span>
-          <span class="selected-staff-separator">•</span>
-          <span id="selectedStaffTeam">--</span>
+          <span id="selectedStaffRole"> -- </span>
+
+          <span class="selected-staff-separator"> • </span>
+
+          <span id="selectedStaffTeam"> -- </span>
         </div>
       </div>
 
       <div class="selected-staff-indicator">
         <i class="bi bi-check-circle-fill"></i>
+
         Selected
       </div>
     </div>
 
-    <!-- SUMMARY -->
+    <!-- ======================================================
+         SUMMARY
+    ======================================================= -->
+
     <div class="attendance-summary">
       <div class="attendance-stat">
         <div class="attendance-stat-icon stat-present">
@@ -188,7 +208,10 @@
       </div>
     </div>
 
-    <!-- TABLE -->
+    <!-- ======================================================
+         ATTENDANCE TABLE
+    ======================================================= -->
+
     <div class="attendance-card">
       <div class="attendance-card-header">
         <div>
@@ -205,28 +228,40 @@
         <span id="attendanceCount" class="attendance-record-count"> 0 Records </span>
       </div>
 
-      <div class="table-responsive">
+      <div class="table-responsive attendance-table-container">
         <table class="table attendance-table align-middle mb-0">
           <thead>
             <tr>
-              <th>Date</th>
-              <th>Check In</th>
-              <th>Check Out</th>
-              <th>Working Time</th>
-              <th>Punctuality</th>
-              <th>Attendance Type</th>
-              <th>Status</th>
+              <th class="attendance-col-date">Date</th>
+
+              <th class="attendance-col-time">Check In</th>
+
+              <th class="attendance-col-selfie">In Selfie</th>
+
+              <th class="attendance-col-time">Check Out</th>
+
+              <th class="attendance-col-selfie">Out Selfie</th>
+
+              <th class="attendance-col-duration">Work</th>
+
+              <th class="attendance-col-duration">Break</th>
+
+              <th class="attendance-col-punctuality">Punctuality</th>
+
+              <th class="attendance-col-type">Type</th>
+
+              <th class="attendance-col-status">Status</th>
             </tr>
           </thead>
 
           <tbody id="attendanceTable">
             <tr>
-              <td colspan="7" class="empty-state">
+              <td colspan="10" class="empty-state">
                 <div class="empty-state-icon">
                   <i class="bi bi-calendar-check"></i>
                 </div>
 
-                <strong>Select an executive and month</strong>
+                <strong> Select an executive and month </strong>
 
                 <span> Your attendance records will appear here. </span>
               </td>
@@ -237,3 +272,47 @@
     </div>
   </div>
 </section>
+
+<!-- ==========================================================
+     SELFIE PREVIEW MODAL
+========================================================== -->
+
+<div class="modal fade" id="attendanceSelfieModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content attendance-selfie-modal">
+      <!-- HEADER -->
+
+      <div class="modal-header">
+        <div>
+          <div class="attendance-section-label">
+            <i class="bi bi-camera"></i>
+
+            <span id="attendanceSelfieModalLabel"> Check-In Selfie </span>
+          </div>
+
+          <h6 class="mb-0">Attendance verification photo</h6>
+        </div>
+
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <!-- BODY -->
+
+      <div class="modal-body">
+        <div id="attendanceSelfieLoading" class="attendance-selfie-loading d-none">
+          <div class="spinner-border" role="status"></div>
+
+          <span> Loading photo... </span>
+        </div>
+
+        <div id="attendanceSelfieError" class="attendance-selfie-error d-none">
+          <i class="bi bi-image"></i>
+
+          <span> Unable to load this selfie. </span>
+        </div>
+
+        <img id="attendanceSelfiePreview" src="" alt="Attendance selfie" class="attendance-selfie-preview" />
+      </div>
+    </div>
+  </div>
+</div>

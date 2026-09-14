@@ -10,6 +10,10 @@ export class CheckOutDto {
   @IsNumber()
   @IsLongitude()
   lng?: number;
+
+  @IsOptional()
+  @IsString()
+  selfieUrl?: string;
 }
 
 export class CorrectCheckOutDto {

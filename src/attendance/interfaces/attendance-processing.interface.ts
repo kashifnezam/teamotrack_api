@@ -35,12 +35,14 @@ export interface ShiftConfig {
   fullDayMinutes: number;
 
   weeklyOff: string[];
+  selfieCheckIn: boolean;
+  selfieCheckOut: boolean;
 }
 
 export interface BreakHistoryItem {
   id: string;
 
-  startTime: number;
+  startTime: number; 
 
   endTime?: number;
 

@@ -7,7 +7,8 @@ import { PayrollPeriodDto } from './dto/payroll-period.dto';
 
 import { FirebaseAuthGuard } from '../auth/firebase-auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
-import { RootManagerGuard } from 'src/auth/root-manager.guard';
+import { AllowRoles } from 'src/auth/roles.decorator';
+import { RoleGuard } from 'src/auth/role.guard';
 
 @Controller('payroll-periods')
 export class PayrollPeriodController {
@@ -27,7 +28,8 @@ export class PayrollPeriodController {
   // ==================================================
   // GET DATA
   // ==================================================
-  @UseGuards(FirebaseAuthGuard, RootManagerGuard)
+  @UseGuards(FirebaseAuthGuard, RoleGuard)
+  @AllowRoles('root_manager')
   @Get('data')
   get(@CurrentUser() user: any) {
     return this.service.getAll(user.uid);
@@ -36,7 +38,8 @@ export class PayrollPeriodController {
   // ==================================================
   // CREATE
   // ==================================================
-  @UseGuards(FirebaseAuthGuard, RootManagerGuard)
+  @UseGuards(FirebaseAuthGuard, RoleGuard)
+  @AllowRoles('root_manager')
   @Post()
   create(@CurrentUser() user: any, @Body() dto: PayrollPeriodDto) {
     return this.service.create(user.uid, dto);
@@ -45,7 +48,8 @@ export class PayrollPeriodController {
   // ==================================================
   // PROCESSING
   // ==================================================
-  @UseGuards(FirebaseAuthGuard, RootManagerGuard)
+  @UseGuards(FirebaseAuthGuard, RoleGuard)
+  @AllowRoles('root_manager')
   @Patch(':id/processing')
   processing(@CurrentUser() user: any, @Param('id') id: string) {
     return this.service.processing(user.uid, id);
@@ -54,7 +58,8 @@ export class PayrollPeriodController {
   // ==================================================
   // PROCESSED
   // ==================================================
-  @UseGuards(FirebaseAuthGuard, RootManagerGuard)
+  @UseGuards(FirebaseAuthGuard, RoleGuard)
+  @AllowRoles('root_manager')
   @Patch(':id/processed')
   processed(@CurrentUser() user: any, @Param('id') id: string) {
     return this.service.processed(user.uid, id);
@@ -63,7 +68,8 @@ export class PayrollPeriodController {
   // ==================================================
   // CLOSED
   // ==================================================
-  @UseGuards(FirebaseAuthGuard, RootManagerGuard)
+  @UseGuards(FirebaseAuthGuard, RoleGuard)
+  @AllowRoles('root_manager')
   @Patch(':id/closed')
   closed(@CurrentUser() user: any, @Param('id') id: string) {
     return this.service.closed(user.uid, id);
@@ -72,7 +78,8 @@ export class PayrollPeriodController {
   // ==================================================
   // REOPEN
   // ==================================================
-  @UseGuards(FirebaseAuthGuard, RootManagerGuard)
+  @UseGuards(FirebaseAuthGuard, RoleGuard)
+  @AllowRoles('root_manager')
   @Patch(':id/reopen')
   reopen(@CurrentUser() user: any, @Param('id') id: string) {
     return this.service.reopen(user.uid, id);

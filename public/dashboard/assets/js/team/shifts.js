@@ -114,7 +114,7 @@
       tbody.innerHTML = `
         <tr>
           <td
-            colspan="7"
+            colspan="9"
             class="empty-state"
           >
             <div class="empty-icon">
@@ -226,6 +226,7 @@
               </span>
             </td>
 
+
             <!-- SELFIE CHECK-IN -->
 
             <td>
@@ -244,6 +245,27 @@
                   `
               }
             </td>
+
+
+            <!-- SELFIE CHECK-OUT -->
+
+            <td>
+              ${
+                shift.selfieCheckOut === true
+                  ? `
+                    <span class="weekly-badge">
+                      <i class="bi bi-camera me-1"></i>
+                      Required
+                    </span>
+                  `
+                  : `
+                    <span class="no-off">
+                      Not Required
+                    </span>
+                  `
+              }
+            </td>
+
 
             <!-- WEEKLY OFF -->
 
@@ -322,8 +344,6 @@
      */
 
     if (!id) {
-      document.getElementById('selfieCheckIn').checked = false;
-
       document.getElementById('shiftId').value = '';
 
       document.getElementById('shiftName').value = '';
@@ -340,11 +360,27 @@
 
       document.getElementById('breakFields').style.display = 'none';
 
+      /*
+       * Selfie Attendance
+       */
+
+      document.getElementById('selfieCheckIn').checked = false;
+
+      document.getElementById('selfieCheckOut').checked = false;
+
+      /*
+       * Attendance thresholds
+       */
+
       setDurationMinutes('graceHours', 'graceMinutes', 0);
 
       setDurationMinutes('halfDayHours', 'halfDayMinutes', 240);
 
       setDurationMinutes('fullDayHours', 'fullDayMinutes', 480);
+
+      /*
+       * Weekly Off
+       */
 
       document.querySelectorAll('#shiftModal .weekly-off input').forEach((input) => {
         input.checked = false;
@@ -377,6 +413,8 @@
     if (!shift) {
       return;
     }
+
+    editingId = id;
 
     document.getElementById('shiftId').value = id;
 
@@ -414,7 +452,20 @@
 
     setDurationMinutes('fullDayHours', 'fullDayMinutes', shift.fullDayMinutes);
 
+    /*
+     * Selfie Check-In
+     */
+
     document.getElementById('selfieCheckIn').checked = shift.selfieCheckIn === true;
+
+    /*
+     * Selfie Check-Out
+     *
+     * Explicitly default to false for old
+     * shifts that don't have this property.
+     */
+
+    document.getElementById('selfieCheckOut').checked = shift.selfieCheckOut === true;
 
     /* --------------------------------------------------------
        Weekly Off
@@ -679,6 +730,14 @@
     }
 
     /* --------------------------------------------------------
+       Selfie Attendance
+    -------------------------------------------------------- */
+
+    const selfieCheckIn = document.getElementById('selfieCheckIn')?.checked === true;
+
+    const selfieCheckOut = document.getElementById('selfieCheckOut')?.checked === true;
+
+    /* --------------------------------------------------------
        DTO
     -------------------------------------------------------- */
 
@@ -707,7 +766,13 @@
         (input) => WEEK_DAYS[Number(input.value)]
       ),
 
-      selfieCheckIn: document.getElementById('selfieCheckIn')?.checked === true,
+      /*
+       * Selfie Attendance
+       */
+
+      selfieCheckIn,
+
+      selfieCheckOut,
     };
 
     /* --------------------------------------------------------

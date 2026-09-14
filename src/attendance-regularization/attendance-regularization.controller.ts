@@ -1,38 +1,28 @@
-import { Body, Controller, Get, Param, Res, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
 
 import { FirebaseAuthGuard } from '../auth/firebase-auth.guard';
-
 import { CurrentUser } from '../auth/current-user.decorator';
 
 import { AttendanceRegularizationService } from './attendance-regularization.service';
 
 import { CreateAttendanceRegularizationDto } from './dto/create-attendance-regularization.dto';
 
+import { ReviewAttendanceRegularizationDto } from './dto/review-attendance-regularization.dto';
+
 import { RejectAttendanceRegularizationDto } from './dto/reject-attendance-regularization.dto';
 
-import type { Response } from 'express';
+import { RoleGuard } from 'src/auth/role.guard';
 
 @Controller('attendance-regularization')
+@UseGuards(FirebaseAuthGuard, RoleGuard)
 export class AttendanceRegularizationController {
   constructor(private readonly service: AttendanceRegularizationService) {}
-
-  // ============================================================
-  // SPA
-  // ============================================================
-
-  @Get()
-  page(@Res() res: Response) {
-    return res.sendFile('shell.html', {
-      root: './public/dashboard',
-    });
-  }
 
   // ============================================================
   // CREATE
   // ============================================================
 
   @Post()
-  @UseGuards(FirebaseAuthGuard)
   create(@CurrentUser() user: any, @Body() dto: CreateAttendanceRegularizationDto) {
     return this.service.create(user.uid, dto);
   }
@@ -42,7 +32,6 @@ export class AttendanceRegularizationController {
   // ============================================================
 
   @Get('my')
-  @UseGuards(FirebaseAuthGuard)
   getMyRequests(@CurrentUser() user: any, @Query('month') month?: string, @Query('year') year?: string) {
     return this.service.getMyRequests(user.uid, month ? Number(month) : undefined, year ? Number(year) : undefined);
   }
@@ -52,7 +41,6 @@ export class AttendanceRegularizationController {
   // ============================================================
 
   @Get('approvals')
-  @UseGuards(FirebaseAuthGuard)
   getApprovals(@CurrentUser() user: any) {
     return this.service.getApprovals(user.uid);
   }
@@ -62,7 +50,6 @@ export class AttendanceRegularizationController {
   // ============================================================
 
   @Get('history')
-  @UseGuards(FirebaseAuthGuard)
   getHistory(
     @CurrentUser() user: any,
     @Query('month') month?: string,
@@ -82,19 +69,17 @@ export class AttendanceRegularizationController {
   // ============================================================
 
   @Get(':id')
-  @UseGuards(FirebaseAuthGuard)
   getById(@CurrentUser() user: any, @Param('id') id: string) {
     return this.service.getById(user.uid, id);
   }
 
   // ============================================================
-  // APPROVE
+  // REGULARIZE
   // ============================================================
 
-  @Post(':id/approve')
-  @UseGuards(FirebaseAuthGuard)
-  approve(@CurrentUser() user: any, @Param('id') id: string) {
-    return this.service.approve(user.uid, id);
+  @Post(':id/regularize')
+  regularize(@CurrentUser() user: any, @Param('id') id: string, @Body() dto: ReviewAttendanceRegularizationDto) {
+    return this.service.regularize(user.uid, id, dto.attendanceStatus);
   }
 
   // ============================================================
@@ -102,7 +87,6 @@ export class AttendanceRegularizationController {
   // ============================================================
 
   @Post(':id/reject')
-  @UseGuards(FirebaseAuthGuard)
   reject(@CurrentUser() user: any, @Param('id') id: string, @Body() dto: RejectAttendanceRegularizationDto) {
     return this.service.reject(user.uid, id, dto.reason);
   }
@@ -112,7 +96,6 @@ export class AttendanceRegularizationController {
   // ============================================================
 
   @Post(':id/cancel')
-  @UseGuards(FirebaseAuthGuard)
   cancel(@CurrentUser() user: any, @Param('id') id: string) {
     return this.service.cancel(user.uid, id);
   }

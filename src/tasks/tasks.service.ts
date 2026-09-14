@@ -137,7 +137,7 @@ export class TasksService {
          * Find creator from already loaded
          * users.
          */
-        if(task.createdBy == null) task.createdBy = rootId;
+        if (task.createdBy == null) task.createdBy = rootId;
         const creator = task.createdBy ? userMap.get(task.createdBy) : null;
 
         return {
@@ -289,30 +289,11 @@ export class TasksService {
   async create(userId: string, dto: TaskDto) {
     const user = await this.getUser(userId);
 
-    /*
-     * Only managers/root can
-     * create tasks.
-     */
-    await this.authorize(user, 'task.create');
-
     const rootId = this.getRootId(user);
 
     this.validate(dto);
 
-    const assignedTo = dto.assignedTo || null;
-
-    /*
-     * --------------------------------------------------
-     * EXECUTIVE HIERARCHY CHECK
-     * --------------------------------------------------
-     */
-
-    if (assignedTo) {
-      await this.verifyExecutive(user, assignedTo);
-    }
-
     const startDate = new Date(dto.startDate);
-
     const endDate = new Date(dto.endDate);
 
     if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
@@ -321,6 +302,38 @@ export class TasksService {
 
     if (endDate <= startDate) {
       throw new BadRequestException('End date must be after start date');
+    }
+
+    let assignedTo: string | null = null;
+
+    /*
+     * --------------------------------------------------
+     * EXECUTIVE
+     * --------------------------------------------------
+     */
+
+    if (user.role === 'field_executive') {
+      await this.authorize(user, 'task.create');
+
+      /*
+       * Executive can only create a task for itself.
+       */
+      assignedTo = userId;
+    }
+
+    /*
+     * --------------------------------------------------
+     * MANAGER / ROOT
+     * --------------------------------------------------
+     */
+    else {
+      await this.authorize(user, 'task.create');
+
+      assignedTo = dto.assignedTo || null;
+
+      if (assignedTo) {
+        await this.verifyExecutive(user, assignedTo);
+      }
     }
 
     const now = new Date();
@@ -348,7 +361,6 @@ export class TasksService {
 
     return {
       success: true,
-
       id: ref.id,
     };
   }
@@ -947,38 +959,44 @@ export class TasksService {
   // ==================================================
 
   private async authorize(user: any, permission: string) {
-    /*
-     * Root has full authority.
-     */
+    // Root manager has unrestricted access.
     if (this.isRoot(user)) {
       return;
     }
 
-    /*
-     * HR does not manage tasks.
-     */
+    // HR cannot manage tasks.
     if (user.role === 'hr') {
       throw new BadRequestException('HR cannot manage tasks');
     }
 
-    /*
-     * Executive cannot
-     * manage tasks.
-     */
+    // Executives can manage only their own task actions
+    // when explicitly granted the corresponding permission.
     if (user.role === 'field_executive') {
-      throw new BadRequestException('Executive has no management permission');
+      if (!['task.create', 'task.edit', 'task.delete'].includes(permission)) {
+        throw new BadRequestException('Executive has no management permission');
+      }
+
+      const permissions = await this.getPermissions(user.uid);
+
+      if (permissions[permission] !== true) {
+        throw new BadRequestException('Permission denied');
+      }
+
+      // Important:
+      // still verify that the executive's parent hierarchy
+      // has this permission.
+      await this.verifyAuthorityChain(user, permission);
+
+      return;
     }
 
+    // Manager / child manager flow.
     const permissions = await this.getPermissions(user.uid);
 
     if (permissions[permission] !== true) {
       throw new BadRequestException('Permission denied');
     }
 
-    /*
-     * Parent authority must also
-     * contain the permission.
-     */
     await this.verifyAuthorityChain(user, permission);
   }
 

@@ -269,7 +269,8 @@ export class StaffService {
      * If no parent is supplied, current user
      * becomes the parent.
      */
-    const selectedParentId = dto.parentId || userId;
+    const rootId = this.getRootId(requester);
+    const selectedParentId = this.isRoot(requester) ? rootId : dto.parentId || userId;
 
     const parent = await this.getUser(selectedParentId);
 
@@ -291,8 +292,6 @@ export class StaffService {
     if (!dto.email || !dto.password) {
       throw new BadRequestException('Email and password are required');
     }
-
-    const rootId = this.getRootId(requester);
 
     const parentRootId = this.getRootId(parent);
 
@@ -960,7 +959,6 @@ export class StaffService {
      */
     else if (role === 'hr') {
       permissions = {
-      
         // ==================================================
         // FIELD EXECUTIVES
         // ==================================================

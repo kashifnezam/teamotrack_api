@@ -11,32 +11,9 @@
 
   let isLoading = false;
 
-  /*
-   * Today's attendance record only.
-   *
-   * IMPORTANT:
-   * This must NOT contain today's shift anymore.
-   * Today's shift comes separately from `todayShift`.
-   */
   let todayAttendance = null;
 
-  /*
-   * Today's applicable shift.
-   *
-   * This comes from:
-   *
-   * data.today.shift
-   */
   let todayShift = null;
-
-  /*
-   * Today's selfie requirement.
-   *
-   * This comes from:
-   *
-   * data.today.selfieCheckInRequired
-   */
-  let todaySelfieCheckInRequired = false;
 
   let actionInProgress = false;
 
@@ -48,71 +25,11 @@
 
   let checkoutHistoryModal = null;
 
-  let selfieCameraModal = null;
-
-  let selfieViewModal = null;
-
-  let selfieStream = null;
-
-  let selfieVideo = null;
-
-  let selfieCanvas = null;
-
-  let selfieDetectionTimer = null;
-
-  let selfieFaceValid = false;
-
-  let capturedSelfieBlob = null;
-
-  let faceModelsLoaded = false;
-
-  let faceModelLoading = null;
-
   /* ==========================================================
      CONSTANTS
   ========================================================== */
 
   const INDIA_TIME_ZONE = 'Asia/Kolkata';
-
-  const FACE_MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model';
-
-  const FACE_CHECK_INTERVAL = 250;
-
-  const MIN_FACE_RATIO = 0.2;
-
-  const MAX_HEAD_ANGLE = 22;
-
-  const MIN_IMAGE_WIDTH = 500;
-
-  const MIN_IMAGE_HEIGHT = 500;
-
-  const MIN_BRIGHTNESS = 35;
-
-  const MAX_BRIGHTNESS = 225;
-
-  const MIN_CONTRAST = 18;
-
-  const REGULARIZATION_TYPES = {
-    MISSED_CHECK_IN: 'MISSED_CHECK_IN',
-
-    MISSED_CHECK_OUT: 'MISSED_CHECK_OUT',
-
-    MISSED_BOTH: 'MISSED_BOTH',
-
-    BREAK_ERROR: 'BREAK_ERROR',
-
-    WRONG_CHECK_IN: 'WRONG_CHECK_IN',
-
-    WRONG_CHECK_OUT: 'WRONG_CHECK_OUT',
-
-    WRONG_BOTH: 'WRONG_BOTH',
-
-    SYSTEM_ERROR: 'SYSTEM_ERROR',
-
-    LOCATION_ERROR: 'LOCATION_ERROR',
-
-    OTHER: 'OTHER',
-  };
 
   /* ==========================================================
      INITIALIZE
@@ -128,8 +45,6 @@
     initializeRegularizationModal();
 
     initializeCheckoutHistoryModal();
-
-    initializeSelfieModals();
 
     await loadAttendance();
   };
@@ -169,7 +84,21 @@
 
     document.getElementById('regularizationReason')?.addEventListener('input', updateRegularizationCharacterCount);
 
-    document.getElementById('regularizationType')?.addEventListener('change', handleRegularizationTypeChange);
+    /*
+     * Close three-dot menu when clicking
+     * outside the attendance action area.
+     */
+    document.addEventListener('click', function (event) {
+      const wrapper = document.getElementById('attendanceMoreWrapper');
+
+      if (!wrapper) {
+        return;
+      }
+
+      if (!wrapper.contains(event.target)) {
+        closeMoreMenu();
+      }
+    });
   }
 
   /* ==========================================================
@@ -250,23 +179,11 @@
       summary = data.summary || {};
 
       /*
-       * IMPORTANT:
-       *
-       * Today's shift is returned separately by backend:
-       *
-       * data.today = {
-       *   date,
-       *   shift,
-       *   selfieCheckInRequired,
-       *   hasShift
-       * }
-       *
-       * Do not put this into todayAttendance.
+       * Today's shift is independent
+       * of today's attendance record.
        */
       if (isCurrentMonth(year, month)) {
         todayShift = data.today?.shift || null;
-
-        todaySelfieCheckInRequired = data.today?.selfieCheckInRequired === true;
 
         const todayKey = getTodayKey();
 
@@ -281,8 +198,6 @@
 
         todayShift = null;
 
-        todaySelfieCheckInRequired = false;
-
         renderTodayUnavailable();
       }
 
@@ -293,7 +208,8 @@
       renderRecords();
 
       /*
-       * Render again after records/regularization are loaded.
+       * Render again because regularization
+       * data has now been loaded.
        */
       if (isCurrentMonth(year, month)) {
         renderTodayAttendance();
@@ -356,8 +272,16 @@
       return null;
     }
 
+    /*
+     * New status model:
+     *
+     * pending
+     * regularized
+     * rejected
+     * cancelled
+     */
     const active = matching.find(function (request) {
-      return ['pending', 'approved'].includes(String(request.status || '').toLowerCase());
+      return ['pending', 'regularized'].includes(String(request.status || '').toLowerCase());
     });
 
     return active || matching[matching.length - 1];
@@ -373,22 +297,30 @@
 
       if (status === 'pending') {
         return `
-          <span
-            class="attendance-regularization-status pending"
-          >
+          <span class="attendance-regularization-status pending">
             <i class="bi bi-hourglass-split"></i>
             Pending
           </span>
         `;
       }
 
-      if (status === 'approved') {
+      if (status === 'regularized') {
+        const attendanceStatus = request.attendanceStatus || request.finalAttendanceStatus || null;
+
+        let label = 'Regularized';
+
+        if (attendanceStatus === 'full_day') {
+          label = 'Full Day';
+        } else if (attendanceStatus === 'half_day') {
+          label = 'Half Day';
+        } else if (attendanceStatus === 'absent') {
+          label = 'Absent';
+        }
+
         return `
-          <span
-            class="attendance-regularization-status approved"
-          >
+          <span class="attendance-regularization-status regularized">
             <i class="bi bi-check-circle-fill"></i>
-            Approved
+            ${escapeHtml(label)}
           </span>
         `;
       }
@@ -420,33 +352,6 @@
       }
     }
 
-    const breakIssue = getBreakIssue(record);
-
-    if (breakIssue) {
-      return `
-        <div class="attendance-regularization-break-action">
-
-          <span
-            class="attendance-break-issue-badge"
-            title="${escapeHtml(breakIssue.message)}"
-          >
-            <i class="bi bi-exclamation-triangle-fill"></i>
-            Break Issue
-          </span>
-
-          <button
-            type="button"
-            class="attendance-regularize-btn break"
-            onclick="window.openAttendanceRegularization('${escapeJs(record.id)}')"
-          >
-            <i class="bi bi-pencil-square"></i>
-            Correct
-          </button>
-
-        </div>
-      `;
-    }
-
     return `
       <button
         type="button"
@@ -474,156 +379,6 @@
   };
 
   /* ==========================================================
-     BREAK ISSUE
-  ========================================================== */
-
-  function getShiftBreakWindow(record) {
-    const shift = record?.shiftSnapshot;
-
-    if (!shift) {
-      return null;
-    }
-
-    const startHour = Number(shift.breakStartHour);
-
-    const startMinute = Number(shift.breakStartMinute);
-
-    const endHour = Number(shift.breakEndHour);
-
-    const endMinute = Number(shift.breakEndMinute);
-
-    if (
-      !Number.isFinite(startHour) ||
-      !Number.isFinite(startMinute) ||
-      !Number.isFinite(endHour) ||
-      !Number.isFinite(endMinute)
-    ) {
-      return null;
-    }
-
-    const date = normalizeDateOnly(record.date);
-
-    if (!date) {
-      return null;
-    }
-
-    const start = parseIndiaDatetimeLocal(
-      `${date}T${String(startHour).padStart(2, '0')}:${String(startMinute).padStart(2, '0')}`
-    );
-
-    let end = parseIndiaDatetimeLocal(
-      `${date}T${String(endHour).padStart(2, '0')}:${String(endMinute).padStart(2, '0')}`
-    );
-
-    if (!start || !end) {
-      return null;
-    }
-
-    if (end.getTime() <= start.getTime()) {
-      end = new Date(end.getTime() + 24 * 60 * 60 * 1000);
-    }
-
-    return {
-      start,
-      end,
-    };
-  }
-
-  function getBreakIssue(record) {
-    if (!record) {
-      return null;
-    }
-
-    const window = getShiftBreakWindow(record);
-
-    /*
-     * No scheduled break means
-     * there is no break issue.
-     */
-    if (!window) {
-      return null;
-    }
-
-    const currentBreak = record.currentBreak;
-
-    /*
-     * Incomplete break.
-     */
-    if (currentBreak?.active === true) {
-      return {
-        type: 'INCOMPLETE_BREAK',
-
-        title: 'Incomplete Break',
-
-        message: 'A break was started but has not been ended.',
-      };
-    }
-
-    const history = Array.isArray(record.breakHistory) ? record.breakHistory : [];
-
-    /*
-     * Skipping a break is allowed.
-     */
-    if (!history.length) {
-      return null;
-    }
-
-    const breakItem = history[history.length - 1];
-
-    const start = getRecordDate(breakItem?.startTime);
-
-    const end = getRecordDate(breakItem?.endTime);
-
-    if (!start || !end) {
-      return {
-        type: 'INVALID_BREAK_TIME',
-
-        title: 'Invalid Break Time',
-
-        message: 'The recorded break time is incomplete or invalid.',
-      };
-    }
-
-    /*
-     * Wrong break window.
-     */
-    if (
-      start.getTime() < window.start.getTime() ||
-      start.getTime() > window.end.getTime() ||
-      end.getTime() > window.end.getTime()
-    ) {
-      return {
-        type: 'WRONG_BREAK_TIME',
-
-        title: 'Break Outside Scheduled Window',
-
-        message: 'The recorded break does not match the scheduled break window.',
-      };
-    }
-
-    /*
-     * Excess break.
-     */
-    const actualMinutes = Math.max(0, Math.round((end.getTime() - start.getTime()) / 60000));
-
-    const scheduledMinutes = Math.max(0, Math.round((window.end.getTime() - window.start.getTime()) / 60000));
-
-    if (actualMinutes > scheduledMinutes) {
-      return {
-        type: 'EXCESS_BREAK',
-
-        title: 'Excess Break',
-
-        message: `Recorded break is ${formatMinutes(actualMinutes)} while the scheduled break is ${formatMinutes(
-          scheduledMinutes
-        )}.`,
-      };
-    }
-
-    return null;
-  }
-
-  /* ==========================================================
      OPEN REGULARIZATION
   ========================================================== */
 
@@ -636,9 +391,9 @@
 
     const existingStatus = String(existingRequest?.status || '').toLowerCase();
 
-    if (existingRequest && ['pending', 'approved'].includes(existingStatus)) {
+    if (existingRequest && ['pending', 'regularized'].includes(existingStatus)) {
       AppAlert.error(
-        existingStatus === 'approved'
+        existingStatus === 'regularized'
           ? 'This attendance has already been regularized.'
           : 'A regularization request is already pending for this date.'
       );
@@ -656,32 +411,9 @@
 
     setText('regularizationCurrentWorking', formatMinutes(Number(record.workingMinutes ?? 0)));
 
-    setText(
-      'regularizationCurrentBreak',
-      formatMinutes(Number(record.totalBreakMinutes ?? getBreakHistoryMinutes(record.breakHistory)))
-    );
-
     setText('regularizationCurrentStatus', formatStatus(record.status));
 
     resetRegularizationForm();
-
-    const breakIssue = getBreakIssue(record);
-
-    if (breakIssue) {
-      const type = document.getElementById('regularizationType');
-
-      if (type) {
-        type.value = REGULARIZATION_TYPES.BREAK_ERROR;
-      }
-    }
-
-    renderRegularizationBreakIssue(record);
-
-    handleRegularizationTypeChange();
-
-    if (breakIssue && breakIssue.type !== 'INCOMPLETE_BREAK') {
-      prefillRegularizationBreak(record);
-    }
 
     if (!regularizationModal) {
       initializeRegularizationModal();
@@ -690,263 +422,24 @@
     regularizationModal?.show();
   }
 
+  /* ==========================================================
+     RESET REGULARIZATION FORM
+  ========================================================== */
+
   function resetRegularizationForm() {
-    const type = document.getElementById('regularizationType');
-
-    const checkIn = document.getElementById('regularizationCheckIn');
-
-    const checkOut = document.getElementById('regularizationCheckOut');
-
-    const breakStart = document.getElementById('regularizationBreakStart');
-
-    const breakEnd = document.getElementById('regularizationBreakEnd');
-
     const reason = document.getElementById('regularizationReason');
 
-    const breakSection = document.getElementById('regularizationBreakSection');
-
-    if (type) {
-      type.value = '';
-    }
-
-    if (checkIn) {
-      checkIn.value = '';
-      checkIn.disabled = false;
-      checkIn.required = false;
-    }
-
-    if (checkOut) {
-      checkOut.value = '';
-      checkOut.disabled = false;
-      checkOut.required = false;
-    }
-
-    if (breakStart) {
-      breakStart.value = '';
-    }
-
-    if (breakEnd) {
-      breakEnd.value = '';
-    }
+    const attachment = document.getElementById('regularizationAttachmentUrl');
 
     if (reason) {
       reason.value = '';
     }
 
-    if (breakSection) {
-      breakSection.hidden = true;
+    if (attachment) {
+      attachment.value = '';
     }
 
     updateRegularizationCharacterCount();
-
-    renderRegularizationBreakIssue(null);
-  }
-
-  function renderRegularizationBreakIssue(record) {
-    const container = document.getElementById('regularizationBreakIssue');
-
-    const title = document.getElementById('regularizationBreakIssueTitle');
-
-    const message = document.getElementById('regularizationBreakIssueMessage');
-
-    if (!container) {
-      return;
-    }
-
-    const issue = getBreakIssue(record);
-
-    if (!issue) {
-      container.hidden = true;
-
-      setText('regularizationBreakIssueTitle', 'Break Issue');
-
-      setText('regularizationBreakIssueMessage', '');
-
-      return;
-    }
-
-    container.hidden = false;
-
-    setText(title?.id, issue.title);
-
-    setText(message?.id, issue.message);
-  }
-
-  /* ==========================================================
-     REGULARIZATION TYPE
-  ========================================================== */
-
-  function handleRegularizationTypeChange() {
-    const type = document.getElementById('regularizationType')?.value;
-
-    const checkIn = document.getElementById('regularizationCheckIn');
-
-    const checkOut = document.getElementById('regularizationCheckOut');
-
-    const breakSection = document.getElementById('regularizationBreakSection');
-
-    if (breakSection) {
-      breakSection.hidden = type !== REGULARIZATION_TYPES.BREAK_ERROR;
-    }
-
-    if (!type) {
-      if (checkIn) {
-        checkIn.disabled = false;
-        checkIn.required = false;
-      }
-
-      if (checkOut) {
-        checkOut.disabled = false;
-        checkOut.required = false;
-      }
-
-      return;
-    }
-
-    /*
-     * MISSED / WRONG CHECK-IN
-     */
-    if (type === REGULARIZATION_TYPES.MISSED_CHECK_IN || type === REGULARIZATION_TYPES.WRONG_CHECK_IN) {
-      if (checkIn) {
-        checkIn.disabled = false;
-        checkIn.required = true;
-      }
-
-      if (checkOut) {
-        checkOut.disabled = true;
-        checkOut.required = false;
-        checkOut.value = '';
-      }
-
-      return;
-    }
-
-    /*
-     * MISSED / WRONG CHECK-OUT
-     */
-    if (type === REGULARIZATION_TYPES.MISSED_CHECK_OUT || type === REGULARIZATION_TYPES.WRONG_CHECK_OUT) {
-      if (checkIn) {
-        checkIn.disabled = true;
-        checkIn.required = false;
-        checkIn.value = '';
-      }
-
-      if (checkOut) {
-        checkOut.disabled = false;
-        checkOut.required = true;
-      }
-
-      return;
-    }
-
-    /*
-     * BOTH
-     */
-    if (type === REGULARIZATION_TYPES.MISSED_BOTH || type === REGULARIZATION_TYPES.WRONG_BOTH) {
-      if (checkIn) {
-        checkIn.disabled = false;
-        checkIn.required = true;
-      }
-
-      if (checkOut) {
-        checkOut.disabled = false;
-        checkOut.required = true;
-      }
-
-      return;
-    }
-
-    /*
-     * BREAK ERROR
-     */
-    if (type === REGULARIZATION_TYPES.BREAK_ERROR) {
-      if (checkIn) {
-        checkIn.disabled = true;
-        checkIn.required = false;
-        checkIn.value = '';
-      }
-
-      if (checkOut) {
-        checkOut.disabled = true;
-        checkOut.required = false;
-        checkOut.value = '';
-      }
-
-      if (breakSection) {
-        breakSection.hidden = false;
-      }
-
-      renderRegularizationBreakSchedule();
-
-      return;
-    }
-
-    /*
-     * SYSTEM / LOCATION / OTHER
-     */
-    if (
-      type === REGULARIZATION_TYPES.SYSTEM_ERROR ||
-      type === REGULARIZATION_TYPES.LOCATION_ERROR ||
-      type === REGULARIZATION_TYPES.OTHER
-    ) {
-      if (checkIn) {
-        checkIn.disabled = false;
-        checkIn.required = false;
-      }
-
-      if (checkOut) {
-        checkOut.disabled = false;
-        checkOut.required = false;
-      }
-    }
-  }
-
-  function renderRegularizationBreakSchedule() {
-    const element = document.getElementById('regularizationBreakSchedule');
-
-    if (!element) {
-      return;
-    }
-
-    const window = getShiftBreakWindow(selectedRegularizationRecord);
-
-    if (!window) {
-      element.textContent = 'No scheduled break configured';
-
-      return;
-    }
-
-    element.textContent = `Scheduled: ${formatTime(window.start)} - ${formatTime(window.end)}`;
-  }
-
-  /* ==========================================================
-     PREFILL BREAK
-  ========================================================== */
-
-  function prefillRegularizationBreak(record) {
-    const breakStart = document.getElementById('regularizationBreakStart');
-
-    const breakEnd = document.getElementById('regularizationBreakEnd');
-
-    if (!breakStart || !breakEnd) {
-      return;
-    }
-
-    const history = Array.isArray(record?.breakHistory) ? record.breakHistory : [];
-
-    const lastBreak = history[history.length - 1];
-
-    const start = getRecordDate(lastBreak?.startTime);
-
-    const end = getRecordDate(lastBreak?.endTime);
-
-    if (start) {
-      breakStart.value = formatTimeInput(start);
-    }
-
-    if (end) {
-      breakEnd.value = formatTimeInput(end);
-    }
   }
 
   /* ==========================================================
@@ -962,32 +455,12 @@
 
     const date = normalizeDateOnly(selectedRegularizationRecord.date);
 
-    const type = document.getElementById('regularizationType')?.value;
-
-    const checkIn = document.getElementById('regularizationCheckIn')?.value;
-
-    const checkOut = document.getElementById('regularizationCheckOut')?.value;
-
-    const breakStart = document.getElementById('regularizationBreakStart')?.value;
-
-    const breakEnd = document.getElementById('regularizationBreakEnd')?.value;
-
     const reason = document.getElementById('regularizationReason')?.value?.trim();
+
+    const attachmentUrl = document.getElementById('regularizationAttachmentUrl')?.value?.trim();
 
     if (!date) {
       AppAlert.error('Attendance date could not be determined.');
-
-      return;
-    }
-
-    if (!type) {
-      AppAlert.error('Please select what went wrong.');
-
-      return;
-    }
-
-    if (!Object.values(REGULARIZATION_TYPES).includes(type)) {
-      AppAlert.error('Invalid regularization type.');
 
       return;
     }
@@ -1004,147 +477,47 @@
       return;
     }
 
-    const requiresCheckIn = [
-      REGULARIZATION_TYPES.MISSED_CHECK_IN,
-      REGULARIZATION_TYPES.WRONG_CHECK_IN,
-      REGULARIZATION_TYPES.MISSED_BOTH,
-      REGULARIZATION_TYPES.WRONG_BOTH,
-    ].includes(type);
-
-    const requiresCheckOut = [
-      REGULARIZATION_TYPES.MISSED_CHECK_OUT,
-      REGULARIZATION_TYPES.WRONG_CHECK_OUT,
-      REGULARIZATION_TYPES.MISSED_BOTH,
-      REGULARIZATION_TYPES.WRONG_BOTH,
-    ].includes(type);
-
-    if (requiresCheckIn && !checkIn) {
-      AppAlert.error('Please provide the requested check-in time.');
-
-      return;
-    }
-
-    if (requiresCheckOut && !checkOut) {
-      AppAlert.error('Please provide the requested check-out time.');
+    if (attachmentUrl && attachmentUrl.length > 2000) {
+      AppAlert.error('Attachment URL cannot exceed 2000 characters.');
 
       return;
     }
 
     /*
-     * BREAK VALIDATION
-     */
-    if (type === REGULARIZATION_TYPES.BREAK_ERROR) {
-      if (!breakStart) {
-        AppAlert.error('Please provide the requested break start time.');
-
-        return;
-      }
-
-      if (!breakEnd) {
-        AppAlert.error('Please provide the requested break end time.');
-
-        return;
-      }
-
-      const breakStartDate = parseIndiaDatetimeLocal(combineAttendanceDateAndTime(date, breakStart));
-
-      const breakEndDate = parseIndiaDatetimeLocal(combineAttendanceDateAndTime(date, breakEnd));
-
-      if (!breakStartDate || !breakEndDate) {
-        AppAlert.error('Invalid break start or end time.');
-
-        return;
-      }
-
-      if (breakEndDate.getTime() <= breakStartDate.getTime()) {
-        AppAlert.error('Break end time must be after break start time.');
-
-        return;
-      }
-
-      const breakWindow = getShiftBreakWindow(selectedRegularizationRecord);
-
-      if (!breakWindow) {
-        AppAlert.error('No scheduled break is configured for this attendance record.');
-
-        return;
-      }
-
-      if (breakStartDate.getTime() < breakWindow.start.getTime()) {
-        AppAlert.error(`Break cannot start before ${formatTime(breakWindow.start)}.`);
-
-        return;
-      }
-
-      if (breakStartDate.getTime() > breakWindow.end.getTime()) {
-        AppAlert.error(`Break cannot start after ${formatTime(breakWindow.end)}.`);
-
-        return;
-      }
-
-      if (breakEndDate.getTime() > breakWindow.end.getTime()) {
-        AppAlert.error(`Break cannot end after ${formatTime(breakWindow.end)}.`);
-
-        return;
-      }
-    }
-
-    /*
-     * NORMAL CHECK-IN / CHECK-OUT
-     */
-    const checkInDateTime = combineAttendanceDateAndTime(date, checkIn);
-
-    const checkOutDateTime = combineAttendanceDateAndTime(date, checkOut);
-
-    if (checkIn && checkOut) {
-      const checkInDate = parseIndiaDatetimeLocal(checkInDateTime);
-
-      const checkOutDate = parseIndiaDatetimeLocal(checkOutDateTime);
-
-      if (!checkInDate || !checkOutDate) {
-        AppAlert.error('Invalid check-in or check-out time.');
-
-        return;
-      }
-
-      if (checkOutDate.getTime() <= checkInDate.getTime()) {
-        AppAlert.error('Check-out time must be after check-in time.');
-
-        return;
-      }
-    }
-
-    /*
-     * DUPLICATE REQUEST
+     * Duplicate protection.
      */
     const existingRequest = getRegularizationForDate(selectedRegularizationRecord.date);
 
-    if (existingRequest && ['pending', 'approved'].includes(String(existingRequest.status || '').toLowerCase())) {
+    if (existingRequest && ['pending', 'regularized'].includes(String(existingRequest.status || '').toLowerCase())) {
       AppAlert.error('A regularization request already exists for this date.');
 
       return;
     }
 
-    const breakStartDateTime =
-      type === REGULARIZATION_TYPES.BREAK_ERROR ? combineAttendanceDateAndTime(date, breakStart) : null;
-
-    const breakEndDateTime =
-      type === REGULARIZATION_TYPES.BREAK_ERROR ? combineAttendanceDateAndTime(date, breakEnd) : null;
-
+    /*
+     * New backend payload:
+     *
+     * {
+     *   date,
+     *   reason,
+     *   attachmentUrl?
+     * }
+     *
+     * No type.
+     * No check-in time.
+     * No check-out time.
+     * No break times.
+     */
     const payload = {
       date: indiaDateToIso(date),
 
-      type,
-
-      checkInTime: checkInDateTime ? indiaLocalDateTimeToIso(checkInDateTime) : null,
-
-      checkOutTime: checkOutDateTime ? indiaLocalDateTimeToIso(checkOutDateTime) : null,
-
-      breakStartTime: breakStartDateTime ? indiaLocalDateTimeToIso(breakStartDateTime) : null,
-
-      breakEndTime: breakEndDateTime ? indiaLocalDateTimeToIso(breakEndDateTime) : null,
-
       reason,
+
+      ...(attachmentUrl
+        ? {
+            attachmentUrl,
+          }
+        : {}),
     };
 
     const button = document.getElementById('submitAttendanceRegularizationBtn');
@@ -1223,13 +596,11 @@
   function renderTodayDate() {
     setText(
       'attendanceTodayDate',
+
       formatIndiaDate(new Date(), {
         weekday: 'long',
-
         day: '2-digit',
-
         month: 'long',
-
         year: 'numeric',
       })
     );
@@ -1238,15 +609,6 @@
   function renderTodayAttendance() {
     const record = todayAttendance;
 
-    /*
-     * IMPORTANT:
-     *
-     * The shift is now independent
-     * of the attendance record.
-     *
-     * This means the shift can still
-     * render when `record === null`.
-     */
     const shift = todayShift;
 
     const checkInBtn = document.getElementById('attendanceCheckInBtn');
@@ -1266,14 +628,14 @@
     const progressSection = document.getElementById('attendanceWorkBreakSection');
 
     /*
-     * ALWAYS render today's shift
-     * independently from attendance.
+     * Always render shift separately.
      */
     renderShift(shift);
 
-    /*
-     * NO ATTENDANCE RECORD
-     */
+    /* ========================================================
+       NO ATTENDANCE RECORD
+    ======================================================== */
+
     if (!record) {
       setText('myAttendanceStatusText', 'NOT MARKED');
 
@@ -1295,14 +657,15 @@
         progressSection.hidden = true;
       }
 
-      /*
-       * Check-in is possible only when
-       * an applicable shift exists.
-       */
       const hasShift = !!todayShift;
 
       const isWeeklyOff = todayShift?.isWeeklyOff === true;
 
+      /*
+       * Direct check-in.
+       *
+       * No selfie requirement.
+       */
       if (checkInBtn) {
         checkInBtn.hidden = !hasShift;
 
@@ -1311,6 +674,7 @@
 
       if (checkOutBtn) {
         checkOutBtn.disabled = true;
+
         checkOutBtn.hidden = false;
       }
 
@@ -1320,11 +684,13 @@
 
       if (startBreakBtn) {
         startBreakBtn.hidden = true;
+
         startBreakBtn.disabled = false;
       }
 
       if (endBreakBtn) {
         endBreakBtn.hidden = true;
+
         endBreakBtn.disabled = false;
       }
 
@@ -1340,21 +706,15 @@
 
       setText('attendanceBreakMessage', '');
 
-      /*
-       * Tell employee whether selfie
-       * is required.
-       */
-      if (todaySelfieCheckInRequired) {
-        setText(
-          'attendanceActionMessage',
-          'Your attendance for today has not been marked. A selfie is required for check-in.'
-        );
-      } else if (!hasShift) {
+      if (!hasShift) {
         setText('attendanceActionMessage', 'No applicable shift is assigned for today.');
       } else if (isWeeklyOff) {
         setText('attendanceActionMessage', 'Today is your scheduled weekly off.');
       } else {
-        setText('attendanceActionMessage', 'Your attendance for today has not been marked.');
+        setText(
+          'attendanceActionMessage',
+          'Your attendance for today has not been marked. Click Check In to start your attendance.'
+        );
       }
 
       closeMoreMenu();
@@ -1362,14 +722,10 @@
       return;
     }
 
-    /*
-     * From here onward the attendance
-     * record exists.
-     *
-     * Use the historical shift snapshot
-     * for already-created attendance
-     * calculations such as break schedule.
-     */
+    /* ========================================================
+       ATTENDANCE RECORD EXISTS
+    ======================================================== */
+
     const historicalShift = record.shiftSnapshot || todayShift || null;
 
     const hasCheckIn = !!record.checkInTime;
@@ -1404,9 +760,10 @@
 
     renderWorkBreakProgress(workingMinutes, breakMinutes);
 
-    /*
-     * STATUS
-     */
+    /* ========================================================
+       STATUS
+    ======================================================== */
+
     if (hasCheckIn && hasActiveBreak) {
       setText('myAttendanceStatusText', 'ON BREAK');
 
@@ -1425,18 +782,20 @@
       setStatusClass(getStatusClass(record.status));
     }
 
-    /*
-     * CHECK-IN
-     */
+    /* ========================================================
+       CHECK-IN
+    ======================================================== */
+
     if (checkInBtn) {
       checkInBtn.disabled = hasCheckIn || isTerminalNonAttendanceStatus(record.status);
 
       checkInBtn.hidden = hasCheckIn;
     }
 
-    /*
-     * START BREAK
-     */
+    /* ========================================================
+       START BREAK
+    ======================================================== */
+
     const canStartBreak =
       hasCheckIn &&
       !hasActiveBreak &&
@@ -1450,18 +809,20 @@
       startBreakBtn.disabled = !canStartBreak;
     }
 
-    /*
-     * END BREAK
-     */
+    /* ========================================================
+       END BREAK
+    ======================================================== */
+
     if (endBreakBtn) {
       endBreakBtn.hidden = !hasCheckIn || !hasActiveBreak;
 
       endBreakBtn.disabled = !hasCheckIn || !hasActiveBreak;
     }
 
-    /*
-     * CHECKOUT
-     */
+    /* ========================================================
+       CHECKOUT
+    ======================================================== */
+
     if (checkOutBtn) {
       checkOutBtn.hidden = !hasCheckIn || hasCheckOut || isTerminalNonAttendanceStatus(record.status);
 
@@ -1469,13 +830,18 @@
         !hasCheckIn || hasActiveBreak || hasCheckOut || isTerminalNonAttendanceStatus(record.status);
     }
 
+    /* ========================================================
+       MORE MENU
+    ======================================================== */
+
     if (moreWrapper) {
       moreWrapper.hidden = !hasCheckIn || !hasCheckOut || isTerminalNonAttendanceStatus(record.status);
     }
 
-    /*
-     * BREAK INFORMATION
-     */
+    /* ========================================================
+       BREAK INFORMATION
+    ======================================================== */
+
     if (breakInfo) {
       breakInfo.hidden = !hasActiveBreak;
     }
@@ -1494,9 +860,10 @@
       setText('attendanceBreakMessage', '');
     }
 
-    /*
-     * CHECKOUT INFORMATION
-     */
+    /* ========================================================
+       CHECKOUT INFORMATION
+    ======================================================== */
+
     if (checkoutInfo) {
       checkoutInfo.hidden = !hasCheckOut;
     }
@@ -1504,6 +871,7 @@
     if (hasCheckOut) {
       setText(
         'attendanceCheckoutInfoText',
+
         `Latest checkout: ${formatTime(record.checkOutTime)} • ${checkoutCount} checkout${
           checkoutCount === 1 ? '' : 's'
         } recorded`
@@ -1512,9 +880,10 @@
       setText('attendanceCheckoutInfoText', '');
     }
 
-    /*
-     * ACTION MESSAGE
-     */
+    /* ========================================================
+       ACTION MESSAGE
+    ======================================================== */
+
     if (hasActiveBreak) {
       setText('attendanceActionMessage', 'You are currently on break. End your break before checking out.');
 
@@ -1562,13 +931,7 @@
   ========================================================== */
 
   function renderTodayUnavailable() {
-    /*
-     * Clear today's separate shift
-     * when viewing another month.
-     */
     todayShift = null;
-
-    todaySelfieCheckInRequired = false;
 
     setText('myAttendanceStatusText', 'CURRENT MONTH ONLY');
 
@@ -1608,21 +971,25 @@
 
     if (checkInBtn) {
       checkInBtn.disabled = true;
+
       checkInBtn.hidden = true;
     }
 
     if (checkOutBtn) {
       checkOutBtn.disabled = true;
+
       checkOutBtn.hidden = true;
     }
 
     if (startBreakBtn) {
       startBreakBtn.disabled = true;
+
       startBreakBtn.hidden = true;
     }
 
     if (endBreakBtn) {
       endBreakBtn.disabled = true;
+
       endBreakBtn.hidden = true;
     }
 
@@ -1796,16 +1163,20 @@
     if (!records.length) {
       tbody.innerHTML = `
         <tr>
+
           <td
-            colspan="8"
+            colspan="7"
             class="attendance-empty-state"
           >
+
             <i class="bi bi-calendar2-week"></i>
 
             <span>
               No attendance records found for this month.
             </span>
+
           </td>
+
         </tr>
       `;
 
@@ -1831,29 +1202,31 @@
           </strong>
         </td>
 
+
         <td>
           ${escapeHtml(formatTime(record.checkInTime))}
         </td>
 
-        <td>
-          ${renderSelfieCell(record)}
-        </td>
 
         <td>
           ${renderCheckoutCell(record)}
         </td>
 
+
         <td>
           ${renderWorkBreakCell(record)}
         </td>
+
 
         <td>
           ${attendanceBadge(record)}
         </td>
 
+
         <td>
           ${punctualityBadge(record.punctuality)}
         </td>
+
 
         <td>
           ${renderRegularizationAction(record, regularization)}
@@ -1862,58 +1235,6 @@
       </tr>
     `;
   }
-
-  /* ==========================================================
-     SELFIE TABLE CELL
-  ========================================================== */
-
-  function renderSelfieCell(record) {
-    const url = record?.checkInSelfieUrl;
-
-    if (!url) {
-      return `
-        <span class="attendance-selfie-none">
-          --
-        </span>
-      `;
-    }
-
-    return `
-      <button
-        type="button"
-        class="attendance-selfie-view-btn"
-        onclick="window.viewAttendanceSelfie('${escapeJs(url)}')"
-        title="View check-in selfie"
-      >
-        <i class="bi bi-camera"></i>
-        View
-      </button>
-    `;
-  }
-
-  /* ==========================================================
-     VIEW SELFIE
-  ========================================================== */
-
-  window.viewAttendanceSelfie = function (url) {
-    if (!url) {
-      return;
-    }
-
-    const image = document.getElementById('attendanceSelfieViewImage');
-
-    if (!image) {
-      return;
-    }
-
-    image.src = url;
-
-    if (!selfieViewModal) {
-      initializeSelfieModals();
-    }
-
-    selfieViewModal?.show();
-  };
 
   /* ==========================================================
      CHECKOUT TABLE CELL
@@ -1995,6 +1316,7 @@
 
         </div>
 
+
         <div class="attendance-row-progress">
 
           <div
@@ -2052,9 +1374,7 @@
   function punctualityBadge(punctuality) {
     if (!punctuality) {
       return `
-        <span
-          class="my-punctuality-badge neutral"
-        >
+        <span class="my-punctuality-badge neutral">
           --
         </span>
       `;
@@ -2066,11 +1386,13 @@
       <span
         class="my-punctuality-badge ${late ? 'late' : 'on-time'}"
       >
+
         <i
           class="bi ${late ? 'bi-clock' : 'bi-check-circle'}"
         ></i>
 
         ${late ? 'Late' : 'On Time'}
+
       </span>
     `;
   }
@@ -2085,32 +1407,18 @@
     }
 
     /*
-     * IMPORTANT:
+     * No selfie.
      *
-     * Do NOT read:
-     *
-     * todayAttendance.shiftSnapshot
-     *
-     * because todayAttendance can be null.
-     *
-     * Today's shift comes from:
-     *
-     * todayShift
+     * Check-in is direct.
      */
-    if (todaySelfieCheckInRequired) {
-      await handleSelfieCheckIn();
-
-      return;
-    }
-
     await performCheckIn();
   }
 
   /* ==========================================================
-     SELFIE CHECK-IN
+     NORMAL CHECK-IN
   ========================================================== */
 
-  async function handleSelfieCheckIn() {
+  async function performCheckIn() {
     if (actionInProgress) {
       return;
     }
@@ -2118,734 +1426,12 @@
     try {
       actionInProgress = true;
 
-      await openSelfieCamera();
-    } catch (error) {
-      console.error('Selfie camera failed:', error);
-
-      AppAlert.error(getApiErrorMessage(error, 'Unable to open camera.'));
-
-      actionInProgress = false;
-    }
-  }
-
-  /* ==========================================================
-     OPEN CAMERA
-  ========================================================== */
-
-  async function openSelfieCamera() {
-    resetSelfieCameraUI();
-
-    selfieFaceValid = false;
-
-    capturedSelfieBlob = null;
-
-    /*
-     * Camera requires HTTPS,
-     * except localhost.
-     */
-    if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
-      showCameraError(
-        'Secure Connection Required',
-        'Camera access requires HTTPS. Please open TeamoTrack using a secure HTTPS connection.'
-      );
-
-      return;
-    }
-
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      showCameraError('Camera Not Supported', 'This browser does not support camera access.');
-
-      return;
-    }
-
-    try {
-      await loadFaceModels();
-    } catch (error) {
-      console.error('Face model loading failed:', error);
-
-      showCameraError(
-        'Face Detection Unavailable',
-        'The face detection component could not be loaded. Please refresh the page and try again.'
-      );
-
-      return;
-    }
-
-    try {
-      selfieStream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: {
-            ideal: 'user',
-          },
-
-          width: {
-            ideal: 1280,
-          },
-
-          height: {
-            ideal: 1280,
-          },
-
-          frameRate: {
-            ideal: 24,
-            max: 30,
-          },
-        },
-
-        audio: false,
-      });
-
-      selfieVideo = document.getElementById('attendanceSelfieVideo');
-
-      if (!selfieVideo) {
-        throw new Error('Camera video element is missing.');
-      }
-
-      selfieVideo.srcObject = selfieStream;
-
-      await selfieVideo.play();
-
-      selfieCameraModal?.show();
-
-      waitForVideoAndStartDetection();
-    } catch (error) {
-      console.error('getUserMedia failed:', error);
-
-      stopSelfieCamera();
-
-      if (error?.name === 'NotAllowedError') {
-        showCameraError('Camera Permission Required', 'Please allow camera access in your browser and try again.');
-
-        return;
-      }
-
-      if (error?.name === 'NotFoundError') {
-        showCameraError('No Camera Found', 'No usable camera was found on this device.');
-
-        return;
-      }
-
-      showCameraError('Camera Unavailable', 'Unable to access the camera. Please check your browser permissions.');
-    }
-  }
-
-  /* ==========================================================
-     FACE MODELS
-  ========================================================== */
-
-  async function loadFaceModels() {
-    if (faceModelsLoaded) {
-      return;
-    }
-
-    if (faceModelLoading) {
-      return faceModelLoading;
-    }
-
-    if (typeof faceapi === 'undefined') {
-      throw new Error('Face detection library is not loaded.');
-    }
-
-    faceModelLoading = Promise.all([
-      faceapi.nets.tinyFaceDetector.loadFromUri(FACE_MODEL_URL),
-
-      faceapi.nets.faceLandmark68Net.loadFromUri(FACE_MODEL_URL),
-    ])
-      .then(function () {
-        faceModelsLoaded = true;
-      })
-      .catch(function (error) {
-        faceModelLoading = null;
-
-        throw error;
-      });
-
-    return faceModelLoading;
-  }
-
-  /* ==========================================================
-     VIDEO DETECTION
-  ========================================================== */
-
-  function waitForVideoAndStartDetection() {
-    if (!selfieVideo) {
-      return;
-    }
-
-    if (selfieVideo.readyState >= 2) {
-      startFaceDetection();
-
-      return;
-    }
-
-    selfieVideo.addEventListener(
-      'loadeddata',
-      function () {
-        startFaceDetection();
-      },
-      {
-        once: true,
-      }
-    );
-  }
-
-  function startFaceDetection() {
-    stopFaceDetection();
-
-    selfieDetectionTimer = window.setInterval(detectFace, FACE_CHECK_INTERVAL);
-
-    detectFace();
-  }
-
-  function stopFaceDetection() {
-    if (selfieDetectionTimer) {
-      window.clearInterval(selfieDetectionTimer);
-
-      selfieDetectionTimer = null;
-    }
-  }
-
-  /* ==========================================================
-     FACE DETECTION
-  ========================================================== */
-
-  async function detectFace() {
-    if (!selfieVideo || selfieVideo.readyState < 2) {
-      return;
-    }
-
-    try {
-      const detections = await faceapi.detectAllFaces(
-        selfieVideo,
-        new faceapi.TinyFaceDetectorOptions({
-          inputSize: 320,
-          scoreThreshold: 0.2,
-        })
-      );
-
-      console.log('[FaceAPI] Faces detected:', detections.length);
-
-      if (detections.length === 0) {
-        setFaceValidation(false, 'No face detected. Please look at the camera.');
-
-        return;
-      }
-
-      if (detections.length > 1) {
-        setFaceValidation(false, 'Only one face should be visible.');
-
-        return;
-      }
+      setActionLoading('attendanceCheckInBtn', true, 'Checking in...');
 
       /*
-       * Exactly one face detected.
-       *
-       * Do NOT check:
-       * - blur
-       * - brightness
-       * - contrast
-       * - face size
-       * - face position
-       * - head angle
-       * - image resolution
-       *
-       * Laptop cameras can be poor.
+       * Location remains optional.
        */
-      setFaceValidation(true, 'Face detected. You can capture the selfie.');
-    } catch (error) {
-      console.error('[FaceAPI] Detection error:', error);
-
-      setFaceValidation(false, 'Unable to detect your face. Please try again.');
-    }
-  }
-
-  /* ==========================================================
-     FACE ANGLES
-  ========================================================== */
-
-  function getFaceAngles(detection) {
-    try {
-      const landmarks = detection.landmarks;
-
-      if (!landmarks) {
-        return {
-          yaw: null,
-          pitch: null,
-        };
-      }
-
-      const positions = landmarks.positions;
-
-      if (!positions || positions.length < 68) {
-        return {
-          yaw: null,
-          pitch: null,
-        };
-      }
-
-      const nose = positions[30];
-
-      const leftEye = positions[36];
-
-      const rightEye = positions[45];
-
-      const leftFace = positions[0];
-
-      const rightFace = positions[16];
-
-      const eyeCenterX = (leftEye.x + rightEye.x) / 2;
-
-      const faceWidth = Math.max(1, rightFace.x - leftFace.x);
-
-      const yaw = ((nose.x - eyeCenterX) / faceWidth) * 180;
-
-      const eyeCenterY = (leftEye.y + rightEye.y) / 2;
-
-      const chin = positions[8];
-
-      const forehead = positions[27];
-
-      const faceHeight = Math.max(1, chin.y - forehead.y);
-
-      const pitch = ((nose.y - eyeCenterY) / faceHeight) * 120;
-
-      return {
-        yaw,
-        pitch,
-      };
-    } catch (_) {
-      return {
-        yaw: null,
-        pitch: null,
-      };
-    }
-  }
-
-  /* ==========================================================
-     FACE VALIDATION UI
-  ========================================================== */
-
-  function setFaceValidation(valid, message) {
-    selfieFaceValid = valid;
-
-    const status = document.getElementById('attendanceFaceStatus');
-
-    const statusDot = document.getElementById('attendanceFaceStatusDot');
-
-    const statusText = document.getElementById('attendanceFaceStatusText');
-
-    const guide = document.getElementById('attendanceFaceGuide');
-
-    const capture = document.getElementById('attendanceSelfieCaptureBtn');
-
-    if (statusText) {
-      statusText.textContent = message;
-    }
-
-    if (status) {
-      status.classList.toggle('valid', valid);
-
-      status.classList.toggle('invalid', !valid);
-    }
-
-    if (guide) {
-      guide.classList.toggle('valid', valid);
-
-      guide.classList.toggle('invalid', !valid);
-    }
-
-    if (statusDot) {
-      statusDot.style.background = valid ? '#22c55e' : '';
-    }
-
-    if (capture) {
-      capture.disabled = !valid || !!capturedSelfieBlob;
-    }
-  }
-
-  /* ==========================================================
-     CAPTURE SELFIE
-  ========================================================== */
-
-  async function captureSelfie() {
-    if (!selfieFaceValid) {
-      setFaceValidation(false, 'Please make sure your face is visible.');
-
-      return;
-    }
-
-    if (!selfieVideo || selfieVideo.readyState < 2) {
-      return;
-    }
-
-    const canvas = document.createElement('canvas');
-
-    canvas.width = selfieVideo.videoWidth;
-    canvas.height = selfieVideo.videoHeight;
-
-    const context = canvas.getContext('2d');
-
-    if (!context) {
-      return;
-    }
-
-    context.drawImage(selfieVideo, 0, 0, canvas.width, canvas.height);
-
-    capturedSelfieBlob = await canvasToBlob(canvas, 'image/jpeg', 0.8);
-
-    if (!capturedSelfieBlob) {
-      AppAlert.error('Unable to capture selfie. Please try again.');
-
-      return;
-    }
-
-    const preview = document.getElementById('attendanceSelfiePreview');
-
-    if (preview) {
-      if (preview.src && preview.src.startsWith('blob:')) {
-        URL.revokeObjectURL(preview.src);
-      }
-
-      preview.src = URL.createObjectURL(capturedSelfieBlob);
-    }
-
-    document.getElementById('attendanceCameraContainer')?.setAttribute('hidden', '');
-
-    document.getElementById('attendanceSelfiePreviewContainer')?.removeAttribute('hidden');
-
-    document.getElementById('attendanceSelfieCaptureBtn')?.setAttribute('hidden', '');
-
-    document.getElementById('attendanceSelfieRetakeBtn')?.removeAttribute('hidden');
-
-    document.getElementById('attendanceSelfieUseBtn')?.removeAttribute('hidden');
-
-    stopFaceDetection();
-  }
-  /* ==========================================================
-     IMAGE QUALITY
-  ========================================================== */
-
-  async function validateCapturedImage(blob) {
-    return new Promise(function (resolve) {
-      const image = new Image();
-
-      const url = URL.createObjectURL(blob);
-
-      image.onload = function () {
-        URL.revokeObjectURL(url);
-
-        if (image.width < MIN_IMAGE_WIDTH || image.height < MIN_IMAGE_HEIGHT) {
-          resolve({
-            valid: false,
-
-            message: 'The captured image is too small. Please use a better camera or move closer.',
-          });
-
-          return;
-        }
-
-        const canvas = document.createElement('canvas');
-
-        const maxSize = 320;
-
-        const scale = Math.min(1, maxSize / Math.max(image.width, image.height));
-
-        canvas.width = Math.max(1, Math.round(image.width * scale));
-
-        canvas.height = Math.max(1, Math.round(image.height * scale));
-
-        const context = canvas.getContext('2d', {
-          willReadFrequently: true,
-        });
-
-        if (!context) {
-          resolve({
-            valid: true,
-          });
-
-          return;
-        }
-
-        context.drawImage(image, 0, 0, canvas.width, canvas.height);
-
-        const data = context.getImageData(0, 0, canvas.width, canvas.height).data;
-
-        let brightness = 0;
-
-        let brightnessSquared = 0;
-
-        let pixels = 0;
-
-        for (let i = 0; i < data.length; i += 4) {
-          const r = data[i];
-
-          const g = data[i + 1];
-
-          const b = data[i + 2];
-
-          const value = 0.299 * r + 0.587 * g + 0.114 * b;
-
-          brightness += value;
-
-          brightnessSquared += value * value;
-
-          pixels++;
-        }
-
-        if (!pixels) {
-          resolve({
-            valid: true,
-          });
-
-          return;
-        }
-
-        brightness /= pixels;
-
-        const variance = brightnessSquared / pixels - brightness * brightness;
-
-        const contrast = Math.sqrt(Math.max(0, variance));
-
-        if (brightness < MIN_BRIGHTNESS) {
-          resolve({
-            valid: false,
-
-            message: 'The selfie is too dark. Please move to a brighter area.',
-          });
-
-          return;
-        }
-
-        if (brightness > MAX_BRIGHTNESS) {
-          resolve({
-            valid: false,
-
-            message: 'The selfie is too bright. Please avoid direct strong light.',
-          });
-
-          return;
-        }
-
-        if (contrast < MIN_CONTRAST) {
-          resolve({
-            valid: false,
-
-            message: 'The selfie appears blurry or low quality. Please hold the camera steady.',
-          });
-
-          return;
-        }
-
-        resolve({
-          valid: true,
-        });
-      };
-
-      image.onerror = function () {
-        URL.revokeObjectURL(url);
-
-        resolve({
-          valid: false,
-
-          message: 'Unable to read the captured image.',
-        });
-      };
-
-      image.src = url;
-    });
-  }
-
-  /* ==========================================================
-     RETAKE
-  ========================================================== */
-
-  function retakeSelfie() {
-    capturedSelfieBlob = null;
-
-    const preview = document.getElementById('attendanceSelfiePreview');
-
-    if (preview) {
-      if (preview.src && preview.src.startsWith('blob:')) {
-        URL.revokeObjectURL(preview.src);
-      }
-
-      preview.removeAttribute('src');
-    }
-
-    document.getElementById('attendanceSelfiePreviewContainer')?.setAttribute('hidden', '');
-
-    document.getElementById('attendanceCameraContainer')?.removeAttribute('hidden');
-
-    document.getElementById('attendanceSelfieRetakeBtn')?.setAttribute('hidden', '');
-
-    document.getElementById('attendanceSelfieUseBtn')?.setAttribute('hidden', '');
-
-    const capture = document.getElementById('attendanceSelfieCaptureBtn');
-
-    if (capture) {
-      capture.removeAttribute('hidden');
-
-      capture.disabled = !selfieFaceValid;
-    }
-
-    if (selfieVideo) {
-      selfieVideo.style.display = 'block';
-    }
-
-    startFaceDetection();
-  }
-
-  /* ==========================================================
-     USE CAPTURED SELFIE
-  ========================================================== */
-
-  async function useCapturedSelfie() {
-    if (!capturedSelfieBlob) {
-      return;
-    }
-
-    const blob = capturedSelfieBlob;
-
-    closeSelfieCamera();
-
-    try {
-      await performCheckIn(blob);
-    } finally {
-      capturedSelfieBlob = null;
-
-      actionInProgress = false;
-    }
-  }
-
-  /* ==========================================================
-     CLOSE CAMERA
-  ========================================================== */
-
-  function closeSelfieCamera() {
-    stopFaceDetection();
-
-    stopSelfieCamera();
-
-    selfieCameraModal?.hide();
-  }
-
-  /* ==========================================================
-     STOP CAMERA
-  ========================================================== */
-
-  function stopSelfieCamera() {
-    stopFaceDetection();
-
-    if (selfieStream) {
-      selfieStream.getTracks().forEach(function (track) {
-        track.stop();
-      });
-
-      selfieStream = null;
-    }
-
-    if (selfieVideo) {
-      selfieVideo.pause();
-
-      selfieVideo.srcObject = null;
-    }
-
-    selfieVideo = null;
-
-    selfieFaceValid = false;
-  }
-
-  /* ==========================================================
-     RESET SELFIE UI
-  ========================================================== */
-
-  function resetSelfieCameraUI() {
-    capturedSelfieBlob = null;
-
-    const cameraContainer = document.getElementById('attendanceCameraContainer');
-
-    const previewContainer = document.getElementById('attendanceSelfiePreviewContainer');
-
-    const error = document.getElementById('attendanceCameraError');
-
-    const instructions = document.getElementById('attendanceSelfieInstructions');
-
-    cameraContainer?.removeAttribute('hidden');
-
-    previewContainer?.setAttribute('hidden', '');
-
-    error?.setAttribute('hidden', '');
-
-    instructions?.removeAttribute('hidden');
-
-    document.getElementById('attendanceSelfieCaptureBtn')?.removeAttribute('hidden');
-
-    document.getElementById('attendanceSelfieRetakeBtn')?.setAttribute('hidden', '');
-
-    document.getElementById('attendanceSelfieUseBtn')?.setAttribute('hidden', '');
-
-    const status = document.getElementById('attendanceFaceStatus');
-
-    status?.classList.remove('valid', 'invalid');
-
-    setText('attendanceFaceStatusText', 'Looking for your face...');
-
-    const guide = document.getElementById('attendanceFaceGuide');
-
-    guide?.classList.remove('valid', 'invalid');
-
-    const capture = document.getElementById('attendanceSelfieCaptureBtn');
-
-    if (capture) {
-      capture.disabled = true;
-    }
-  }
-
-  /* ==========================================================
-     CAMERA ERROR
-  ========================================================== */
-
-  function showCameraError(title, message) {
-    const camera = document.getElementById('attendanceCameraContainer');
-
-    const instructions = document.getElementById('attendanceSelfieInstructions');
-
-    const error = document.getElementById('attendanceCameraError');
-
-    camera?.setAttribute('hidden', '');
-
-    instructions?.setAttribute('hidden', '');
-
-    error?.removeAttribute('hidden');
-
-    setText('attendanceCameraErrorTitle', title);
-
-    setText('attendanceCameraErrorMessage', message);
-
-    const settingsButton = document.getElementById('attendanceCameraSettingsBtn');
-
-    if (message.toLowerCase().includes('allow camera')) {
-      settingsButton?.removeAttribute('hidden');
-    } else {
-      settingsButton?.setAttribute('hidden', '');
-    }
-  }
-
-  /* ==========================================================
-     NORMAL CHECK-IN
-  ========================================================== */
-
-  async function performCheckIn(selfieBlob = null) {
-    if (actionInProgress && !selfieBlob) {
-      return;
-    }
-
-    try {
-      actionInProgress = true;
-
       const location = await getCurrentLocation();
-
-      setActionLoading('attendanceCheckInBtn', true, selfieBlob ? 'Uploading selfie...' : 'Checking in...');
 
       const payload = {};
 
@@ -2856,40 +1442,13 @@
       }
 
       /*
-       * IMPORTANT:
+       * Direct JSON request.
        *
-       * The selfie requirement comes
-       * from the separately returned
-       * today's shift.
+       * No FormData.
+       * No selfie.
+       * No camera.
        */
-      const requiresSelfie = todaySelfieCheckInRequired;
-
-      /*
-       * Selfie is sent to backend as
-       * multipart/form-data.
-       *
-       * Backend will:
-       * 1. Validate the current shift.
-       * 2. Validate selfie requirement.
-       * 3. Compress the image.
-       * 4. Upload it to Firebase Storage.
-       * 5. Save checkInSelfieUrl.
-       */
-      if (requiresSelfie && !selfieBlob) {
-        throw new Error('A selfie is required for check-in.');
-      }
-
-      let data;
-
-      if (requiresSelfie && selfieBlob) {
-        setActionLoading('attendanceCheckInBtn', true, 'Uploading selfie...');
-
-        data = await postAttendanceCheckIn(payload, selfieBlob);
-      } else {
-        setActionLoading('attendanceCheckInBtn', true, 'Checking in...');
-
-        data = await Api.post('/attendance/check-in', payload);
-      }
+      const data = await Api.post('/attendance/check-in', payload);
 
       if (data) {
         updateTodayFromApiResponse(data);
@@ -2916,87 +1475,6 @@
   }
 
   /* ==========================================================
-     BACKEND SELFIE CHECK-IN
-  ========================================================== */
-
-  async function postAttendanceCheckIn(payload, selfieBlob) {
-    /*
-     * Preferred:
-     *
-     * Add `Api.postMultipart()` to your
-     * existing API helper.
-     *
-     * This branch allows the existing
-     * helper to remain the central
-     * authentication mechanism.
-     */
-    if (typeof Api.postMultipart === 'function') {
-      const formData = new FormData();
-
-      if (payload.lat != null) {
-        formData.append('lat', String(payload.lat));
-      }
-
-      if (payload.lng != null) {
-        formData.append('lng', String(payload.lng));
-      }
-
-      formData.append('selfie', selfieBlob, 'attendance-selfie.jpg');
-
-      return await Api.postMultipart('/attendance/check-in', formData);
-    }
-
-    /*
-     * If your Api helper exposes
-     * a generic FormData method under
-     * another name, use that method
-     * instead.
-     *
-     * This fallback uses the same
-     * configured API base URL when
-     * `Api.baseUrl` is available.
-     */
-    if (typeof Api.postFormData === 'function') {
-      const formData = new FormData();
-
-      if (payload.lat != null) {
-        formData.append('lat', String(payload.lat));
-      }
-
-      if (payload.lng != null) {
-        formData.append('lng', String(payload.lng));
-      }
-
-      formData.append('selfie', selfieBlob, 'attendance-selfie.jpg');
-
-      return await Api.postFormData('/attendance/check-in', formData);
-    }
-
-    /*
-     * IMPORTANT:
-     *
-     * Do not fall back to Firebase
-     * Storage here.
-     *
-     * The requested architecture is:
-     *
-     * Browser
-     *   ↓
-     * NestJS multipart
-     *   ↓
-     * Sharp compression
-     *   ↓
-     * Firebase Storage
-     *   ↓
-     * Firestore
-     *
-     * Therefore the Api helper must
-     * support multipart/form-data.
-     */
-    throw new Error('Api.postMultipart() or Api.postFormData() is required for selfie check-in.');
-  }
-
-  /* ==========================================================
      CHECK OUT
   ========================================================== */
 
@@ -3010,9 +1488,9 @@
     try {
       actionInProgress = true;
 
-      const location = await getCurrentLocation();
-
       setCheckoutLoading(true);
+
+      const location = await getCurrentLocation();
 
       const payload = {};
 
@@ -3062,8 +1540,6 @@
     try {
       actionInProgress = true;
 
-      const location = await getCurrentLocation();
-
       if (typeof AppAlert.confirm === 'function') {
         const confirmed = await AppAlert.confirm('Check out again?', 'This will record another checkout for today.');
 
@@ -3073,6 +1549,8 @@
           return;
         }
       }
+
+      const location = await getCurrentLocation();
 
       const payload = {};
 
@@ -3160,9 +1638,9 @@
     try {
       actionInProgress = true;
 
-      const location = await getCurrentLocation();
-
       setActionLoading('attendanceStartBreakBtn', true, 'Starting break...');
+
+      const location = await getCurrentLocation();
 
       const payload = {};
 
@@ -3210,9 +1688,9 @@
     try {
       actionInProgress = true;
 
-      const location = await getCurrentLocation();
-
       setActionLoading('attendanceEndBreakBtn', true, 'Ending break...');
+
+      const location = await getCurrentLocation();
 
       const payload = {};
 
@@ -3294,38 +1772,41 @@
         const time = item.checkOutTime || item.recordedAt || null;
 
         return `
+            <div
+              class="attendance-checkout-history-item"
+            >
+
               <div
-                class="attendance-checkout-history-item"
+                class="attendance-checkout-history-index"
+              >
+                ${history.length - index}
+              </div>
+
+
+              <div
+                class="attendance-checkout-history-main"
               >
 
-                <div
-                  class="attendance-checkout-history-index"
-                >
-                  ${history.length - index}
-                </div>
+                <strong>
+                  ${escapeHtml(formatTime(time))}
+                </strong>
 
-                <div
-                  class="attendance-checkout-history-main"
-                >
-
-                  <strong>
-                    ${escapeHtml(formatTime(time))}
-                  </strong>
-
-                  <span>
-                    ${escapeHtml(formatMinutes(item.workingMinutes))} working time
-                  </span>
-
-                </div>
-
-                <div
-                  class="attendance-checkout-history-status"
-                >
-                  ${item.action === 'checkout_cancelled' ? 'Cancelled' : 'Checkout'}
-                </div>
+                <span>
+                  ${escapeHtml(formatMinutes(item.workingMinutes))}
+                  working time
+                </span>
 
               </div>
-            `;
+
+
+              <div
+                class="attendance-checkout-history-status"
+              >
+                ${item.action === 'checkout_cancelled' ? 'Cancelled' : 'Checkout'}
+              </div>
+
+            </div>
+          `;
       })
       .join('');
 
@@ -3341,14 +1822,6 @@
       return;
     }
 
-    /*
-     * IMPORTANT:
-     *
-     * API action responses contain
-     * attendance record data.
-     *
-     * They must NOT replace todayShift.
-     */
     const record =
       data.record ||
       data.attendance ||
@@ -3364,8 +1837,14 @@
       return;
     }
 
+    /*
+     * IMPORTANT:
+     *
+     * Do not replace todayShift here.
+     */
     todayAttendance = {
       ...todayAttendance,
+
       ...record,
     };
 
@@ -3378,6 +1857,7 @@
     if (index >= 0) {
       records[index] = {
         ...records[index],
+
         ...record,
       };
     } else {
@@ -3401,6 +1881,12 @@
     }
 
     menu.hidden = !menu.hidden;
+
+    const button = document.getElementById('attendanceMoreBtn');
+
+    if (button) {
+      button.setAttribute('aria-expanded', String(!menu.hidden));
+    }
   }
 
   function closeMoreMenu() {
@@ -3409,46 +1895,26 @@
     if (menu) {
       menu.hidden = true;
     }
+
+    const button = document.getElementById('attendanceMoreBtn');
+
+    if (button) {
+      button.setAttribute('aria-expanded', 'false');
+    }
   }
 
   /* ==========================================================
-     SELFIE MODALS
+     MODAL INITIALIZATION
   ========================================================== */
 
-  function initializeSelfieModals() {
-    if (typeof bootstrap === 'undefined') {
+  function initializeRegularizationModal() {
+    const element = document.getElementById('attendanceRegularizationModal');
+
+    if (!element || typeof bootstrap === 'undefined') {
       return;
     }
 
-    const cameraElement = document.getElementById('attendanceSelfieCameraModal');
-
-    if (cameraElement) {
-      selfieCameraModal = bootstrap.Modal.getOrCreateInstance(cameraElement);
-    }
-
-    const viewElement = document.getElementById('attendanceSelfieViewModal');
-
-    if (viewElement) {
-      selfieViewModal = bootstrap.Modal.getOrCreateInstance(viewElement);
-    }
-
-    document.getElementById('attendanceSelfieCancelBtn')?.addEventListener('click', closeSelfieCamera);
-
-    document.getElementById('attendanceSelfieCloseBtn')?.addEventListener('click', closeSelfieCamera);
-
-    document.getElementById('attendanceSelfieCaptureBtn')?.addEventListener('click', captureSelfie);
-
-    document.getElementById('attendanceSelfieRetakeBtn')?.addEventListener('click', retakeSelfie);
-
-    document.getElementById('attendanceSelfieUseBtn')?.addEventListener('click', useCapturedSelfie);
-
-    document.getElementById('attendanceSelfieViewModal')?.addEventListener('hidden.bs.modal', function () {
-      const image = document.getElementById('attendanceSelfieViewImage');
-
-      if (image) {
-        image.removeAttribute('src');
-      }
-    });
+    regularizationModal = bootstrap.Modal.getOrCreateInstance(element);
   }
 
   /* ==========================================================
@@ -3548,13 +2014,21 @@
 
     element.classList.remove(
       'status-not-marked',
+
       'status-working',
+
       'status-completed',
+
       'status-present',
+
       'status-half-day',
+
       'status-leave',
+
       'status-absent',
+
       'status-weekly-off',
+
       'status-holiday'
     );
 
@@ -3610,17 +2084,24 @@
   function escapeHtml(value) {
     return String(value ?? '')
       .replaceAll('&', '&amp;')
+
       .replaceAll('<', '&lt;')
+
       .replaceAll('>', '&gt;')
+
       .replaceAll('"', '&quot;')
+
       .replaceAll("'", '&#039;');
   }
 
   function escapeJs(value) {
     return String(value ?? '')
       .replaceAll('\\', '\\\\')
+
       .replaceAll("'", "\\'")
+
       .replaceAll('\n', '\\n')
+
       .replaceAll('\r', '\\r');
   }
 
@@ -3725,10 +2206,6 @@
       return '--';
     }
 
-    /*
-     * Support shift time values
-     * when supplied as Date.
-     */
     if (typeof value === 'number') {
       const date = new Date(value);
 
@@ -3762,24 +2239,6 @@
     }).format(date);
   }
 
-  function formatTimeInput(value) {
-    const date = getRecordDate(value);
-
-    if (!date) {
-      return '';
-    }
-
-    return new Intl.DateTimeFormat('en-GB', {
-      timeZone: INDIA_TIME_ZONE,
-
-      hour: '2-digit',
-
-      minute: '2-digit',
-
-      hour12: false,
-    }).format(date);
-  }
-
   function formatHourMinute(hour, minute) {
     const h = Number.isFinite(Number(hour)) ? Number(hour) : 0;
 
@@ -3798,38 +2257,10 @@
     }).format(date);
   }
 
-  function parseIndiaDatetimeLocal(value) {
-    if (!value) {
-      return null;
-    }
-
-    const date = new Date(`${value}:00+05:30`);
-
-    if (Number.isNaN(date.getTime())) {
-      return null;
-    }
-
-    return date;
-  }
-
-  function combineAttendanceDateAndTime(date, time) {
-    if (!date || !time) {
-      return null;
-    }
-
-    return `${date}T${time}`;
-  }
-
   function indiaDateToIso(date) {
-    const parsed = parseIndiaDatetimeLocal(`${date}T00:00`);
+    const parsed = new Date(`${date}T00:00:00+05:30`);
 
-    return parsed ? parsed.toISOString() : null;
-  }
-
-  function indiaLocalDateTimeToIso(value) {
-    const parsed = parseIndiaDatetimeLocal(value);
-
-    return parsed ? parsed.toISOString() : null;
+    return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
   }
 
   /* ==========================================================
@@ -3843,6 +2274,7 @@
 
     return String(status)
       .replaceAll('_', ' ')
+
       .replace(/\b\w/g, function (char) {
         return char.toUpperCase();
       });
@@ -3907,40 +2339,43 @@
   }
 
   /* ==========================================================
-     SELFIE BLOB
+     CURRENT LOCATION
   ========================================================== */
 
-  function canvasToBlob(canvas, type, quality) {
+  async function getCurrentLocation() {
+    if (!navigator.geolocation) {
+      console.warn('Geolocation is not supported by this browser.');
+
+      return null;
+    }
+
     return new Promise(function (resolve) {
-      canvas.toBlob(
-        function (blob) {
-          resolve(blob);
+      navigator.geolocation.getCurrentPosition(
+        function (position) {
+          resolve({
+            lat: position.coords.latitude,
+
+            lng: position.coords.longitude,
+          });
         },
-        type,
-        quality
+
+        function (error) {
+          console.warn('Unable to get current location:', error);
+
+          /*
+           * Location remains optional.
+           */
+          resolve(null);
+        },
+
+        {
+          enableHighAccuracy: true,
+
+          timeout: 10000,
+
+          maximumAge: 0,
+        }
       );
     });
   }
-
-  /* ==========================================================
-     MODAL INITIALIZATION
-  ========================================================== */
-
-  function initializeRegularizationModal() {
-    const element = document.getElementById('attendanceRegularizationModal');
-
-    if (!element || typeof bootstrap === 'undefined') {
-      return;
-    }
-
-    regularizationModal = bootstrap.Modal.getOrCreateInstance(element);
-  }
-
-  /* ==========================================================
-     GLOBAL INITIALIZATION HELPERS
-  ========================================================== */
-
-  window.openAttendanceSelfieCamera = handleSelfieCheckIn;
-
-  window.closeAttendanceSelfieCamera = closeSelfieCamera;
 })();

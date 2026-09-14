@@ -62,4 +62,12 @@ export class ShiftDto {
    */
   @IsBoolean()
   selfieCheckIn!: boolean;
+
+  /*
+   * When enabled, employees assigned to this
+   * shift must complete the selfie attendance
+   * flow before check-out.
+   */
+  @IsBoolean()
+  selfieCheckOut!: boolean;
 }

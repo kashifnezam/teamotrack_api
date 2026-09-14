@@ -7,11 +7,13 @@
 
   let executives = [];
   let teams = [];
+
   let editingId = null;
+  let permissionId = null;
 
   /* ==========================================================
        Initialize
-    ========================================================== */
+  ========================================================== */
 
   window.initializeExecutivesPage = async function () {
     await loadExecutives();
@@ -27,11 +29,10 @@
 
   /* ==========================================================
        Password Toggle
-    ========================================================== */
+  ========================================================== */
 
   function initializePasswordToggle() {
     const password = document.getElementById('password');
-
     const toggle = document.getElementById('togglePassword');
 
     if (!password || !toggle) {
@@ -45,33 +46,30 @@
         password.type = 'text';
 
         icon?.classList.remove('bi-eye');
-
         icon?.classList.add('bi-eye-slash');
 
         toggle.title = 'Hide password';
-
         toggle.setAttribute('aria-label', 'Hide password');
       } else {
         password.type = 'password';
 
         icon?.classList.remove('bi-eye-slash');
-
         icon?.classList.add('bi-eye');
 
         toggle.title = 'Show password';
-
         toggle.setAttribute('aria-label', 'Show password');
       }
     };
   }
 
   /* ==========================================================
-       Load
-    ========================================================== */
+       Load Executives
+  ========================================================== */
 
   async function loadExecutives() {
     try {
       AppAlert.loading('Loading executives...');
+
       const data = await Api.get('/executives/data');
 
       if (!data) {
@@ -84,68 +82,68 @@
       teams = Array.isArray(data.teams) ? data.teams : [];
 
       populateTeams();
-
       renderExecutives();
+
       AppAlert.close();
     } catch (error) {
       console.error(error);
 
       AppAlert.close();
+
       AppAlert.error(error.message || 'Unable to load executives');
     }
   }
 
   /* ==========================================================
        Teams
-    ========================================================== */
+  ========================================================== */
 
   function populateTeams() {
     const filter = document.getElementById('teamFilter');
-
     const select = document.getElementById('teamId');
 
     if (filter) {
       filter.innerHTML = `
-                    <option value="">
-                        All Teams
-                    </option>
-                `;
+        <option value="">
+          All Teams
+        </option>
+      `;
 
       teams.forEach((team) => {
         filter.insertAdjacentHTML(
           'beforeend',
           `
-                        <option value="${escapeHtml(team.id)}">
-                            ${escapeHtml(team.name || 'Unnamed Team')}
-                        </option>
-                    `
+            <option value="${escapeHtml(team.id)}">
+              ${escapeHtml(team.name || 'Unnamed Team')}
+            </option>
+          `
         );
       });
     }
 
     if (select) {
       select.innerHTML = `
-                    <option value="">
-                        Select Team
-                    </option>
-                `;
+        <option value="">
+          Select Team
+        </option>
+      `;
 
       teams.forEach((team) => {
         select.insertAdjacentHTML(
           'beforeend',
           `
-                        <option value="${escapeHtml(team.id)}">
-                            ${escapeHtml(team.name || 'Unnamed Team')}
-                        </option>
-                    `
+            <option value="${escapeHtml(team.id)}">
+              ${escapeHtml(team.name || 'Unnamed Team')}
+            </option>
+          `
         );
       });
     }
   }
 
   /* ==========================================================
-       Parent Manager
-    ========================================================== */
+       Parent Manager + Shift
+  ========================================================== */
 
   function updateParentFromTeam() {
     const teamId = document.getElementById('teamId')?.value || '';
@@ -154,23 +152,35 @@
 
     const hint = document.getElementById('parentHint');
 
+    const shiftDisplay = document.getElementById('shiftDisplay');
+
+    const shiftHint = document.getElementById('shiftHint');
+
     if (!parentSelect) {
       return;
     }
 
     parentSelect.innerHTML = '';
 
+    if (shiftDisplay) {
+      shiftDisplay.value = '';
+    }
+
     if (!teamId) {
       parentSelect.innerHTML = `
-                    <option value="">
-                        Select Team first
-                    </option>
-                `;
+        <option value="">
+          Select Team first
+        </option>
+      `;
 
       parentSelect.disabled = true;
 
       if (hint) {
         hint.textContent = "Parent manager is determined by the selected team's manager.";
+      }
+
+      if (shiftHint) {
+        shiftHint.textContent = "Shift is determined by the selected team's shift.";
       }
 
       return;
@@ -180,65 +190,99 @@
 
     if (!team) {
       parentSelect.innerHTML = `
-                    <option value="">
-                        Manager unavailable
-                    </option>
-                `;
+        <option value="">
+          Manager unavailable
+        </option>
+      `;
 
       parentSelect.disabled = true;
+
+      if (shiftDisplay) {
+        shiftDisplay.value = '';
+      }
+
+      if (hint) {
+        hint.textContent = 'Manager information is unavailable.';
+      }
 
       return;
     }
 
     /*
-     * Team's leadId is the executive's
-     * parent manager.
+     * ------------------------------------------------------
+     * ROOT-OWNED TEAM SUPPORT
+     * ------------------------------------------------------
+     *
+     * Backend returns rootId as leadId when the team is
+     * directly owned by root.
+     *
+     * Therefore use nullish coalescing instead of ||.
+     *
+     * This preserves a valid rootId.
      */
-    const leadId = team.leadId || '';
+    const leadId = team.leadId ?? team.rootId ?? '';
 
-    const parentName = team.leadName || team.managerName || 'No Manager';
+    const parentName =
+      team.leadName || team.managerName || (leadId && team.leadId == null ? 'Root Manager' : 'No Manager');
 
     parentSelect.innerHTML = `
-                <option value="${escapeHtml(leadId)}">
-                    ${escapeHtml(parentName)}
-                </option>
-            `;
+      <option value="${escapeHtml(leadId)}">
+        ${escapeHtml(parentName)}
+      </option>
+    `;
 
     parentSelect.disabled = true;
 
     if (hint) {
       hint.textContent = leadId
         ? "Parent manager is automatically inherited from the team's manager."
-        : 'This team has no manager.';
+        : 'This team has no assigned parent manager.';
+    }
+
+    /*
+     * ------------------------------------------------------
+     * SHIFT
+     * ------------------------------------------------------
+     */
+
+    const shift = team.shift || null;
+
+    const shiftName = team.shiftName || shift?.name || '';
+
+    if (shiftDisplay) {
+      shiftDisplay.value = shiftName;
+    }
+
+    if (shiftHint) {
+      shiftHint.textContent = shiftName
+        ? 'Shift is automatically inherited from the selected team.'
+        : 'This team has no assigned shift.';
     }
   }
 
   /* ==========================================================
-       Render
-    ========================================================== */
+       Render Executives
+  ========================================================== */
 
   function renderExecutives() {
-    const searchInput = document.getElementById('searchInput');
-
-    const teamFilter = document.getElementById('teamFilter');
-
     const tbody = document.getElementById('executiveTable');
 
-    if (!searchInput || !teamFilter || !tbody) {
+    if (!tbody) {
       return;
     }
 
-    const search = searchInput.value.trim().toLowerCase();
+    const search = document.getElementById('searchInput')?.value?.trim()?.toLowerCase() || '';
 
-    const teamFilterId = teamFilter.value;
+    const teamFilterId = document.getElementById('teamFilter')?.value || '';
 
     const list = executives.filter((exec) => {
       const matchesSearch =
         !search ||
         exec.fullName?.toLowerCase().includes(search) ||
-        exec.mobile?.toLowerCase().includes(search) ||
         exec.email?.toLowerCase().includes(search) ||
-        exec.parentName?.toLowerCase().includes(search);
+        exec.mobile?.toLowerCase().includes(search) ||
+        exec.teamName?.toLowerCase().includes(search) ||
+        exec.shiftName?.toLowerCase().includes(search);
 
       const matchesTeam = !teamFilterId || exec.teamId === teamFilterId;
 
@@ -253,19 +297,15 @@
 
     if (!list.length) {
       tbody.innerHTML = `
-                    <tr>
-
-                        <td
-                            colspan="7"
-                            class="empty-state"
-                        >
-
-                            No executives found
-
-                        </td>
-
-                    </tr>
-                `;
+        <tr>
+          <td
+            colspan="8"
+            class="empty-state"
+          >
+            No executives found
+          </td>
+        </tr>
+      `;
 
       return;
     }
@@ -275,7 +315,7 @@
 
   /* ==========================================================
        Executive Row
-    ========================================================== */
+  ========================================================== */
 
   function renderExecutiveRow(exec) {
     const team = teams.find((item) => item.id === exec.teamId);
@@ -284,195 +324,244 @@
 
     const parentName = exec.parentName || team?.leadName || team?.managerName || 'No Manager';
 
+    const shiftName = exec.shiftName || team?.shiftName || team?.shift?.name || 'No Shift';
+
     return `
-            <tr>
+      <tr>
 
-                <!-- Executive -->
+        <!-- Executive -->
 
-                <td>
+        <td>
+          <div class="exec-name">
+            ${escapeHtml(exec.fullName || 'Unknown')}
+          </div>
 
-                    <div class="exec-name">
+          <div class="exec-email">
+            ${escapeHtml(exec.email || '')}
+          </div>
+        </td>
 
-                        ${escapeHtml(exec.fullName || 'Unknown')}
+        <!-- Parent -->
 
-                    </div>
+        <td>
+          <div class="exec-parent">
+            ${escapeHtml(parentName)}
+          </div>
 
-                    <div class="exec-email">
+          <div class="exec-parent-label">
+            Parent Manager
+          </div>
+        </td>
 
-                        ${escapeHtml(exec.email || '')}
+        <!-- Mobile -->
 
-                    </div>
+        <td>
+          ${escapeHtml(exec.mobile || '-')}
+        </td>
 
-                </td>
+        <!-- Team -->
 
+        <td>
+          <div class="exec-team">
+            ${escapeHtml(teamName)}
+          </div>
+        </td>
 
-                <!-- Parent -->
+        <!-- Shift -->
 
-                <td>
+        <td>
+          <div class="exec-shift">
+            <i class="bi bi-clock me-1"></i>
+            ${escapeHtml(shiftName)}
+          </div>
+        </td>
 
-                    <div class="exec-parent">
+        <!-- Tracking -->
 
-                        ${escapeHtml(parentName)}
+        <td>
+          <span
+            class="tracking-badge ${exec.isTrackingEnable ? 'tracking-on' : 'tracking-off'}"
+          >
+            ${exec.isTrackingEnable ? 'Enabled' : 'Disabled'}
+          </span>
+        </td>
 
-                    </div>
+        <!-- Status -->
 
-                    <div class="exec-parent-label">
+        <td>
+          <span
+            class="status-badge ${exec.isActive ? 'status-active' : 'status-inactive'}"
+          >
+            ${exec.isActive ? 'Active' : 'Inactive'}
+          </span>
+        </td>
 
-                        Parent Manager
+        <!-- Actions -->
 
-                    </div>
+        <td class="text-end">
 
-                </td>
+          <div class="executive-actions">
 
+            <!-- Edit -->
 
-                <!-- Mobile -->
+            <button
+              type="button"
+              class="action-btn"
+              title="Edit"
+              onclick="editExecutive('${escapeJs(exec.id)}')"
+            >
+              <i class="bi bi-pencil"></i>
+            </button>
 
-                <td>
+            <!-- Permissions -->
 
-                    ${escapeHtml(exec.mobile || '-')}
+            <button
+              type="button"
+              class="action-btn"
+              title="Permissions"
+              onclick="openExecutivePermissions('${escapeJs(exec.id)}')"
+            >
+              <i class="bi bi-shield-lock"></i>
+            </button>
 
-                </td>
+          </div>
 
+        </td>
 
-                <!-- Team -->
-
-                <td>
-
-                    ${escapeHtml(teamName)}
-
-                </td>
-
-
-                <!-- Tracking -->
-
-                <td>
-
-                    <span
-                        class="tracking-badge ${exec.isTrackingEnable ? 'tracking-on' : 'tracking-off'}"
-                    >
-
-                        ${exec.isTrackingEnable ? 'Enabled' : 'Disabled'}
-
-                    </span>
-
-                </td>
-
-
-                <!-- Status -->
-
-                <td>
-
-                    <span
-                        class="status-badge ${exec.isActive ? 'status-active' : 'status-inactive'}"
-                    >
-
-                        ${exec.isActive ? 'Active' : 'Inactive'}
-
-                    </span>
-
-                </td>
-
-
-                <!-- Action -->
-
-                <td class="text-end">
-
-                    <button
-                        type="button"
-                        class="action-btn"
-                        title="Edit"
-                        onclick="editExecutive('${escapeJs(exec.id)}')"
-                    >
-
-                        <i class="bi bi-pencil"></i>
-
-                    </button>
-
-                </td>
-
-            </tr>
-        `;
+      </tr>
+    `;
   }
 
   /* ==========================================================
-       Modal
-    ========================================================== */
+       Executive Modal
+  ========================================================== */
 
   function openExecutiveModal(id = null) {
     editingId = id;
 
-    document.getElementById('modalTitle').textContent = id ? 'Edit Executive' : 'Add Executive';
+    const exec = executives.find((item) => item.id === id);
 
-    document.getElementById('saveExecutiveBtn').textContent = id ? 'Update Executive' : 'Save Executive';
+    const modalTitle = document.getElementById('modalTitle');
 
-    document.getElementById('email').disabled = !!editingId;
+    const saveButton = document.getElementById('saveExecutiveBtn');
 
-    document.getElementById('password').value = '';
+    const email = document.getElementById('email');
+
+    const password = document.getElementById('password');
+
+    const passwordHint = document.getElementById('passwordHint');
+
+    if (modalTitle) {
+      modalTitle.textContent = id ? 'Edit Executive' : 'Add Executive';
+    }
+
+    if (saveButton) {
+      saveButton.textContent = id ? 'Update Executive' : 'Save Executive';
+    }
+
+    if (email) {
+      email.disabled = !!id;
+    }
+
+    if (password) {
+      password.value = '';
+      password.type = 'password';
+    }
+
+    if (passwordHint) {
+      passwordHint.textContent = id
+        ? 'Leave blank to keep current password.'
+        : 'Required when creating a new executive.';
+    }
 
     if (!id) {
-      document.getElementById('executiveId').value = '';
+      resetExecutiveForm();
+    } else {
+      document.getElementById('executiveId').value = id;
 
-      document.getElementById('fullName').value = '';
+      document.getElementById('fullName').value = exec?.fullName || '';
 
-      document.getElementById('mobile').value = '';
+      document.getElementById('mobile').value = exec?.mobile || '';
 
-      document.getElementById('email').value = '';
+      document.getElementById('email').value = exec?.email || '';
 
-      document.getElementById('teamId').value = '';
+      document.getElementById('teamId').value = exec?.teamId || '';
 
-      document.getElementById('parentId').innerHTML = `
-                    <option value="">
-                        Select Team first
-                    </option>
-                `;
+      document.getElementById('gpsPriority').value = exec?.gpsPriority || 'low';
 
-      document.getElementById('parentId').disabled = true;
+      document.getElementById('isActive').checked = exec?.isActive !== false;
 
-      document.getElementById('gpsPriority').value = 'low';
+      document.getElementById('isTrackingEnable').checked = exec?.isTrackingEnable === true;
 
-      document.getElementById('isActive').checked = true;
-
-      document.getElementById('isTrackingEnable').checked = false;
+      updateParentFromTeam();
     }
 
     bootstrap.Modal.getOrCreateInstance(document.getElementById('executiveModal')).show();
   }
 
   /* ==========================================================
-       Edit
-    ========================================================== */
+       Reset Form
+  ========================================================== */
 
-  function editExecutive(id) {
-    const exec = executives.find((item) => item.id === id);
+  function resetExecutiveForm() {
+    document.getElementById('executiveId').value = '';
 
-    if (!exec) {
-      return;
+    document.getElementById('fullName').value = '';
+
+    document.getElementById('mobile').value = '';
+
+    document.getElementById('email').value = '';
+
+    document.getElementById('password').value = '';
+
+    document.getElementById('password').type = 'password';
+
+    document.getElementById('teamId').value = '';
+
+    document.getElementById('parentId').innerHTML = `
+      <option value="">
+        Select Team first
+      </option>
+    `;
+
+    document.getElementById('parentId').disabled = true;
+
+    document.getElementById('shiftDisplay').value = '';
+
+    document.getElementById('gpsPriority').value = 'low';
+
+    document.getElementById('isActive').checked = true;
+
+    document.getElementById('isTrackingEnable').checked = false;
+
+    const hint = document.getElementById('parentHint');
+
+    if (hint) {
+      hint.textContent = "Parent manager is determined by the selected team's manager.";
     }
 
-    document.getElementById('executiveId').value = id;
+    const shiftHint = document.getElementById('shiftHint');
 
-    document.getElementById('fullName').value = exec.fullName || '';
+    if (shiftHint) {
+      shiftHint.textContent = "Shift is determined by the selected team's shift.";
+    }
+  }
 
-    document.getElementById('mobile').value = exec.mobile || '';
+  /* ==========================================================
+       Edit
+  ========================================================== */
 
-    document.getElementById('email').value = exec.email || '';
-
-    document.getElementById('teamId').value = exec.teamId || '';
-
-    document.getElementById('gpsPriority').value = exec.gpsPriority || 'low';
-
-    document.getElementById('isActive').checked = exec.isActive !== false;
-
-    document.getElementById('isTrackingEnable').checked = exec.isTrackingEnable === true;
-
-    updateParentFromTeam();
+  function editExecutive(id) {
+    if (!executives.some((exec) => exec.id === id)) {
+      return;
+    }
 
     openExecutiveModal(id);
   }
 
   /* ==========================================================
-       Save
-    ========================================================== */
+       Save Executive
+  ========================================================== */
 
   async function saveExecutive() {
     const fullName = document.getElementById('fullName').value.trim();
@@ -502,19 +591,23 @@
     }
 
     /*
-     * Parent is NOT taken from
-     * an independently editable field.
+     * ------------------------------------------------------
+     * PARENT
+     * ------------------------------------------------------
      *
-     * Backend should derive it from
-     * team.leadId.
+     * Parent is derived from the team.
+     *
+     * IMPORTANT:
+     * Do not use:
+     *
+     *   team.leadId || ''
+     *
+     * because rootId is a valid fallback for a root-owned
+     * team.
+     *
+     * Backend remains authoritative.
      */
-    const parentId = team.leadId || '';
-
-    if (!parentId) {
-      AppAlert.warning('Selected team has no manager');
-
-      return;
-    }
+    const parentId = team.leadId ?? team.rootId ?? '';
 
     const body = {
       fullName,
@@ -534,7 +627,6 @@
 
     if (!editingId) {
       body.email = email;
-
       body.password = password;
     } else if (password) {
       body.password = password;
@@ -548,8 +640,6 @@
       const data = editingId ? await Api.patch(`/executives/${editingId}`, body) : await Api.post('/executives', body);
 
       if (!data) {
-        AppAlert.close();
-
         return;
       }
 
@@ -572,8 +662,302 @@
   }
 
   /* ==========================================================
+       EXECUTIVE PERMISSIONS
+  ========================================================== */
+
+  async function openExecutivePermissions(id) {
+    permissionId = id;
+
+    const executive = executives.find((item) => item.id === id);
+
+    if (!executive) {
+      return;
+    }
+
+    try {
+      AppAlert.loading('Loading permissions...');
+
+      const data = await Api.get(`/executives/${id}/permissions`);
+
+      if (!data) {
+        return;
+      }
+
+      AppAlert.close();
+
+      /*
+       * The complete permission map returned
+       * by the backend is passed directly to the
+       * renderer.
+       *
+       * Nothing is hardcoded here.
+       */
+      renderExecutivePermissions(data.permissions || {});
+
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('executivePermissionModal')).show();
+    } catch (error) {
+      AppAlert.close();
+
+      AppAlert.error(error.message || 'Unable to load executive permissions');
+    }
+  }
+
+  /* ==========================================================
+       Render Executive Permissions
+  ========================================================== */
+
+  function renderExecutivePermissions(permissions) {
+    const container = document.getElementById('executivePermissionList');
+
+    if (!container) {
+      return;
+    }
+
+    /*
+     * ------------------------------------------------------
+     * PERMISSION GROUP LABELS
+     * ------------------------------------------------------
+     *
+     * Individual permission keys are NOT hardcoded.
+     *
+     * Example:
+     *
+     * task.create
+     * task.edit
+     * task.delete
+     *
+     * will all automatically appear under Tasks.
+     *
+     * If a new group is introduced later, only its
+     * display label needs to be added here.
+     */
+    const groups = {
+      task: 'Tasks',
+    };
+
+    const permissionKeys = Object.keys(permissions);
+
+    /*
+     * ------------------------------------------------------
+     * GROUPS PRESENT IN DB
+     * ------------------------------------------------------
+     *
+     * First render the known groups in the desired order.
+     */
+    const knownGroups = Object.entries(groups);
+
+    const knownGroupKeys = new Set(knownGroups.map(([group]) => group));
+
+    let html = '';
+
+    knownGroups.forEach(([group, title]) => {
+      const keys = permissionKeys.filter((key) => key.startsWith(`${group}.`));
+
+      if (!keys.length) {
+        return;
+      }
+
+      html += renderExecutivePermissionGroup(title, keys, permissions);
+    });
+
+    /*
+     * ------------------------------------------------------
+     * UNKNOWN GROUPS
+     * ------------------------------------------------------
+     *
+     * This keeps the UI future-proof.
+     *
+     * If the backend later introduces:
+     *
+     * attendance.view
+     * tracking.view
+     * leave.approve
+     *
+     * they will still render instead of disappearing.
+     *
+     * The raw prefix is formatted as the group title.
+     */
+    const unknownGroups = {};
+
+    permissionKeys.forEach((key) => {
+      const separatorIndex = key.indexOf('.');
+
+      if (separatorIndex === -1) {
+        return;
+      }
+
+      const group = key.slice(0, separatorIndex);
+
+      if (knownGroupKeys.has(group)) {
+        return;
+      }
+
+      if (!unknownGroups[group]) {
+        unknownGroups[group] = [];
+      }
+
+      unknownGroups[group].push(key);
+    });
+
+    Object.entries(unknownGroups).forEach(([group, keys]) => {
+      html += renderExecutivePermissionGroup(formatExecutivePermission(group), keys, permissions);
+    });
+
+    /*
+     * ------------------------------------------------------
+     * PERMISSIONS WITHOUT A GROUP
+     * ------------------------------------------------------
+     *
+     * This is only a fallback for malformed/unusual keys.
+     */
+    const ungroupedKeys = permissionKeys.filter((key) => !key.includes('.'));
+
+    if (ungroupedKeys.length) {
+      html += renderExecutivePermissionGroup('Other', ungroupedKeys, permissions);
+    }
+
+    if (!html.trim()) {
+      container.innerHTML = `
+        <div class="executive-permission-empty">
+          No permissions available.
+        </div>
+      `;
+
+      return;
+    }
+
+    container.innerHTML = html;
+  }
+
+  /* ==========================================================
+       Render Permission Group
+  ========================================================== */
+
+  function renderExecutivePermissionGroup(title, keys, permissions) {
+    return `
+      <div class="executive-permission-group">
+
+        <div class="executive-permission-group-title">
+          ${escapeHtml(title)}
+        </div>
+
+        ${keys
+          .map((key) => {
+            const action = key.split('.').slice(1).join(' ');
+
+            /*
+             * For a normal grouped permission:
+             *
+             * task.create -> Create
+             *
+             * For an unusual ungrouped permission:
+             *
+             * example -> Example
+             */
+            const label = action ? formatExecutivePermission(action) : formatExecutivePermission(key);
+
+            return `
+              <div class="executive-permission-item">
+
+                <div>
+                  <div class="executive-permission-label">
+                    ${escapeHtml(label)}
+                  </div>
+
+                  <div class="executive-permission-key">
+                    ${escapeHtml(key)}
+                  </div>
+                </div>
+
+                <div class="form-check form-switch m-0">
+
+                  <input
+                    class="form-check-input executive-permission-toggle"
+                    type="checkbox"
+                    data-key="${escapeHtml(key)}"
+                    ${permissions[key] === true ? 'checked' : ''}
+                  />
+
+                </div>
+
+              </div>
+            `;
+          })
+          .join('')}
+
+      </div>
+    `;
+  }
+
+  /* ==========================================================
+       Save Executive Permissions
+  ========================================================== */
+
+  async function saveExecutivePermissions() {
+    if (!permissionId) {
+      return;
+    }
+
+    const permissions = {};
+
+    /*
+     * Collect every permission currently rendered
+     * by the DB-driven UI.
+     */
+    document.querySelectorAll('.executive-permission-toggle').forEach((input) => {
+      const key = input.dataset.key;
+
+      if (!key) {
+        return;
+      }
+
+      permissions[key] = input.checked;
+    });
+
+    const button = document.getElementById('saveExecutivePermissionBtn');
+
+    if (!button) {
+      return;
+    }
+
+    try {
+      button.disabled = true;
+
+      AppAlert.loading('Saving permissions...');
+
+      const data = await Api.patch(`/executives/${permissionId}/permissions`, permissions);
+
+      if (!data) {
+        return;
+      }
+
+      AppAlert.close();
+
+      AppAlert.success('Executive permissions updated');
+
+      bootstrap.Modal.getInstance(document.getElementById('executivePermissionModal'))?.hide();
+    } catch (error) {
+      AppAlert.close();
+
+      AppAlert.error(error.message || 'Unable to save executive permissions');
+    } finally {
+      button.disabled = false;
+    }
+  }
+
+  /* ==========================================================
+       Permission Label Formatter
+  ========================================================== */
+
+  function formatExecutivePermission(value) {
+    return String(value ?? '')
+      .replaceAll('_', ' ')
+      .replace(/\b\w/g, (char) => char.toUpperCase());
+  }
+
+  /* ==========================================================
        Escape HTML
-    ========================================================== */
+  ========================================================== */
 
   function escapeHtml(value) {
     return String(value ?? '')
@@ -586,7 +970,7 @@
 
   /* ==========================================================
        Escape JS
-    ========================================================== */
+  ========================================================== */
 
   function escapeJs(value) {
     return String(value ?? '')
@@ -597,12 +981,16 @@
   }
 
   /* ==========================================================
-       GLOBAL HTML HANDLERS
-    ========================================================== */
-
-  window.editExecutive = editExecutive;
+       GLOBAL
+  ========================================================== */
 
   window.openExecutiveModal = openExecutiveModal;
 
+  window.editExecutive = editExecutive;
+
   window.saveExecutive = saveExecutive;
+
+  window.openExecutivePermissions = openExecutivePermissions;
+
+  window.saveExecutivePermissions = saveExecutivePermissions;
 })();

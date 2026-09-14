@@ -1,7 +1,5 @@
 import { Body, Controller, Get, Post, Query, Res, UseGuards } from '@nestjs/common';
 
-import type { Response } from 'express';
-
 import { AttendanceService } from './attendance.service';
 import { AttendanceSchedulerService } from './scheduler.service';
 
@@ -13,9 +11,11 @@ import { BreakDto } from './dto/break.dto';
 
 import { FirebaseAuthGuard } from '../auth/firebase-auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
-import { RootManagerGuard } from '../auth/root-manager.guard';
+import { RoleGuard } from 'src/auth/role.guard';
+import { AllowRoles, RestrictRoles } from 'src/auth/roles.decorator';
 
 @Controller('attendance')
+@UseGuards(FirebaseAuthGuard, RoleGuard)
 export class AttendanceController {
   constructor(
     private readonly service: AttendanceService,
@@ -23,29 +23,11 @@ export class AttendanceController {
   ) {}
 
   // ============================================================
-  // SPA
-  // ============================================================
-
-  @Get()
-  page(@Res() res: Response) {
-    return res.sendFile('shell.html', {
-      root: './public/dashboard',
-    });
-  }
-
-  @Get('my')
-  pageMe(@Res() res: Response) {
-    return res.sendFile('shell.html', {
-      root: './public/dashboard',
-    });
-  }
-
-  // ============================================================
   // CHECK IN
   // ============================================================
 
   @Post('check-in')
-  @UseGuards(FirebaseAuthGuard)
+  @RestrictRoles('root_manager')
   checkIn(@CurrentUser() user: any, @Body() dto: CheckInDto) {
     return this.service.checkIn(user.uid, dto);
   }
@@ -55,7 +37,7 @@ export class AttendanceController {
   // ============================================================
 
   @Post('check-out')
-  @UseGuards(FirebaseAuthGuard)
+  @RestrictRoles('root_manager')
   checkOut(@CurrentUser() user: any, @Body() dto: CheckOutDto) {
     return this.service.checkOut(user.uid, dto);
   }
@@ -65,7 +47,7 @@ export class AttendanceController {
   // ============================================================
 
   @Post('start-break')
-  @UseGuards(FirebaseAuthGuard)
+  @RestrictRoles('root_manager')
   startBreak(@CurrentUser() user: any, @Body() dto: BreakDto) {
     return this.service.startBreak(user.uid, dto);
   }
@@ -75,7 +57,7 @@ export class AttendanceController {
   // ============================================================
 
   @Post('end-break')
-  @UseGuards(FirebaseAuthGuard)
+  @RestrictRoles('root_manager')
   endBreak(@CurrentUser() user: any, @Body() dto: BreakDto) {
     return this.service.endBreak(user.uid, dto);
   }
@@ -85,7 +67,6 @@ export class AttendanceController {
   // ============================================================
 
   @Post('data')
-  @UseGuards(FirebaseAuthGuard)
   getData(@CurrentUser() user: any, @Body() dto: AttendanceDto) {
     return this.service.getData(user.uid, dto);
   }
@@ -95,7 +76,7 @@ export class AttendanceController {
   // ============================================================
 
   @Get('my-data')
-  @UseGuards(FirebaseAuthGuard)
+  @RestrictRoles('root_manager')
   getMyData(@CurrentUser() user: any, @Query('month') month?: string, @Query('year') year?: string) {
     const now = new Date();
 
@@ -111,7 +92,7 @@ export class AttendanceController {
   // ============================================================
 
   @Post('process')
-  @UseGuards(FirebaseAuthGuard, RootManagerGuard)
+  @AllowRoles('root_manager')
   async processAttendance(@CurrentUser() user: any, @Body() dto: ProcessAttendanceDto) {
     const authority = await this.schedulerService.assertCanProcess(user.uid);
 

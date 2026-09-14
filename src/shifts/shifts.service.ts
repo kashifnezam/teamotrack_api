@@ -319,9 +319,11 @@ export class ShiftsService {
       dto.breakEndMinute !== null;
 
     /*
-     * Break is optional, but if one break value is supplied,
-     * all four values must be supplied.
+     * Break is optional, but if one break
+     * value is supplied, all four values
+     * must be supplied.
      */
+
     if (hasBreak && !hasCompleteBreak) {
       throw new BadRequestException('Complete break start and end time are required');
     }
@@ -364,6 +366,20 @@ export class ShiftsService {
     if (dto.halfDayMinutes < 0 || dto.fullDayMinutes < 0 || dto.halfDayMinutes > dto.fullDayMinutes) {
       throw new BadRequestException('Invalid attendance duration');
     }
+
+    // ----------------------------------------------
+    // Selfie Attendance
+    // ----------------------------------------------
+
+    /*
+     * selfieCheckIn and selfieCheckOut
+     * are validated by @IsBoolean().
+     *
+     * They are intentionally independent:
+     *
+     * Check-In  -> selfieCheckIn
+     * Check-Out -> selfieCheckOut
+     */
   }
 
   // ==================================================
@@ -398,7 +414,17 @@ export class ShiftsService {
 
       weeklyOff: data.weeklyOff ?? [],
 
+      /*
+       * Selfie Attendance
+       *
+       * Defaults to false so existing
+       * shifts created before these fields
+       * existed continue to work normally.
+       */
+
       selfieCheckIn: data.selfieCheckIn ?? false,
+
+      selfieCheckOut: data.selfieCheckOut ?? false,
     };
   }
 }

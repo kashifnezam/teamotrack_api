@@ -194,10 +194,79 @@ export class AttendanceService {
 
     records.sort((a, b) => this.recordDateValue(b.date) - this.recordDateValue(a.date));
 
+    /*
+     * Resolve the shift independently from attendance.
+     *
+     * This is required because the employee may not
+     * have checked in yet.
+     */
+    const today = this.todayIndia();
+
+    const todayShift = await this.resolveUserShift(user);
+
+    /*
+     * Determine whether today is a weekly off.
+     *
+     * JS day:
+     * 0 = Sunday
+     * 1 = Monday
+     * ...
+     * 6 = Saturday
+     */
+    const todayDate = this.localDate(today);
+
+    const dayOfWeek = todayDate.getDay();
+
+    const todayShiftIsWeeklyOff = todayShift ? this.isWeeklyOff(todayShift.weeklyOff, dayOfWeek) : false;
+
     return {
       records,
+
       summary: this.getSummary(records),
+
+      today: {
+        date: today,
+
+        shift: todayShift
+          ? {
+              ...todayShift,
+
+              isWeeklyOff: todayShiftIsWeeklyOff,
+            }
+          : null,
+
+        /*
+         * This will be true before check-in as well.
+         */
+        selfieCheckInRequired: todayShift?.selfieCheckIn === true,
+
+        selfieCheckOutRequired: todayShift?.selfieCheckOut === true,
+
+        hasShift: !!todayShift,
+      },
     };
+  }
+
+  private isWeeklyOff(weeklyOff: any[], dayOfWeek: number): boolean {
+    if (!Array.isArray(weeklyOff)) {
+      return false;
+    }
+
+    const names = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+
+    const currentName = names[dayOfWeek];
+
+    return weeklyOff.some((item) => {
+      if (typeof item === 'number') {
+        return item === dayOfWeek;
+      }
+
+      if (typeof item === 'string') {
+        return item.toLowerCase() === currentName;
+      }
+
+      return false;
+    });
   }
 
   // ============================================================
@@ -457,6 +526,7 @@ export class AttendanceService {
     dto: {
       lat?: number;
       lng?: number;
+      selfieUrl?: string;
     }
   ) {
     const user = await this.getUser(userId);
@@ -474,6 +544,9 @@ export class AttendanceService {
     } else if (dto.lat != null || dto.lng != null) {
       this.validateLocation(dto.lat, dto.lng);
     }
+
+    const selfieUrl =
+      typeof dto.selfieUrl === 'string' && dto.selfieUrl.trim().length > 0 ? dto.selfieUrl.trim() : undefined;
 
     const date = this.todayIndia();
 
@@ -642,7 +715,12 @@ export class AttendanceService {
         };
       }
 
+      if (selfieUrl) {
+        update.checkOutSelfieUrl = selfieUrl;
+      }
+
       transaction.set(ref, update, {
+        
         merge: true,
       });
 
@@ -997,9 +1075,9 @@ export class AttendanceService {
        */
       const scheduledBreakEnd = this.breakEndForDate(breakStart, shift);
 
-      if (breakEnd.getTime() > scheduledBreakEnd.getTime()) {
-        throw new BadRequestException(`Break must end by ${this.formatIndiaTime(scheduledBreakEnd)}`);
-      }
+      // if (breakEnd.getTime() > scheduledBreakEnd.getTime()) {
+      //   throw new BadRequestException(`Break must end by ${this.formatIndiaTime(scheduledBreakEnd)}`);
+      // }
 
       const breakDurationMinutes = Math.max(0, Math.round((breakEnd.getTime() - breakStart.getTime()) / 60000));
 
@@ -1541,6 +1619,10 @@ export class AttendanceService {
       fullDayMinutes: Number(data.fullDayMinutes ?? 480),
 
       weeklyOff: Array.isArray(data.weeklyOff) ? data.weeklyOff : [],
+
+      selfieCheckIn: data.selfieCheckIn === true,
+
+      selfieCheckOut: data.selfieCheckOut === true,
     };
   }
 
@@ -1962,6 +2044,12 @@ export class AttendanceService {
       ...(data.checkInSelfieUrl
         ? {
             checkInSelfieUrl: data.checkInSelfieUrl,
+          }
+        : {}),
+      
+        ...(data.checkOutSelfieUrl
+        ? {
+            checkOutSelfieUrl: data.checkOutSelfieUrl,
           }
         : {}),
 

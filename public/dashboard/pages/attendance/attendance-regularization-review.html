@@ -7,7 +7,7 @@
     <div>
       <h1 class="page-title">Attendance Regularization</h1>
 
-      <p class="page-description">Review attendance correction requests and view your processing history.</p>
+      <p class="page-description">Review attendance regularization requests and view your processing history.</p>
     </div>
 
     <button type="button" class="btn btn-primary" id="refreshRequestsBtn">
@@ -25,9 +25,8 @@
       <div class="summary-card-icon pending">⏳</div>
 
       <div>
-        <span class="summary-label"> Pending </span>
-
-        <strong id="pendingCount"> 0 </strong>
+        <span class="summary-label">Pending</span>
+        <strong id="pendingCount">0</strong>
       </div>
     </div>
 
@@ -35,19 +34,17 @@
       <div class="summary-card-icon today">📋</div>
 
       <div>
-        <span class="summary-label"> Pending Requests </span>
-
-        <strong id="totalCount"> 0 </strong>
+        <span class="summary-label">Pending Requests</span>
+        <strong id="totalCount">0</strong>
       </div>
     </div>
 
     <div class="summary-card">
-      <div class="summary-card-icon approved">✓</div>
+      <div class="summary-card-icon regularized">✓</div>
 
       <div>
-        <span class="summary-label"> Approved </span>
-
-        <strong id="approvedCount"> 0 </strong>
+        <span class="summary-label">Regularized</span>
+        <strong id="regularizedCount">0</strong>
       </div>
     </div>
 
@@ -55,9 +52,8 @@
       <div class="summary-card-icon rejected">×</div>
 
       <div>
-        <span class="summary-label"> Rejected </span>
-
-        <strong id="rejectedCount"> 0 </strong>
+        <span class="summary-label">Rejected</span>
+        <strong id="rejectedCount">0</strong>
       </div>
     </div>
   </div>
@@ -70,13 +66,13 @@
     <button type="button" class="request-tab active" id="pendingTabBtn" data-tab="pending">
       Pending Requests
 
-      <span class="tab-count" id="pendingTabCount"> 0 </span>
+      <span class="tab-count" id="pendingTabCount">0</span>
     </button>
 
     <button type="button" class="request-tab" id="historyTabBtn" data-tab="history">
       History
 
-      <span class="tab-count" id="historyTabCount"> 0 </span>
+      <span class="tab-count" id="historyTabCount">0</span>
     </button>
   </div>
 
@@ -86,10 +82,10 @@
 
   <div class="filter-card">
     <div class="filter-group search-group">
-      <label for="requestSearch"> Search </label>
+      <label for="requestSearch">Search</label>
 
       <div class="search-wrapper">
-        <span class="search-icon"> 🔍 </span>
+        <span class="search-icon">🔍</span>
 
         <input
           type="search"
@@ -102,45 +98,17 @@
     </div>
 
     <div class="filter-group">
-      <label for="requestTypeFilter"> Type </label>
-
-      <select id="requestTypeFilter" class="form-control">
-        <option value="">All types</option>
-
-        <option value="MISSED_CHECK_IN">Missed Check-in</option>
-
-        <option value="MISSED_CHECK_OUT">Missed Check-out</option>
-
-        <option value="MISSED_BOTH">Missed Both</option>
-
-        <option value="WRONG_CHECK_IN">Wrong Check-in</option>
-
-        <option value="WRONG_CHECK_OUT">Wrong Check-out</option>
-
-        <option value="WRONG_BOTH">Wrong Both</option>
-
-        <option value="SYSTEM_ERROR">System Error</option>
-
-        <option value="LOCATION_ERROR">Location Error</option>
-
-        <option value="OTHER">Other</option>
-      </select>
-    </div>
-
-    <div class="filter-group">
-      <label for="requestStatusFilter"> Status </label>
+      <label for="requestStatusFilter">Status</label>
 
       <select id="requestStatusFilter" class="form-control">
         <option value="">All statuses</option>
-
-        <option value="approved">Approved</option>
-
+        <option value="regularized">Regularized</option>
         <option value="rejected">Rejected</option>
       </select>
     </div>
 
     <div class="filter-group">
-      <label for="requestDateFilter"> Date </label>
+      <label for="requestDateFilter">Attendance Date</label>
 
       <input type="date" id="requestDateFilter" class="form-control" />
     </div>
@@ -149,7 +117,7 @@
   </div>
 
   <!-- ==========================================================
-       REQUEST LIST
+       REQUEST CARD
        ========================================================== -->
 
   <div class="request-card">
@@ -160,7 +128,7 @@
         <p id="requestListDescription">Attendance requests waiting for your action.</p>
       </div>
 
-      <span class="request-count-badge" id="visibleRequestCount"> 0 </span>
+      <span class="request-count-badge" id="visibleRequestCount">0</span>
     </div>
 
     <!-- ========================================================
@@ -170,7 +138,7 @@
     <div id="requestLoading" class="request-loading" hidden>
       <div class="loading-spinner"></div>
 
-      <span> Loading requests... </span>
+      <span>Loading requests...</span>
     </div>
 
     <!-- ========================================================
@@ -182,7 +150,7 @@
 
       <h3 id="emptyTitle">No pending requests</h3>
 
-      <p id="emptyDescription">There are currently no attendance regularization requests requiring your approval.</p>
+      <p id="emptyDescription">There are currently no attendance regularization requests requiring your action.</p>
     </div>
 
     <!-- ========================================================
@@ -190,7 +158,7 @@
          ======================================================== -->
 
     <div id="requestError" class="request-error" hidden>
-      <strong> Unable to load requests. </strong>
+      <strong>Unable to load requests.</strong>
 
       <span id="requestErrorMessage"> Please try again. </span>
 
@@ -206,17 +174,10 @@
         <thead>
           <tr>
             <th>Employee</th>
-
-            <th>Date</th>
-
-            <th>Request Type</th>
-
-            <th>Requested Time</th>
-
+            <th>Attendance Date</th>
+            <th>Current Attendance</th>
             <th>Reason</th>
-
             <th id="actionHeader">Submitted</th>
-
             <th>Action</th>
           </tr>
         </thead>
@@ -239,6 +200,10 @@
 
 <div class="request-modal-backdrop" id="requestDetailModal" hidden>
   <div class="request-modal" role="dialog" aria-modal="true" aria-labelledby="requestDetailTitle">
+    <!-- ======================================================
+         MODAL HEADER
+         ====================================================== -->
+
     <div class="modal-header">
       <div>
         <span class="modal-eyebrow"> Attendance Regularization </span>
@@ -249,20 +214,24 @@
       <button type="button" class="modal-close-btn" id="closeDetailModalBtn" aria-label="Close">×</button>
     </div>
 
-    <!-- DETAIL LOADING -->
+    <!-- ======================================================
+         DETAIL LOADING
+         ====================================================== -->
 
     <div class="modal-loading" id="detailLoading" hidden>
       <div class="loading-spinner"></div>
 
-      <span> Loading request... </span>
+      <span>Loading request...</span>
     </div>
 
-    <!-- DETAIL CONTENT -->
+    <!-- ======================================================
+         DETAIL CONTENT
+         ====================================================== -->
 
     <div id="detailContent" class="detail-content" hidden>
-      <!-- ======================================================
+      <!-- ====================================================
            EMPLOYEE
-           ====================================================== -->
+           ==================================================== -->
 
       <div class="detail-section">
         <div class="detail-section-title">Employee</div>
@@ -271,60 +240,60 @@
           <div class="employee-avatar" id="detailEmployeeAvatar">E</div>
 
           <div>
-            <strong id="detailEmployeeName"> - </strong>
+            <strong id="detailEmployeeName">-</strong>
 
-            <span id="detailEmployeeRole"> - </span>
+            <span id="detailEmployeeRole">-</span>
           </div>
         </div>
       </div>
 
-      <!-- ======================================================
+      <!-- ====================================================
            STATUS
-           ====================================================== -->
+           ==================================================== -->
 
       <div class="detail-section">
-        <div class="detail-section-title">Status</div>
+        <div class="detail-section-title">Request Status</div>
 
         <div id="detailStatus">-</div>
       </div>
 
-      <!-- ======================================================
+      <!-- ====================================================
            REQUEST
-           ====================================================== -->
+           ==================================================== -->
 
       <div class="detail-section">
         <div class="detail-section-title">Request</div>
 
         <div class="detail-grid">
           <div class="detail-item">
-            <span> Date </span>
+            <span>Attendance Date</span>
 
-            <strong id="detailDate"> - </strong>
+            <strong id="detailDate">-</strong>
           </div>
 
           <div class="detail-item">
-            <span> Type </span>
+            <span>Submitted</span>
 
-            <strong id="detailType"> - </strong>
+            <strong id="detailCreatedAt">-</strong>
           </div>
 
-          <div class="detail-item">
-            <span> Check-in </span>
+          <div class="detail-item detail-item-full">
+            <span>Current Attendance</span>
 
-            <strong id="detailCheckIn"> - </strong>
+            <strong id="detailCurrentAttendance"> - </strong>
           </div>
 
-          <div class="detail-item">
-            <span> Check-out </span>
+          <div class="detail-item detail-item-full" id="detailRegularizedResultItem" hidden>
+            <span>Final Attendance</span>
 
-            <strong id="detailCheckOut"> - </strong>
+            <strong id="detailRegularizedResult" class="attendance-result"> - </strong>
           </div>
         </div>
       </div>
 
-      <!-- ======================================================
+      <!-- ====================================================
            PREVIOUS ATTENDANCE
-           ====================================================== -->
+           ==================================================== -->
 
       <div class="detail-section">
         <div class="detail-section-title">Previous Attendance</div>
@@ -332,19 +301,19 @@
         <div class="previous-attendance" id="previousAttendance">-</div>
       </div>
 
-      <!-- ======================================================
+      <!-- ====================================================
            REASON
-           ====================================================== -->
+           ==================================================== -->
 
       <div class="detail-section">
-        <div class="detail-section-title">Reason</div>
+        <div class="detail-section-title">Employee Reason</div>
 
         <div class="reason-box" id="detailReason">-</div>
       </div>
 
-      <!-- ======================================================
+      <!-- ====================================================
            ATTACHMENT
-           ====================================================== -->
+           ==================================================== -->
 
       <div class="detail-section" id="attachmentSection" hidden>
         <div class="detail-section-title">Attachment</div>
@@ -354,35 +323,94 @@
         </a>
       </div>
 
-      <!-- ======================================================
+      <!-- ====================================================
+           REJECTION REASON
+           ==================================================== -->
+
+      <div class="detail-section" id="rejectionReasonSection" hidden>
+        <div class="detail-section-title">Rejection Reason</div>
+
+        <div class="reason-box rejection-reason-box" id="detailRejectionReason">-</div>
+      </div>
+
+      <!-- ====================================================
+           PROCESSING INFORMATION
+           ==================================================== -->
+
+      <div class="detail-section" id="processingSection" hidden>
+        <div class="detail-section-title">Processing</div>
+
+        <div class="detail-grid">
+          <div class="detail-item">
+            <span>Processed By</span>
+
+            <strong id="detailProcessedBy"> - </strong>
+          </div>
+
+          <div class="detail-item">
+            <span>Processed At</span>
+
+            <strong id="detailProcessedAt"> - </strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- ====================================================
            APPROVAL HISTORY
-           ====================================================== -->
+           ==================================================== -->
 
       <div class="detail-section">
-        <div class="detail-section-title">Approval History</div>
+        <div class="detail-section-title">Processing History</div>
 
         <div id="approvalTimeline" class="approval-timeline"></div>
       </div>
     </div>
 
-    <!-- ========================================================
+    <!-- ======================================================
          DETAIL ERROR
-         ======================================================== -->
+         ====================================================== -->
 
     <div class="modal-error" id="detailError" hidden>
-      <strong> Unable to load request. </strong>
+      <strong>Unable to load request.</strong>
 
       <p id="detailErrorMessage">Please try again.</p>
     </div>
 
-    <!-- ========================================================
+    <!-- ======================================================
          ACTIONS
-         ======================================================== -->
+         ====================================================== -->
 
     <div class="modal-actions" id="detailActions" hidden>
       <button type="button" class="btn btn-danger" id="rejectRequestBtn">Reject</button>
 
-      <button type="button" class="btn btn-success" id="approveRequestBtn">Approve</button>
+      <div class="regularize-action-group">
+        <button
+          type="button"
+          class="btn btn-secondary attendance-decision-btn"
+          data-attendance-status="absent"
+          id="regularizeAbsentBtn"
+        >
+          Mark Absent
+        </button>
+
+        <button
+          type="button"
+          class="btn btn-warning attendance-decision-btn"
+          data-attendance-status="half_day"
+          id="regularizeHalfDayBtn"
+        >
+          Half Day
+        </button>
+
+        <button
+          type="button"
+          class="btn btn-success attendance-decision-btn"
+          data-attendance-status="full_day"
+          id="regularizeFullDayBtn"
+        >
+          Full Day
+        </button>
+      </div>
     </div>
   </div>
 </div>
@@ -393,6 +421,8 @@
 
 <template id="requestRowTemplate">
   <tr>
+    <!-- Employee -->
+
     <td>
       <div class="employee-cell">
         <div class="employee-avatar employee-avatar-small">E</div>
@@ -405,29 +435,37 @@
       </div>
     </td>
 
+    <!-- Attendance Date -->
+
     <td>
       <strong class="request-date"></strong>
     </td>
 
-    <td>
-      <span class="type-badge request-type"></span>
-    </td>
+    <!-- Current Attendance -->
 
     <td>
-      <div class="time-cell">
-        <span class="request-check-in"></span>
+      <div class="attendance-cell">
+        <span class="attendance-status-label"></span>
 
-        <span class="request-check-out"></span>
+        <span class="attendance-type-label"></span>
+
+        <span class="attendance-working-time"></span>
       </div>
     </td>
+
+    <!-- Reason -->
 
     <td>
       <div class="reason-preview"></div>
     </td>
 
+    <!-- Submitted / Processed -->
+
     <td>
       <span class="submitted-date"></span>
     </td>
+
+    <!-- Action -->
 
     <td>
       <button type="button" class="btn btn-view view-request-btn">View</button>

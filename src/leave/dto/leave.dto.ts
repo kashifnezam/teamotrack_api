@@ -1,42 +1,49 @@
 import {
-    IsBoolean,
-    IsDateString,
-    IsIn,
-    IsNumber,
-    IsOptional,
-    IsString,
-    Min,
+  IsBoolean,
+  IsDateString,
+  IsIn,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Min,
+  ValidateIf,
 } from 'class-validator';
 
-
 export class LeaveDto {
+  @IsString()
+  leaveTypeId!: string;
 
-    @IsString()
-    leaveTypeId!: string;
+  @IsDateString()
+  startDate!: string;
 
+  @IsDateString()
+  endDate!: string;
 
-    @IsDateString()
-    startDate!: string;
+  @IsOptional()
+  @IsIn([
+    'day',
+    'half_day',
+    'hour',
+  ])
+  durationUnit?: string;
 
+  /*
+   * Required when durationUnit = half_day.
+   *
+   * first_half  = First Half
+   * second_half = Second Half
+   */
+  @ValidateIf((dto) => dto.durationUnit === 'half_day')
+  @IsIn([
+    'first_half',
+    'second_half',
+  ])
+  halfDay?: string;
 
-    @IsDateString()
-    endDate!: string;
-
-
-    @IsOptional()
-    @IsIn([
-        'day',
-        'half_day',
-        'hour',
-    ])
-    durationUnit?: string;
-
-
-    @IsOptional()
-    @IsString()
-    reason?: string;
+  @IsOptional()
+  @IsString()
+  reason?: string;
 }
-
 
 /*
  * Leave type / policy.

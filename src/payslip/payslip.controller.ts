@@ -5,7 +5,8 @@ import type { Response } from 'express';
 import { FirebaseAuthGuard } from '../auth/firebase-auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { PayslipService } from './payslip.service';
-import { RootManagerGuard } from 'src/auth/root-manager.guard';
+import { AllowRoles } from 'src/auth/roles.decorator';
+import { RoleGuard } from 'src/auth/role.guard';
 
 @Controller('payslips')
 export class PayslipController {
@@ -26,7 +27,8 @@ export class PayslipController {
   // DATA
   // ==================================================
 
-  @UseGuards(FirebaseAuthGuard, RootManagerGuard)
+  @UseGuards(FirebaseAuthGuard, RoleGuard)
+  @AllowRoles('root_manager')
   @Get('data')
   getAll(@CurrentUser() user: any) {
     return this.service.getAll(user.uid);
@@ -36,13 +38,15 @@ export class PayslipController {
   // TEMPLATE SETTINGS
   // ==================================================
 
-  @UseGuards(FirebaseAuthGuard, RootManagerGuard)
+  @UseGuards(FirebaseAuthGuard, RoleGuard)
+  @AllowRoles('root_manager')
   @Get('template/settings')
   getTemplateSettings(@CurrentUser() user: any) {
     return this.service.getTemplateSettings(user.uid);
   }
 
-  @UseGuards(FirebaseAuthGuard, RootManagerGuard)
+  @UseGuards(FirebaseAuthGuard, RoleGuard)
+  @AllowRoles('root_manager')
   @Patch('template')
   setTemplate(@CurrentUser() user: any, @Body('template') template: string) {
     return this.service.setTemplate(user.uid, template);
@@ -52,7 +56,8 @@ export class PayslipController {
   // PERIOD
   // ==================================================
 
-  @UseGuards(FirebaseAuthGuard, RootManagerGuard)
+  @UseGuards(FirebaseAuthGuard, RoleGuard)
+  @AllowRoles('root_manager')
   @Get('period/:periodId')
   getPeriod(@CurrentUser() user: any, @Param('periodId') periodId: string) {
     return this.service.getPeriod(user.uid, periodId);
@@ -62,7 +67,8 @@ export class PayslipController {
   // SINGLE PAYSLIP
   // ==================================================
 
-  @UseGuards(FirebaseAuthGuard, RootManagerGuard)
+  @UseGuards(FirebaseAuthGuard, RoleGuard)
+  @AllowRoles('root_manager')
   @Get(':paymentId')
   get(@CurrentUser() user: any, @Param('paymentId') paymentId: string) {
     return this.service.get(user.uid, paymentId);

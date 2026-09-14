@@ -23,7 +23,7 @@
 
   /* ======================================================
      INIT
-  ====================================================== */
+     ====================================================== */
 
   if (window.initializeHrDashboard) {
     console.warn('TeamoTrack HR dashboard already initialized.');
@@ -52,10 +52,10 @@
 
   /* ======================================================
      LOAD
-  ====================================================== */
+     ====================================================== */
 
   async function loadDashboard(requestedDate = null) {
-    const date = requestedDate || document.getElementById('hrDashboardDateFilter')?.value || getTodayIndia();
+    const date = requestedDate || getElement('hrDashboardDateFilter')?.value || getTodayIndia();
 
     const requestId = ++dateRequestSequence;
 
@@ -116,7 +116,7 @@
 
   /* ======================================================
      HEADER
-  ====================================================== */
+     ====================================================== */
 
   function populateHeader(data) {
     const user = data?.user || {};
@@ -132,7 +132,7 @@
 
   /* ======================================================
      USER
-  ====================================================== */
+     ====================================================== */
 
   function initializeUser() {
     try {
@@ -150,7 +150,7 @@
 
   /* ======================================================
      DATE
-  ====================================================== */
+     ====================================================== */
 
   function initializeDate() {
     setText('hrCurrentDate', formatTodayForDisplay());
@@ -166,7 +166,7 @@
 
   /* ======================================================
      ATTENDANCE SUMMARY
-  ====================================================== */
+     ====================================================== */
 
   function populateAttendance(data) {
     const attendance = data?.attendance || {};
@@ -190,7 +190,7 @@
 
   /* ======================================================
      HR SUMMARY
-  ====================================================== */
+     ====================================================== */
 
   function populateHrData(data) {
     const hr = data?.hr || {};
@@ -206,15 +206,17 @@
 
   /* ======================================================
      ATTENDANCE CONTROLS
-  ====================================================== */
+     ====================================================== */
 
   function initializeAttendanceControls() {
-    const search = document.getElementById('hrAttendanceSearch');
+    const search = getElement('hrAttendanceSearch');
 
-    const status = document.getElementById('hrAttendanceStatus');
+    const status = getElement('hrAttendanceStatus');
 
     search?.addEventListener('input', () => {
-      attendanceSearch = search.value.trim().toLowerCase();
+      attendanceSearch = String(search.value || '')
+        .trim()
+        .toLowerCase();
 
       renderAttendance(attendanceRows);
     });
@@ -230,16 +232,18 @@
 
   /* ======================================================
      ATTENDANCE TABLE
-  ====================================================== */
+     ====================================================== */
 
   function renderAttendance(staff) {
-    const tbody = document.getElementById('hrAttendanceTable');
+    const tbody = getElement('hrAttendanceTable');
 
     if (!tbody) {
       return;
     }
 
-    if (!staff.length) {
+    const rows = Array.isArray(staff) ? staff : [];
+
+    if (!rows.length) {
       renderAttendanceEmpty(tbody, 'No executives found.');
 
       updateAttendanceSummary(0, 0);
@@ -247,7 +251,7 @@
       return;
     }
 
-    const filtered = staff.filter(matchesAttendanceFilters);
+    const filtered = rows.filter(matchesAttendanceFilters);
 
     const visible = filtered.slice(0, ATTENDANCE_PREVIEW_LIMIT);
 
@@ -259,14 +263,16 @@
       return;
     }
 
-    tbody.innerHTML = visible.map(renderAttendanceRow).join('');
+    setElementHtml(tbody, visible.map(renderAttendanceRow).join(''));
 
     updateAttendanceSummary(visible.length, filtered.length);
   }
 
   function matchesAttendanceFilters(employee) {
+    const row = employee || {};
+
     if (attendanceSearch) {
-      const name = String(employee.fullName || employee.name || '').toLowerCase();
+      const name = String(row.fullName || row.name || '').toLowerCase();
 
       if (!name.includes(attendanceSearch)) {
         return false;
@@ -274,7 +280,7 @@
     }
 
     if (attendanceStatus !== 'all') {
-      const status = String(employee.status || 'not_marked')
+      const status = String(row.status || 'not_marked')
         .trim()
         .toLowerCase();
 
@@ -287,17 +293,19 @@
   }
 
   function renderAttendanceRow(employee) {
-    const name = employee.fullName || employee.name || 'Unknown';
+    const row = employee || {};
+
+    const name = row.fullName || row.name || 'Unknown';
 
     const initials = getInitials(name);
 
-    const checkIn = employee.checkIn ? formatTime(employee.checkIn) : '—';
+    const checkIn = row.checkIn ? formatTime(row.checkIn) : '—';
 
-    const checkOut = employee.checkOut ? formatTime(employee.checkOut) : '—';
+    const checkOut = row.checkOut ? formatTime(row.checkOut) : '—';
 
-    const working = formatWorkingMinutes(employee.workingMinutes);
+    const working = formatWorkingMinutes(row.workingMinutes);
 
-    const status = String(employee.status || 'not_marked')
+    const status = String(row.status || 'not_marked')
       .trim()
       .toLowerCase();
 
@@ -341,51 +349,58 @@
   }
 
   function renderAttendanceEmpty(tbody, message) {
-    tbody.innerHTML = `
-      <tr>
-        <td
-          colspan="5"
-          class="hr-table-empty"
-        >
-          <div class="hr-empty-state">
+    if (!tbody) {
+      return;
+    }
 
-            <i class="bi bi-inbox"></i>
+    setElementHtml(
+      tbody,
+      `
+        <tr>
+          <td
+            colspan="5"
+            class="hr-table-empty"
+          >
+            <div class="hr-empty-state">
 
-            <span>
-              ${escapeHtml(message)}
-            </span>
+              <i class="bi bi-inbox"></i>
 
-          </div>
-        </td>
-      </tr>
-    `;
+              <span>
+                ${escapeHtml(message)}
+              </span>
+
+            </div>
+          </td>
+        </tr>
+      `
+    );
   }
 
   function updateAttendanceSummary(visibleCount, filteredCount) {
-    const element = document.getElementById('hrAttendanceSummary');
+    const element = getElement('hrAttendanceSummary');
 
     if (!element) {
       return;
     }
 
     if (!filteredCount) {
-      element.textContent = 'No matching employees';
+      setElementText(element, 'No matching employees');
 
       return;
     }
 
     if (filteredCount > ATTENDANCE_PREVIEW_LIMIT) {
-      element.textContent = `Showing ${visibleCount} of ${filteredCount}`;
+      setElementText(element, `Showing ${visibleCount} of ${filteredCount}`);
 
       return;
     }
 
-    element.textContent = `Showing ${filteredCount} employee${filteredCount === 1 ? '' : 's'}`;
+    setElementText(element, `Showing ${filteredCount} employee${filteredCount === 1 ? '' : 's'}`);
   }
 
   /* ======================================================
      REGULARIZATIONS
-  ====================================================== */
+     ====================================================== */
 
   function renderRegularizations(regularizations) {
     renderCompactList({
@@ -404,13 +419,15 @@
   }
 
   function renderRegularizationItem(item) {
-    const name = item.userName || item.fullName || 'Unknown';
+    const request = item || {};
+
+    const name = request.userName || request.fullName || 'Unknown';
 
     const initials = getInitials(name);
 
-    const type = formatRegularizationType(item.type);
+    const type = formatRegularizationType(request.type);
 
-    const date = formatIsoDate(item.date);
+    const date = formatIsoDate(request.date);
 
     return `
       <div class="hr-list-item">
@@ -442,7 +459,7 @@
 
   /* ======================================================
      LEAVE
-  ====================================================== */
+     ====================================================== */
 
   function renderPendingLeave(leaves) {
     renderCompactList({
@@ -461,15 +478,17 @@
   }
 
   function renderLeaveItem(leave) {
-    const name = leave.userName || leave.fullName || 'Unknown';
+    const request = leave || {};
+
+    const name = request.userName || request.fullName || 'Unknown';
 
     const initials = getInitials(name);
 
-    const start = formatIsoDate(leave.startDate);
+    const start = formatIsoDate(request.startDate);
 
-    const end = formatIsoDate(leave.endDate);
+    const end = formatIsoDate(request.endDate);
 
-    const days = Number(leave.days);
+    const days = Number(request.days);
 
     const duration = Number.isFinite(days) ? `${days} day${days === 1 ? '' : 's'}` : '—';
 
@@ -505,7 +524,7 @@
 
   /* ======================================================
      HOLIDAYS
-  ====================================================== */
+     ====================================================== */
 
   function renderHolidays(holidays) {
     renderCompactList({
@@ -524,11 +543,13 @@
   }
 
   function renderHolidayItem(holiday) {
-    const name = holiday.name || 'Holiday';
+    const item = holiday || {};
 
-    const date = formatIsoDate(holiday.date);
+    const name = item.name || 'Holiday';
 
-    const optional = holiday.isOptional === true ? 'Optional' : '';
+    const date = formatIsoDate(item.date);
+
+    const optional = item.isOptional === true ? 'Optional' : '';
 
     return `
       <div class="hr-list-item">
@@ -536,11 +557,11 @@
         <div class="hr-holiday-date">
 
           <span>
-            ${escapeHtml(formatHolidayDay(holiday.date))}
+            ${escapeHtml(formatHolidayDay(item.date))}
           </span>
 
           <small>
-            ${escapeHtml(formatHolidayMonth(holiday.date))}
+            ${escapeHtml(formatHolidayMonth(item.date))}
           </small>
 
         </div>
@@ -564,10 +585,10 @@
 
   /* ======================================================
      GENERIC COMPACT LIST
-  ====================================================== */
+     ====================================================== */
 
   function renderCompactList({ containerId, items, emptyIcon, emptyMessage, moreLabel, renderItem }) {
-    const container = document.getElementById(containerId);
+    const container = getElement(containerId);
 
     if (!container) {
       return;
@@ -576,27 +597,31 @@
     const list = getArray(items);
 
     if (!list.length) {
-      container.innerHTML = `
-        <div class="hr-list-empty">
+      setElementHtml(
+        container,
+        `
+          <div class="hr-list-empty">
 
-          <i class="${emptyIcon}"></i>
+            <i class="${escapeHtml(emptyIcon)}"></i>
 
-          <span>
-            ${escapeHtml(emptyMessage)}
-          </span>
+            <span>
+              ${escapeHtml(emptyMessage)}
+            </span>
 
-        </div>
-      `;
+          </div>
+        `
+      );
 
       return;
     }
 
     const visible = list.slice(0, LIST_PREVIEW_LIMIT);
 
-    container.innerHTML = visible.map(renderItem).join('');
+    setElementHtml(container, visible.map(renderItem).join(''));
 
     if (list.length > LIST_PREVIEW_LIMIT) {
-      container.insertAdjacentHTML(
+      insertElementHtml(
+        container,
         'beforeend',
         `
           <div class="hr-list-more">
@@ -610,7 +635,7 @@
 
   /* ======================================================
      LOADING
-  ====================================================== */
+     ====================================================== */
 
   function setDashboardLoading() {
     const statIds = [
@@ -622,7 +647,9 @@
       'regularizationCount',
     ];
 
-    statIds.forEach((id) => setDashboardValue(id, '—'));
+    statIds.forEach((id) => {
+      setDashboardValue(id, '—');
+    });
 
     renderLoadingList('hrRegularizationList', 'Loading regularizations...');
 
@@ -630,49 +657,55 @@
 
     renderLoadingList('hrHolidayList', 'Loading holidays...');
 
-    const table = document.getElementById('hrAttendanceTable');
+    const table = getElement('hrAttendanceTable');
 
     if (table) {
-      table.innerHTML = `
-        <tr>
-          <td
-            colspan="5"
-            class="hr-table-empty"
-          >
-            <div class="hr-loading-state">
+      setElementHtml(
+        table,
+        `
+          <tr>
+            <td
+              colspan="5"
+              class="hr-table-empty"
+            >
+              <div class="hr-loading-state">
 
-              <span class="spinner-border spinner-border-sm"></span>
+                <span class="spinner-border spinner-border-sm"></span>
 
-              <span>
-                Loading attendance...
-              </span>
+                <span>
+                  Loading attendance...
+                </span>
 
-            </div>
-          </td>
-        </tr>
-      `;
+              </div>
+            </td>
+          </tr>
+        `
+      );
     }
 
     setText('hrAttendanceSummary', 'Loading...');
   }
 
   function renderLoadingList(id, message) {
-    const container = document.getElementById(id);
+    const container = getElement(id);
 
     if (!container) {
       return;
     }
 
-    container.innerHTML = `
-      <div class="hr-list-loading">
-        ${escapeHtml(message)}
-      </div>
-    `;
+    setElementHtml(
+      container,
+      `
+        <div class="hr-list-loading">
+          ${escapeHtml(message)}
+        </div>
+      `
+    );
   }
 
   /* ======================================================
      ERROR
-  ====================================================== */
+     ====================================================== */
 
   function showDashboardError() {
     const statIds = [
@@ -684,7 +717,9 @@
       'regularizationCount',
     ];
 
-    statIds.forEach((id) => setDashboardValue(id, '—'));
+    statIds.forEach((id) => {
+      setDashboardValue(id, '—');
+    });
 
     renderErrorList('hrRegularizationList', 'Unable to load regularizations.');
 
@@ -692,49 +727,55 @@
 
     renderErrorList('hrHolidayList', 'Unable to load holidays.');
 
-    const table = document.getElementById('hrAttendanceTable');
+    const table = getElement('hrAttendanceTable');
 
     if (table) {
-      table.innerHTML = `
-        <tr>
-          <td
-            colspan="5"
-            class="hr-table-empty"
-          >
-            <div class="hr-empty-state">
+      setElementHtml(
+        table,
+        `
+          <tr>
+            <td
+              colspan="5"
+              class="hr-table-empty"
+            >
+              <div class="hr-empty-state">
 
-              <i class="bi bi-exclamation-circle"></i>
+                <i class="bi bi-exclamation-circle"></i>
 
-              <span>
-                Unable to load attendance.
-              </span>
+                <span>
+                  Unable to load attendance.
+                </span>
 
-            </div>
-          </td>
-        </tr>
-      `;
+              </div>
+            </td>
+          </tr>
+        `
+      );
     }
 
     setText('hrAttendanceSummary', 'Unable to load data');
   }
 
   function renderErrorList(id, message) {
-    const container = document.getElementById(id);
+    const container = getElement(id);
 
     if (!container) {
       return;
     }
 
-    container.innerHTML = `
-      <div class="hr-list-empty">
-        ${escapeHtml(message)}
-      </div>
-    `;
+    setElementHtml(
+      container,
+      `
+        <div class="hr-list-empty">
+          ${escapeHtml(message)}
+        </div>
+      `
+    );
   }
 
   /* ======================================================
      ALERT HELPERS
-  ====================================================== */
+     ====================================================== */
 
   function showLoading(message) {
     if (typeof AppAlert !== 'undefined' && typeof AppAlert.loading === 'function') {
@@ -755,42 +796,115 @@
   }
 
   /* ======================================================
+     GENERIC DOM HELPERS
+     ====================================================== */
+
+  /**
+   * Safely retrieves an element by ID.
+   *
+   * Returns null when the element does not exist.
+   * This is intentional because TeamoTrack uses SPA-style
+   * page navigation where not every page contains every
+   * dashboard element.
+   */
+  function getElement(id) {
+    if (!id) {
+      return null;
+    }
+
+    return document.getElementById(id);
+  }
+
+  /**
+   * Safely sets text content.
+   */
+  function setText(id, value) {
+    const element = getElement(id);
+
+    if (!element) {
+      return false;
+    }
+
+    setElementText(element, value ?? '');
+
+    return true;
+  }
+
+  /**
+   * Safely sets text content on an already resolved element.
+   */
+  function setElementText(element, value) {
+    if (!element) {
+      return false;
+    }
+
+    element.textContent = value ?? '';
+
+    return true;
+  }
+
+  /**
+   * Safely sets innerHTML on an already resolved element.
+   */
+  function setElementHtml(element, html) {
+    if (!element) {
+      return false;
+    }
+
+    element.innerHTML = html ?? '';
+
+    return true;
+  }
+
+  /**
+   * Safely inserts HTML into an already resolved element.
+   */
+  function insertElementHtml(element, position, html) {
+    if (!element) {
+      return false;
+    }
+
+    if (typeof element.insertAdjacentHTML !== 'function') {
+      return false;
+    }
+
+    element.insertAdjacentHTML(position, html ?? '');
+
+    return true;
+  }
+
+  /* ======================================================
      GENERIC HELPERS
-  ====================================================== */
+     ====================================================== */
 
   function getArray(value) {
     return Array.isArray(value) ? value : [];
   }
 
   function setDashboardValue(elementId, value) {
-    const element = document.getElementById(elementId);
-
-    if (element) {
-      element.textContent = value ?? '—';
-    }
-  }
-
-  function setText(id, value) {
-    const element = document.getElementById(id);
-
-    if (element) {
-      element.textContent = value ?? '';
-    }
+    setText(elementId, value ?? '—');
   }
 
   /* ======================================================
      ATTENDANCE STATUS
-  ====================================================== */
+     ====================================================== */
 
   function formatAttendanceStatus(status) {
     const labels = {
       working: 'Working',
+
       present: 'Present',
+
       late: 'Late',
+
       leave: 'On Leave',
+
       absent: 'Absent',
+
       weekly_off: 'Weekly Off',
+
       holiday: 'Holiday',
+
       not_marked: 'Not Marked',
     };
 
@@ -800,12 +914,19 @@
   function getStatusClass(status) {
     const classes = {
       working: 'status-working',
+
       present: 'status-present',
+
       late: 'status-late',
+
       leave: 'status-leave',
+
       absent: 'status-absent',
+
       weekly_off: 'status-weekly-off',
+
       holiday: 'status-holiday',
+
       not_marked: 'status-not-marked',
     };
 
@@ -814,20 +935,28 @@
 
   /* ======================================================
      REGULARIZATION TYPE
-  ====================================================== */
+     ====================================================== */
 
   function formatRegularizationType(type) {
     const labels = {
       MISSED_CHECK_IN: 'Missed check-in',
+
       MISSED_CHECK_OUT: 'Missed check-out',
+
       MISSED_BOTH: 'Missed check-in & check-out',
 
       WRONG_CHECK_IN: 'Wrong check-in',
+
       WRONG_CHECK_OUT: 'Wrong check-out',
+
       WRONG_BOTH: 'Wrong check-in & check-out',
 
       SYSTEM_ERROR: 'System error',
+
       LOCATION_ERROR: 'Location error',
+
+      BREAK_ERROR: 'Break error',
+
       OTHER: 'Other',
     };
 
@@ -836,7 +965,7 @@
 
   /* ======================================================
      INITIALS
-  ====================================================== */
+     ====================================================== */
 
   function getInitials(name) {
     const value = String(name || 'User').trim();
@@ -856,7 +985,7 @@
 
   /* ======================================================
      WORKING MINUTES
-  ====================================================== */
+     ====================================================== */
 
   function formatWorkingMinutes(minutes) {
     if (minutes == null || !Number.isFinite(Number(minutes))) {
@@ -878,7 +1007,7 @@
 
   /* ======================================================
      TIME
-  ====================================================== */
+     ====================================================== */
 
   function formatTime(value) {
     const date = parseDateValue(value);
@@ -897,7 +1026,7 @@
 
   /* ======================================================
      DASHBOARD DATE
-  ====================================================== */
+     ====================================================== */
 
   function formatDashboardDate(value) {
     const normalized = normalizeDashboardDate(value);
@@ -951,7 +1080,7 @@
 
   /* ======================================================
      ISO DATE
-  ====================================================== */
+     ====================================================== */
 
   function formatIsoDate(value) {
     if (!value) {
@@ -975,7 +1104,7 @@
 
   /* ======================================================
      HOLIDAY DATE
-  ====================================================== */
+     ====================================================== */
 
   function formatHolidayDay(value) {
     if (!value) {
@@ -1013,7 +1142,7 @@
 
   /* ======================================================
      TODAY INDIA
-  ====================================================== */
+     ====================================================== */
 
   function getTodayIndia() {
     const parts = new Intl.DateTimeFormat('en-CA', {
@@ -1036,7 +1165,7 @@
 
   /* ======================================================
      DATE PARSER
-  ====================================================== */
+     ====================================================== */
 
   function parseDateValue(value) {
     if (!value) {
@@ -1049,11 +1178,29 @@
       date = value;
     } else if (value && typeof value.toDate === 'function') {
       date = value.toDate();
+    } else if (value && typeof value === 'object') {
+      /*
+       * Supports Firestore-style serialized timestamps:
+       *
+       * {
+       *   _seconds: 1234567890,
+       *   _nanoseconds: 123000000
+       * }
+       */
+      const seconds = Number(value._seconds ?? value.seconds);
+
+      const nanoseconds = Number(value._nanoseconds ?? value.nanoseconds ?? 0);
+
+      if (Number.isFinite(seconds)) {
+        date = new Date(seconds * 1000 + Math.floor(nanoseconds / 1000000));
+      } else {
+        date = new Date(value);
+      }
     } else {
       date = new Date(value);
     }
 
-    if (Number.isNaN(date.getTime())) {
+    if (!date || Number.isNaN(date.getTime())) {
       return null;
     }
 
@@ -1062,7 +1209,7 @@
 
   /* ======================================================
      ESCAPE HTML
-  ====================================================== */
+     ====================================================== */
 
   function escapeHtml(value) {
     return String(value ?? '')

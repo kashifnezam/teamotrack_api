@@ -7,7 +7,8 @@ import { PaymentDto } from './dto/payment.dto';
 
 import { FirebaseAuthGuard } from '../auth/firebase-auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
-import { RootManagerGuard } from 'src/auth/root-manager.guard';
+import { AllowRoles } from 'src/auth/roles.decorator';
+import { RoleGuard } from 'src/auth/role.guard';
 
 @Controller('payments')
 export class PaymentController {
@@ -28,7 +29,8 @@ export class PaymentController {
   // GET PAYMENTS
   // ==================================================
 
-  @UseGuards(FirebaseAuthGuard, RootManagerGuard)
+  @UseGuards(FirebaseAuthGuard, RoleGuard)
+  @AllowRoles('root_manager')
   @Get('data')
   @UseGuards(FirebaseAuthGuard)
   get(@CurrentUser() user: any) {
@@ -39,7 +41,8 @@ export class PaymentController {
   // GET PAYROLL PERIOD PAYMENTS
   // ==================================================
 
-  @UseGuards(FirebaseAuthGuard, RootManagerGuard)
+  @UseGuards(FirebaseAuthGuard, RoleGuard)
+  @AllowRoles('root_manager')
   @Get('period/:periodId')
   @UseGuards(FirebaseAuthGuard)
   getPeriod(@CurrentUser() user: any, @Param('periodId') periodId: string) {
@@ -50,7 +53,8 @@ export class PaymentController {
   // CREATE PAYMENT
   // ==================================================
 
-  @UseGuards(FirebaseAuthGuard, RootManagerGuard)
+  @UseGuards(FirebaseAuthGuard, RoleGuard)
+  @AllowRoles('root_manager')
   @Post()
   @UseGuards(FirebaseAuthGuard)
   create(@CurrentUser() user: any, @Body() dto: PaymentDto) {
@@ -61,14 +65,16 @@ export class PaymentController {
   // CANCEL PAYMENT
   // ==================================================
 
-  @UseGuards(FirebaseAuthGuard, RootManagerGuard)
+  @UseGuards(FirebaseAuthGuard, RoleGuard)
+  @AllowRoles('root_manager')
   @Patch(':id/cancel')
   @UseGuards(FirebaseAuthGuard)
   cancel(@CurrentUser() user: any, @Param('id') id: string) {
     return this.service.cancel(user.uid, id);
   }
 
-  @UseGuards(FirebaseAuthGuard, RootManagerGuard)
+  @UseGuards(FirebaseAuthGuard, RoleGuard)
+  @AllowRoles('root_manager')
   @Get('payable/:periodId')
   @UseGuards(FirebaseAuthGuard)
   getPayable(@CurrentUser() user: any, @Param('periodId') periodId: string) {

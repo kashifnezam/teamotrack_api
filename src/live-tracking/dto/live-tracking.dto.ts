@@ -1,11 +1,9 @@
 import { IsDateString, IsString } from 'class-validator';
 
 export class LiveTrackingDto {
+  @IsString()
+  executiveId!: string;
 
-    @IsString()
-    executiveId!: string;
-
-    @IsDateString()
-    date!: string;
-
+  @IsDateString()
+  date!: string;
 }
