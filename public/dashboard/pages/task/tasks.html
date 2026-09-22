@@ -3,965 +3,648 @@
 ========================================================= -->
 
 <section class="tasks-page p-3">
-
-    <div class="container-fluid">
-
-        <!-- HEADER -->
-
-        <div class="page-header mb-3">
-
-            <div>
-
-                <h4 class="mb-1">
-                    Tasks
-                </h4>
-
-                <div class="task-page-subtitle">
-                    Manage and assign tasks within your hierarchy.
-                </div>
-
-            </div>
-
-
-            <div class="task-actions">
-
-                <button
-                    type="button"
-                    class="btn btn-light"
-                    onclick="downloadTemplate(event)"
-                >
-                    <i class="bi bi-download me-1"></i>
-                    Template
-                </button>
-
-
-                <button
-                    type="button"
-                    class="btn btn-light"
-                    onclick="openImportModal()"
-                >
-                    <i class="bi bi-upload me-1"></i>
-                    Bulk Upload
-                </button>
-
-
-                <button
-                    type="button"
-                    class="btn btn-primary"
-                    onclick="openTaskModal()"
-                >
-                    <i class="bi bi-plus-lg me-1"></i>
-                    Add Task
-                </button>
-
-            </div>
-
-        </div>
-
-
-        <!-- FILTER -->
-
-        <div class="filter-card">
-
-            <div class="row g-2 align-items-center">
-
-                <div class="col-lg-4 col-md-6">
-
-                    <div class="search-box">
-
-                        <i class="bi bi-search"></i>
-
-                        <input
-                            id="searchInput"
-                            type="search"
-                            class="form-control"
-                            placeholder="Search tasks, executive or creator..."
-                            autocomplete="off"
-                        >
-
-                    </div>
-
-                </div>
-
-
-                <div class="col-lg-2 col-md-3">
-
-                    <input
-                        id="monthFilter"
-                        type="month"
-                        class="form-control"
-                    >
-
-                </div>
-
-
-                <div class="col-lg-3 col-md-3">
-
-                    <select
-                        id="statusFilter"
-                        class="form-select"
-                    >
-
-                        <option value="">
-                            All Tasks
-                        </option>
-
-                        <option value="assigned_to">
-                            Assigned Executive
-                        </option>
-
-                        <option value="unassigned">
-                            Unassigned
-                        </option>
-
-                        <option value="pending">
-                            Pending
-                        </option>
-
-                        <option value="completed">
-                            Completed
-                        </option>
-
-                        <option value="cancelled">
-                            Cancelled
-                        </option>
-
-                        <option value="failed">
-                            Failed
-                        </option>
-
-                    </select>
-
-                </div>
-
-
-                <div class="col-lg-3 text-lg-end">
-
-                    <span class="task-count">
-
-                        <strong id="taskCount">
-                            0
-                        </strong>
-
-                        Tasks
-
-                    </span>
-
-                </div>
-
-            </div>
-
-        </div>
-
-
-        <!-- TASK LIST -->
-
-        <div class="task-card">
-
-            <div class="task-card-header">
-
-                <div>
-
-                    <strong>
-                        Task List
-                    </strong>
-
-                    <div class="hierarchy-info">
-                        <i class="bi bi-diagram-3 me-1"></i>
-                        Tasks and executives are restricted by your management hierarchy.
-                    </div>
-
-                </div>
-
-            </div>
-
-
-            <div class="table-responsive">
-
-                <table class="table align-middle mb-0">
-
-                    <thead>
-
-                        <tr>
-
-                            <th>
-                                Task
-                            </th>
-
-                            <th>
-                                Executive
-                            </th>
-
-                            <th>
-                                Created By
-                            </th>
-
-                            <th>
-                                Schedule
-                            </th>
-
-                            <th>
-                                Priority
-                            </th>
-
-                            <th>
-                                Location
-                            </th>
-
-                            <th>
-                                Status
-                            </th>
-
-                            <th class="text-end">
-                                Actions
-                            </th>
-
-                        </tr>
-
-                    </thead>
-
-
-                    <tbody id="taskTable">
-
-                        <tr>
-
-                            <td
-                                colspan="8"
-                                class="empty-state"
-                            >
-
-                                Loading tasks...
-
-                            </td>
-
-                        </tr>
-
-                    </tbody>
-
-                </table>
-
-            </div>
-
-        </div>
-
+  <div class="container-fluid">
+    <!-- HEADER -->
+
+    <div class="page-header mb-3">
+      <div>
+        <h4 class="mb-1">Tasks</h4>
+
+        <div class="task-page-subtitle">Manage and assign tasks within your hierarchy.</div>
+      </div>
+
+      <div class="task-actions">
+        <button type="button" class="btn btn-light" onclick="downloadTemplate(event)">
+          <i class="bi bi-download me-1"></i>
+          Template
+        </button>
+
+        <button type="button" class="btn btn-light" onclick="openImportModal()">
+          <i class="bi bi-upload me-1"></i>
+          Bulk Upload
+        </button>
+
+        <button type="button" class="btn btn-primary" onclick="openTaskModal()">
+          <i class="bi bi-plus-lg me-1"></i>
+          Add Task
+        </button>
+      </div>
     </div>
 
-</section>
+    <!-- FILTER -->
 
+    <div class="filter-card">
+      <div class="row g-2 align-items-center">
+        <div class="col-lg-4 col-md-6">
+          <div class="search-box">
+            <i class="bi bi-search"></i>
+
+            <input
+              id="searchInput"
+              type="search"
+              class="form-control"
+              placeholder="Search tasks, executive or creator..."
+              autocomplete="off"
+            />
+          </div>
+        </div>
+
+        <div class="col-lg-2 col-md-3">
+          <input id="monthFilter" type="month" class="form-control" />
+        </div>
+
+        <div class="col-lg-3 col-md-3">
+          <select id="statusFilter" class="form-select">
+            <option value="">All Tasks</option>
+
+            <option value="assigned_to">Assigned Executive</option>
+
+            <option value="unassigned">Unassigned</option>
+
+            <option value="pending">Pending</option>
+
+            <option value="completed">Completed</option>
+
+            <option value="cancelled">Cancelled</option>
+
+            <option value="failed">Failed</option>
+          </select>
+        </div>
+
+        <div class="col-lg-3 text-lg-end">
+          <span class="task-count">
+            <strong id="taskCount"> 0 </strong>
+
+            Tasks
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- TASK LIST -->
+
+    <div class="task-card">
+      <div class="task-card-header">
+        <div>
+          <strong> Task List </strong>
+
+          <div class="hierarchy-info">
+            <i class="bi bi-diagram-3 me-1"></i>
+
+            Tasks and executives are restricted by your management hierarchy.
+          </div>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table align-middle mb-0">
+          <thead>
+            <tr>
+              <th>Task</th>
+
+              <th>Executive</th>
+
+              <th>Created By</th>
+
+              <th>Schedule</th>
+
+              <th>Priority</th>
+
+              <th>Location</th>
+
+              <th>Status</th>
+
+              <th class="text-end">Actions</th>
+            </tr>
+          </thead>
+
+          <tbody id="taskTable">
+            <tr>
+              <td colspan="8" class="empty-state">Loading tasks...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
 
 <!-- =========================================================
      TASK MODAL
 ========================================================= -->
 
-<div
-    class="modal fade"
-    id="taskModal"
-    tabindex="-1"
->
-
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-
-        <div class="modal-content">
-
-            <div class="modal-header">
-
-                <div>
-
-                    <h5
-                        class="modal-title"
-                        id="modalTitle"
-                    >
-                        Add Task
-                    </h5>
-
-                    <div class="task-modal-subtitle">
-
-                        Tasks can only be assigned to
-                        executives within your management hierarchy.
-
-                    </div>
-
-                </div>
-
-
-                <button
-                    type="button"
-                    class="btn-close"
-                    data-bs-dismiss="modal"
-                ></button>
-
-            </div>
-
-
-            <div class="modal-body">
-
-                <input
-                    type="hidden"
-                    id="taskId"
-                >
-
-
-                <div class="row g-3">
-
-                    <!-- TITLE -->
-
-                    <div class="col-md-6">
-
-                        <label
-                            class="form-label"
-                            for="taskTitle"
-                        >
-                            Title
-                        </label>
-
-                        <input
-                            id="taskTitle"
-                            type="text"
-                            class="form-control"
-                            placeholder="Enter task title"
-                            autocomplete="off"
-                        >
-
-                    </div>
-
-
-                    <!-- PRIORITY -->
-
-                    <div class="col-md-6">
-
-                        <label
-                            class="form-label"
-                            for="priority"
-                        >
-                            Priority
-                        </label>
-
-                        <select
-                            id="priority"
-                            class="form-select"
-                        >
-
-                            <option value="Low">
-                                Low
-                            </option>
-
-                            <option
-                                value="Medium"
-                                selected
-                            >
-                                Medium
-                            </option>
-
-                            <option value="High">
-                                High
-                            </option>
-
-                        </select>
-
-                    </div>
-
-
-                    <!-- DESCRIPTION -->
-
-                    <div class="col-12">
-
-                        <label
-                            class="form-label"
-                            for="description"
-                        >
-                            Description
-                        </label>
-
-                        <textarea
-                            id="description"
-                            class="form-control"
-                            rows="3"
-                            placeholder="Enter task description"
-                        ></textarea>
-
-                    </div>
-
-
-                    <!-- START -->
-
-                    <div class="col-md-6">
-
-                        <label
-                            class="form-label"
-                            for="startDate"
-                        >
-                            Start
-                        </label>
-
-                        <input
-                            id="startDate"
-                            type="datetime-local"
-                            class="form-control"
-                        >
-
-                    </div>
-
-
-                    <!-- END -->
-
-                    <div class="col-md-6">
-
-                        <label
-                            class="form-label"
-                            for="endDate"
-                        >
-                            End
-                        </label>
-
-                        <input
-                            id="endDate"
-                            type="datetime-local"
-                            class="form-control"
-                        >
-
-                    </div>
-
-
-                    <!-- ASSIGNMENT -->
-
-                    <div class="col-12">
-
-                        <label
-                            class="form-label"
-                            for="assignedTo"
-                        >
-                            Assign Executive
-                        </label>
-
-                        <select
-                            id="assignedTo"
-                            class="form-select"
-                        >
-
-                            <option value="">
-                                Unassigned
-                            </option>
-
-                        </select>
-
-
-                        <div class="task-form-hint">
-
-                            <i class="bi bi-diagram-3 me-1"></i>
-
-                            Only executives available in
-                            your hierarchy are shown.
-
-                        </div>
-
-                    </div>
-
-
-                    <!-- GEOFENCE -->
-
-                    <div class="col-12">
-
-                        <div class="form-check form-switch">
-
-                            <input
-                                id="isGeofence"
-                                class="form-check-input"
-                                type="checkbox"
-                            >
-
-                            <label
-                                class="form-check-label"
-                                for="isGeofence"
-                            >
-                                Enable Geofence
-                            </label>
-
-                        </div>
-
-                    </div>
-
-
-                    <!-- LOCATION -->
-
-                    <div
-                        id="locationSection"
-                        class="col-12 d-none"
-                    >
-
-                        <!-- START LOCATION -->
-
-                        <label class="form-label">
-                            Start Location
-                        </label>
-
-                        <div
-                            id="startMap"
-                            class="task-map"
-                        ></div>
-
-
-                        <input
-                            type="hidden"
-                            id="startLat"
-                        >
-
-                        <input
-                            type="hidden"
-                            id="startLng"
-                        >
-
-
-                        <input
-                            id="startAddress"
-                            class="form-control mt-2"
-                            placeholder="Start address"
-                        >
-
-
-                        <!-- END LOCATION -->
-
-                        <label class="form-label mt-3">
-                            End Location
-                        </label>
-
-
-                        <div
-                            id="endMap"
-                            class="task-map"
-                        ></div>
-
-
-                        <input
-                            type="hidden"
-                            id="endLat"
-                        >
-
-                        <input
-                            type="hidden"
-                            id="endLng"
-                        >
-
-
-                        <input
-                            id="endAddress"
-                            class="form-control mt-2"
-                            placeholder="End address"
-                        >
-
-                    </div>
-
-                </div>
-
-            </div>
-
-
-            <div class="modal-footer">
-
-                <button
-                    type="button"
-                    class="btn btn-light"
-                    data-bs-dismiss="modal"
-                >
-                    Cancel
-                </button>
-
-
-                <button
-                    type="button"
-                    class="btn btn-primary"
-                    id="saveTaskBtn"
-                    onclick="saveTask()"
-                >
-                    Save Task
-                </button>
-
-            </div>
-
+<div class="modal fade" id="taskModal" tabindex="-1">
+  <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div>
+          <h5 class="modal-title" id="modalTitle">Add Task</h5>
+
+          <div class="task-modal-subtitle">
+            Tasks can only be assigned to executives within your management hierarchy.
+          </div>
         </div>
 
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <input type="hidden" id="taskId" />
+
+        <div class="row g-3">
+          <!-- TITLE -->
+
+          <div class="col-md-6">
+            <label class="form-label" for="taskTitle"> Title </label>
+
+            <input id="taskTitle" type="text" class="form-control" placeholder="Enter task title" autocomplete="off" />
+          </div>
+
+          <!-- PRIORITY -->
+
+          <div class="col-md-6">
+            <label class="form-label" for="priority"> Priority </label>
+
+            <select id="priority" class="form-select">
+              <option value="Low">Low</option>
+
+              <option value="Medium" selected>Medium</option>
+
+              <option value="High">High</option>
+            </select>
+          </div>
+
+          <!-- DESCRIPTION -->
+
+          <div class="col-12">
+            <label class="form-label" for="description"> Description </label>
+
+            <textarea id="description" class="form-control" rows="3" placeholder="Enter task description"></textarea>
+          </div>
+
+          <!-- START -->
+
+          <div class="col-md-6">
+            <label class="form-label" for="startDate"> Start </label>
+
+            <input id="startDate" type="datetime-local" class="form-control" />
+          </div>
+
+          <!-- END -->
+
+          <div class="col-md-6">
+            <label class="form-label" for="endDate"> End </label>
+
+            <input id="endDate" type="datetime-local" class="form-control" />
+          </div>
+
+          <!-- =================================================
+               SEARCHABLE EXECUTIVE
+          ================================================= -->
+
+          <div class="col-12">
+            <label class="form-label" for="assignedToSearch"> Assign Executive </label>
+
+            <div id="executivePicker" class="executive-picker">
+              <!-- Existing ID retained for compatibility -->
+
+              <input type="hidden" id="assignedTo" value="" />
+
+              <!-- Selected executive -->
+
+              <div id="selectedExecutive" class="selected-executive d-none"></div>
+
+              <!-- Search -->
+
+              <div class="executive-search-input">
+                <i class="bi bi-search"></i>
+
+                <input
+                  id="assignedToSearch"
+                  type="search"
+                  class="form-control"
+                  placeholder="Search executive by name or email..."
+                  autocomplete="off"
+                />
+
+                <i class="bi bi-chevron-down executive-search-chevron"></i>
+              </div>
+
+              <!-- Dropdown -->
+
+              <div id="executiveOptions" class="executive-options"></div>
+            </div>
+
+            <div class="task-form-hint">
+              <i class="bi bi-diagram-3 me-1"></i>
+
+              Only executives available in your hierarchy are shown.
+            </div>
+          </div>
+
+          <!-- =================================================
+               GEOFENCE
+          ================================================= -->
+
+          <div class="col-12">
+            <div class="geofence-toggle-card">
+              <div class="geofence-toggle-icon">
+                <i class="bi bi-geo-alt"></i>
+              </div>
+
+              <div class="flex-grow-1">
+                <label class="geofence-toggle-title" for="isGeofence"> Enable Geofence </label>
+
+                <div class="geofence-toggle-description">Define where this task should start and end.</div>
+              </div>
+
+              <div class="form-check form-switch mb-0">
+                <input id="isGeofence" class="form-check-input" type="checkbox" />
+              </div>
+            </div>
+          </div>
+
+          <!-- =================================================
+               LOCATION
+          ================================================= -->
+
+          <div id="locationSection" class="col-12 d-none">
+            <div class="location-config-header">
+              <div>
+                <h6>
+                  <i class="bi bi-geo-alt-fill me-1"></i>
+
+                  Task Location
+                </h6>
+
+                <p>Search for a place, enter coordinates, or click directly on the map.</p>
+              </div>
+            </div>
+
+            <!-- =================================================
+                 START LOCATION
+            ================================================= -->
+
+            <div class="task-location-card">
+              <div class="task-location-card-header">
+                <div class="location-step-number">1</div>
+
+                <div>
+                  <strong> Start Location </strong>
+
+                  <small> Where the task begins </small>
+                </div>
+              </div>
+
+              <div class="location-search-wrap" id="startLocationSearchWrap">
+                <label class="form-label" for="startLocationSearch"> Search place </label>
+
+                <div class="location-search-input">
+                  <i class="bi bi-search"></i>
+
+                  <input
+                    id="startLocationSearch"
+                    type="search"
+                    class="form-control"
+                    placeholder="Search city, office, landmark..."
+                    autocomplete="off"
+                  />
+
+                  <span class="location-search-spinner" id="startLocationSpinner">
+                    <span class="spinner-border spinner-border-sm"></span>
+                  </span>
+                </div>
+
+                <div id="startLocationSuggestions" class="location-suggestions"></div>
+              </div>
+
+              <div class="location-or">
+                <span> OR ENTER COORDINATES </span>
+              </div>
+
+              <div class="row g-2">
+                <div class="col-md-6">
+                  <label class="form-label" for="startLat"> Latitude </label>
+
+                  <input id="startLat" type="number" step="any" class="form-control" placeholder="e.g. 28.6139" />
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label" for="startLng"> Longitude </label>
+
+                  <input id="startLng" type="number" step="any" class="form-control" placeholder="e.g. 77.2090" />
+                </div>
+              </div>
+
+              <div id="startLocationSelected" class="location-selected d-none"></div>
+
+              <div class="map-toolbar">
+                <span>
+                  <i class="bi bi-hand-index-thumb me-1"></i>
+
+                  Click on the map to place the marker
+                </span>
+
+                <span>
+                  <i class="bi bi-layers me-1"></i>
+
+                  Use the layers button to change map
+                </span>
+              </div>
+
+              <div id="startMap" class="task-map"></div>
+
+              <label class="form-label mt-3" for="startAddress"> Location address </label>
+
+              <input id="startAddress" class="form-control" placeholder="Selected address" />
+            </div>
+
+            <!-- =================================================
+                 END LOCATION
+            ================================================= -->
+
+            <div class="task-location-card mt-3">
+              <div class="task-location-card-header">
+                <div class="location-step-number">2</div>
+
+                <div>
+                  <strong> End Location </strong>
+
+                  <small> Where the task ends </small>
+                </div>
+              </div>
+
+              <div class="location-search-wrap" id="endLocationSearchWrap">
+                <label class="form-label" for="endLocationSearch"> Search place </label>
+
+                <div class="location-search-input">
+                  <i class="bi bi-search"></i>
+
+                  <input
+                    id="endLocationSearch"
+                    type="search"
+                    class="form-control"
+                    placeholder="Search city, office, landmark..."
+                    autocomplete="off"
+                  />
+
+                  <span class="location-search-spinner" id="endLocationSpinner">
+                    <span class="spinner-border spinner-border-sm"></span>
+                  </span>
+                </div>
+
+                <div id="endLocationSuggestions" class="location-suggestions"></div>
+              </div>
+
+              <div class="location-or">
+                <span> OR ENTER COORDINATES </span>
+              </div>
+
+              <div class="row g-2">
+                <div class="col-md-6">
+                  <label class="form-label" for="endLat"> Latitude </label>
+
+                  <input id="endLat" type="number" step="any" class="form-control" placeholder="e.g. 28.6139" />
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label" for="endLng"> Longitude </label>
+
+                  <input id="endLng" type="number" step="any" class="form-control" placeholder="e.g. 77.2090" />
+                </div>
+              </div>
+
+              <div id="endLocationSelected" class="location-selected d-none"></div>
+
+              <div class="map-toolbar">
+                <span>
+                  <i class="bi bi-hand-index-thumb me-1"></i>
+
+                  Click on the map to place the marker
+                </span>
+
+                <span>
+                  <i class="bi bi-layers me-1"></i>
+
+                  Use the layers button to change map
+                </span>
+              </div>
+
+              <div id="endMap" class="task-map"></div>
+
+              <label class="form-label mt-3" for="endAddress"> Location address </label>
+
+              <input id="endAddress" class="form-control" placeholder="Selected address" />
+            </div>
+
+            <div class="location-footer-hint">
+              <i class="bi bi-info-circle me-1"></i>
+
+              You can use any combination of search, coordinates, or map selection.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+
+        <button type="button" class="btn btn-primary" id="saveTaskBtn" onclick="saveTask()">Save Task</button>
+      </div>
     </div>
-
+  </div>
 </div>
-
 
 <!-- =========================================================
      TASK DETAILS
 ========================================================= -->
 
-<div
-    class="modal fade"
-    id="taskDetailsModal"
-    tabindex="-1"
->
-
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-
-        <div class="modal-content">
-
-            <div class="modal-header">
-
-                <div>
-
-                    <h5
-                        class="modal-title"
-                        id="detailTitle"
-                    >
-                        Task Details
-                    </h5>
-
-
-                    <div
-                        class="task-detail-subtitle"
-                        id="detailExecutive"
-                    ></div>
-
-                </div>
-
-
-                <button
-                    type="button"
-                    class="btn-close"
-                    data-bs-dismiss="modal"
-                ></button>
-
-            </div>
-
-
-            <div class="modal-body">
-
-                <div class="task-detail-top">
-
-                    <span
-                        id="detailStatus"
-                        class="status-badge"
-                    ></span>
-
-                    <span
-                        id="detailPriority"
-                        class="priority-badge"
-                    ></span>
-
-                </div>
-
-
-                <div
-                    class="task-detail-description"
-                    id="detailDescription"
-                ></div>
-
-
-                <div class="row g-3 mt-1">
-
-                    <div class="col-md-6">
-
-                        <div class="detail-info">
-
-                            <span>
-                                <i class="bi bi-calendar-event"></i>
-                                Scheduled Start
-                            </span>
-
-                            <strong id="detailScheduledStart">
-                                -
-                            </strong>
-
-                        </div>
-
-                    </div>
-
-
-                    <div class="col-md-6">
-
-                        <div class="detail-info">
-
-                            <span>
-                                <i class="bi bi-calendar-check"></i>
-                                Scheduled End
-                            </span>
-
-                            <strong id="detailScheduledEnd">
-                                -
-                            </strong>
-
-                        </div>
-
-                    </div>
-
-
-                    <div class="col-md-6">
-
-                        <div class="detail-info">
-
-                            <span>
-                                <i class="bi bi-play-circle"></i>
-                                Started At
-                            </span>
-
-                            <strong id="detailStartedAt">
-                                -
-                            </strong>
-
-                        </div>
-
-                    </div>
-
-
-                    <div class="col-md-6">
-
-                        <div class="detail-info">
-
-                            <span>
-                                <i class="bi bi-check-circle"></i>
-                                Completed At
-                            </span>
-
-                            <strong id="detailCompletedAt">
-                                -
-                            </strong>
-
-                        </div>
-
-                    </div>
-
-
-                    <div class="col-md-6">
-
-                        <div class="detail-info">
-
-                            <span>
-                                <i class="bi bi-stopwatch"></i>
-                                Completion Duration
-                            </span>
-
-                            <strong id="detailCompletionDuration">
-                                -
-                            </strong>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-
-                <!-- PROOF -->
-
-                <div
-                    id="detailProofSection"
-                    class="task-proof-section d-none"
-                >
-
-                    <div class="detail-section-title">
-
-                        <i class="bi bi-image me-1"></i>
-                        Completion Proof
-
-                    </div>
-
-
-                    <a
-                        id="detailProofLink"
-                        href="#"
-                        target="_blank"
-                        rel="noopener"
-                    >
-
-                        <img
-                            id="detailProof"
-                            class="task-proof"
-                            alt="Task completion proof"
-                        >
-
-                    </a>
-
-                </div>
-
-
-                <!-- LOCATION -->
-
-                <div
-                    id="detailLocationSection"
-                    class="task-location-detail d-none"
-                >
-
-                    <div class="detail-section-title">
-
-                        <i class="bi bi-geo-alt me-1"></i>
-                        Task Locations
-
-                    </div>
-
-
-                    <div
-                        id="detailStartAddress"
-                        class="small text-muted"
-                    ></div>
-
-
-                    <div
-                        id="detailEndAddress"
-                        class="small text-muted mt-1"
-                    ></div>
-
-                </div>
-
-            </div>
-
-
-            <div class="modal-footer">
-
-                <button
-                    type="button"
-                    class="btn btn-light"
-                    data-bs-dismiss="modal"
-                >
-                    Close
-                </button>
-
-            </div>
-
+<div class="modal fade" id="taskDetailsModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div>
+          <h5 class="modal-title" id="detailTitle">Task Details</h5>
+
+          <div class="task-detail-subtitle" id="detailExecutive"></div>
         </div>
 
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <div class="task-detail-top">
+          <span id="detailStatus" class="status-badge"></span>
+
+          <span id="detailPriority" class="priority-badge"></span>
+        </div>
+
+        <div class="task-detail-description" id="detailDescription"></div>
+
+        <div class="row g-3 mt-1">
+          <div class="col-md-6">
+            <div class="detail-info">
+              <span>
+                <i class="bi bi-calendar-event"></i>
+
+                Scheduled Start
+              </span>
+
+              <strong id="detailScheduledStart"> - </strong>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <div class="detail-info">
+              <span>
+                <i class="bi bi-calendar-check"></i>
+
+                Scheduled End
+              </span>
+
+              <strong id="detailScheduledEnd"> - </strong>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <div class="detail-info">
+              <span>
+                <i class="bi bi-play-circle"></i>
+
+                Started At
+              </span>
+
+              <strong id="detailStartedAt"> - </strong>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <div class="detail-info">
+              <span>
+                <i class="bi bi-check-circle"></i>
+
+                Completed At
+              </span>
+
+              <strong id="detailCompletedAt"> - </strong>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <div class="detail-info">
+              <span>
+                <i class="bi bi-stopwatch"></i>
+
+                Completion Duration
+              </span>
+
+              <strong id="detailCompletionDuration"> - </strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- PROOF -->
+
+        <div id="detailProofSection" class="task-proof-section d-none">
+          <div class="detail-section-title">
+            <i class="bi bi-image me-1"></i>
+
+            Completion Proof
+          </div>
+
+          <a id="detailProofLink" href="#" target="_blank" rel="noopener">
+            <img id="detailProof" class="task-proof" alt="Task completion proof" />
+          </a>
+        </div>
+
+        <!-- LOCATION -->
+
+        <div id="detailLocationSection" class="task-location-detail d-none">
+          <div class="detail-section-title">
+            <i class="bi bi-geo-alt me-1"></i>
+
+            Task Locations
+          </div>
+
+          <div id="detailStartAddress" class="small text-muted"></div>
+
+          <div id="detailEndAddress" class="small text-muted mt-1"></div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
+      </div>
     </div>
-
+  </div>
 </div>
-
 
 <!-- =========================================================
      IMPORT MODAL
 ========================================================= -->
 
-<div
-    class="modal fade"
-    id="importModal"
-    tabindex="-1"
->
+<div class="modal fade" id="importModal" tabindex="-1">
+  <div class="modal-dialog modal-xl modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div>
+          <h5 class="modal-title">Bulk Task Upload</h5>
 
-    <div class="modal-dialog modal-xl modal-dialog-centered">
-
-        <div class="modal-content">
-
-            <div class="modal-header">
-
-                <div>
-
-                    <h5 class="modal-title">
-                        Bulk Task Upload
-                    </h5>
-
-                    <div class="task-modal-subtitle">
-
-                        Tasks can only be assigned to
-                        executives available in your hierarchy.
-
-                    </div>
-
-                </div>
-
-
-                <button
-                    type="button"
-                    class="btn-close"
-                    data-bs-dismiss="modal"
-                ></button>
-
-            </div>
-
-
-            <div class="modal-body">
-
-                <div class="upload-box">
-
-                    <i class="bi bi-file-earmark-spreadsheet"></i>
-
-                    <p class="mt-2 mb-3">
-                        Upload the completed Excel task template.
-                    </p>
-
-                    <input
-                        id="excelFile"
-                        type="file"
-                        class="form-control"
-                        accept=".xlsx,.xls"
-                    >
-
-                </div>
-
-
-                <div
-                    id="importPreview"
-                    class="import-preview d-none"
-                >
-
-                    <div
-                        id="importSummary"
-                        class="mb-3 fw-semibold"
-                    ></div>
-
-
-                    <div class="table-responsive">
-
-                        <table
-                            class="table table-sm align-middle"
-                        >
-
-                            <thead>
-
-                                <tr>
-
-                                    <th>Row</th>
-                                    <th>Email</th>
-                                    <th>Title</th>
-                                    <th>Priority</th>
-                                    <th>Start</th>
-                                    <th>End</th>
-                                    <th>Location</th>
-                                    <th>Validation</th>
-                                    <th></th>
-
-                                </tr>
-
-                            </thead>
-
-
-                            <tbody
-                                id="importTable"
-                            ></tbody>
-
-                        </table>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-
-            <div class="modal-footer">
-
-                <button
-                    type="button"
-                    class="btn btn-light"
-                    data-bs-dismiss="modal"
-                >
-                    Cancel
-                </button>
-
-
-                <button
-                    type="button"
-                    class="btn btn-primary"
-                    id="importTasksBtn"
-                    onclick="importTasks()"
-                    disabled
-                >
-                    Import Valid Tasks
-                </button>
-
-            </div>
-
+          <div class="task-modal-subtitle">Tasks can only be assigned to executives available in your hierarchy.</div>
         </div>
 
-    </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
 
+      <div class="modal-body">
+        <div class="upload-box">
+          <i class="bi bi-file-earmark-spreadsheet"></i>
+
+          <p class="mt-2 mb-3">Upload the completed Excel task template.</p>
+
+          <input id="excelFile" type="file" class="form-control" accept=".xlsx,.xls" />
+        </div>
+
+        <div id="importPreview" class="import-preview d-none">
+          <div id="importSummary" class="mb-3 fw-semibold"></div>
+
+          <div class="table-responsive">
+            <table class="table table-sm align-middle">
+              <thead>
+                <tr>
+                  <th>Row</th>
+
+                  <th>Email</th>
+
+                  <th>Title</th>
+
+                  <th>Priority</th>
+
+                  <th>Start</th>
+
+                  <th>End</th>
+
+                  <th>Location</th>
+
+                  <th>Validation</th>
+
+                  <th></th>
+                </tr>
+              </thead>
+
+              <tbody id="importTable"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+
+        <button type="button" class="btn btn-primary" id="importTasksBtn" onclick="importTasks()" disabled>
+          Import Valid Tasks
+        </button>
+      </div>
+    </div>
+  </div>
 </div>

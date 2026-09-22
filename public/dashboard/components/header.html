@@ -141,43 +141,85 @@
                  PROFILE MENU
             ================================================== -->
 
-      <div class="profile-menu" id="profileMenu">
-        <!-- Profile Header -->
+      <!-- ==================================================
+     PROFILE MENU
+================================================== -->
 
+      <div class="profile-menu" id="profileMenu">
+        <!-- PROFILE IDENTITY -->
         <div class="profile-menu-header">
           <div class="profile-menu-avatar" id="profileMenuUserAvatar">U</div>
 
-          <div>
-            <h6 class="username" id="profileMenuUserName"></h6>
+          <div class="profile-menu-identity">
+            <h6 class="username" id="profileMenuUserName">User</h6>
 
-            <small id="profileMenuUserRole"> Administrator </small>
+            <span class="profile-role-badge">
+              <i class="bi bi-shield-check"></i>
+              <span class="profileMenuUserRole text-dark"></span>
+            </span>
+          </div>
+        </div>
+
+        <!-- REPORTING INFORMATION -->
+        <div class="profile-reporting d-none">
+          <div class="profile-reporting-icon">
+            <i class="bi bi-person-badge"></i>
+          </div>
+
+          <div class="profile-reporting-content">
+            <span class="profile-reporting-label"> Reporting to </span>
+
+            <span class="parentName profile-reporting-name"> — </span>
           </div>
         </div>
 
         <div class="profile-menu-divider"></div>
 
-        <!-- Account -->
+        <!-- ACCOUNT -->
+        <div class="profile-menu-section-label">Account</div>
 
         <a href="/profile" class="profile-menu-item">
-          <i class="bi bi-person"></i>
+          <span class="profile-menu-item-icon">
+            <i class="bi bi-person"></i>
+          </span>
 
-          <span> My Profile </span>
+          <span class="profile-menu-item-content">
+            <span class="profile-menu-item-title"> My Profile </span>
+
+            <span class="profile-menu-item-description"> View and manage your profile </span>
+          </span>
+
+          <i class="bi bi-chevron-right profile-menu-item-arrow"></i>
         </a>
 
+        <!-- COMPANY SETTINGS -->
         <a href="/settings/company" class="profile-menu-item" id="company-setting">
-          <i class="bi bi-gear"></i>
+          <span class="profile-menu-item-icon">
+            <i class="bi bi-building-gear"></i>
+          </span>
 
-          <span> Company Settings </span>
+          <span class="profile-menu-item-content">
+            <span class="profile-menu-item-title"> Company Settings </span>
+
+            <span class="profile-menu-item-description"> Manage company preferences </span>
+          </span>
+
+          <i class="bi bi-chevron-right profile-menu-item-arrow"></i>
         </a>
 
         <div class="profile-menu-divider"></div>
 
-        <!-- Logout -->
-
+        <!-- LOGOUT -->
         <button type="button" class="profile-menu-item logout" id="logoutButton">
-          <i class="bi bi-box-arrow-right"></i>
+          <span class="profile-menu-item-icon">
+            <i class="bi bi-box-arrow-right"></i>
+          </span>
 
-          <span> Logout </span>
+          <span class="profile-menu-item-content">
+            <span class="profile-menu-item-title"> Logout </span>
+
+            <span class="profile-menu-item-description"> Sign out of your account </span>
+          </span>
         </button>
       </div>
     </div>

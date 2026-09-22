@@ -15,7 +15,7 @@
    PAGE HEADER
 ========================================================== */
 
-.attendance-page-header {
+.my-attendance-page .attendance-page-header {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
@@ -23,7 +23,7 @@
   margin-bottom: 22px;
 }
 
-.attendance-eyebrow {
+.my-attendance-page .attendance-eyebrow {
   margin-bottom: 5px;
 
   color: var(--primary-color, #2563eb);
@@ -33,7 +33,7 @@
   letter-spacing: 0.14em;
 }
 
-.attendance-page-title {
+.my-attendance-page .attendance-page-title {
   margin: 0;
 
   color: var(--text-primary, #111827);
@@ -43,7 +43,7 @@
   font-weight: 750;
 }
 
-.attendance-page-subtitle {
+.my-attendance-page .attendance-page-subtitle {
   margin: 7px 0 0;
 
   color: var(--text-secondary, #6b7280);
@@ -140,7 +140,7 @@
   gap: 20px;
 }
 
-.attendance-section-label {
+.my-attendance-page .attendance-section-label {
   margin-bottom: 5px;
 
   color: #6b7280;
@@ -242,12 +242,12 @@
   color: #1d4ed8;
 }
 
-.status-present {
+.my-attendance-page .status-present {
   background: #ecfdf5;
   color: #047857;
 }
 
-.status-leave {
+.my-attendance-page .status-leave {
   background: #fff7ed;
   color: #c2410c;
 }
@@ -257,12 +257,12 @@
   color: #4b5563;
 }
 
-.status-holiday {
+.my-attendance-page .status-holiday {
   background: #f5f3ff;
   color: #6d28d9;
 }
 
-.status-absent {
+.my-attendance-page .status-absent {
   background: #fef2f2;
   color: #b91c1c;
 }
@@ -750,7 +750,7 @@
    FILTER CARD
 ========================================================== */
 
-.attendance-filter-card {
+.my-attendance-page .attendance-filter-card {
   min-height: 76px;
 
   padding: 16px 18px;
@@ -981,7 +981,7 @@
   font-size: 12px;
 }
 
-.attendance-record-count {
+.my-attendance-page .attendance-record-count {
   padding: 5px 10px;
 
   border-radius: 999px;
@@ -1249,7 +1249,7 @@
   border-bottom: 1px solid #edf0f4;
 }
 
-.attendance-checkout-history-modal .modal-body {
+.my-attendance-page .attendance-checkout-history-modal .modal-body {
   padding: 12px 18px 18px;
 }
 
@@ -2510,15 +2510,15 @@
 @media (max-width: 768px) {
   /* PAGE */
 
-  .attendance-page-header {
+  .my-attendance-page .attendance-page-header {
     align-items: flex-start;
   }
 
-  .attendance-page-title {
+  .my-attendance-page .attendance-page-title {
     font-size: 23px;
   }
 
-  .attendance-page-subtitle {
+  .my-attendance-page .attendance-page-subtitle {
     font-size: 13px;
   }
 
@@ -2570,7 +2570,7 @@
 
   /* FILTER */
 
-  .attendance-filter-card {
+  .my-attendance-page .attendance-filter-card {
     align-items: flex-start;
 
     flex-direction: column;
@@ -2651,7 +2651,7 @@
     padding-bottom: 24px;
   }
 
-  .attendance-page-header {
+  .my-attendance-page .attendance-page-header {
     margin-bottom: 16px;
   }
 

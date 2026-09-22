@@ -905,7 +905,7 @@ export class StaffService {
         'field_executive.view': true,
         'field_executive.create': true,
         'field_executive.edit': true,
-        // 'field_executive.delete': false,
+        'field_executive.manage_permissions': false,
 
         // ==================================================
         // TEAMS
@@ -966,7 +966,7 @@ export class StaffService {
         'field_executive.view': false,
         'field_executive.create': false,
         'field_executive.edit': false,
-        // 'field_executive.delete': false,
+       'field_executive.manage_permissions': false, 
 
         // ==================================================
         // TEAMS

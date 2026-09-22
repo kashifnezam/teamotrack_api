@@ -398,60 +398,19 @@ export class AttendanceSchedulerService {
   } {
     /*
      * ----------------------------------------------------------
-     * ACTIVE CHECK-IN
-     * ----------------------------------------------------------
-     *
-     * Never replace an active employee attendance
-     * record with absent/holiday/weekly-off.
-     */
-    if (existing?.checkInTime && !existing?.checkOutTime) {
-      const punctuality = shift
-        ? this.calculatePunctuality(existing.checkInTime, shift)
-        : (existing.punctuality ?? 'on_time');
-
-      const data: FirebaseFirestore.DocumentData = {
-        updatedAt: FieldValue.serverTimestamp(),
-
-        punctuality,
-      };
-
-      /*
-       * Preserve the leave information if this
-       * is a half-day approved leave record.
-       */
-      if (existing.leaveDuration === 'half_day') {
-        data.leaveDuration = 'half_day';
-
-        if (existing.leaveTypeId) {
-          data.leaveTypeId = existing.leaveTypeId;
-        }
-
-        if (existing.leaveRequestId) {
-          data.leaveRequestId = existing.leaveRequestId;
-        }
-
-        if (existing.leaveStatus) {
-          data.leaveStatus = existing.leaveStatus;
-        }
-      }
-
-      return {
-        action: 'update',
-
-        data,
-      };
-    }
-
-    /*
-     * ----------------------------------------------------------
      * COMPLETED ATTENDANCE
      * ----------------------------------------------------------
+     *
+     * If both check-in and check-out exist,
+     * calculate the actual working duration.
+     *
+     * This must happen before the incomplete
+     * check-in case.
      */
     if (existing?.checkInTime && existing?.checkOutTime) {
       /*
-       * Do not touch already terminal
-       * attendance unless it is still an
-       * active leave synchronization.
+       * Do not touch already terminal attendance
+       * unless it is still an active leave synchronization.
        */
       if (
         existing.status === 'present' ||
@@ -486,6 +445,107 @@ export class AttendanceSchedulerService {
           workingMinutes,
 
           punctuality: this.calculatePunctuality(existing.checkInTime, shift),
+
+          updatedAt: FieldValue.serverTimestamp(),
+        },
+      };
+    }
+
+    /*
+     * ----------------------------------------------------------
+     * INCOMPLETE ATTENDANCE
+     * ----------------------------------------------------------
+     *
+     * The employee checked in but never checked out.
+     *
+     * Because this scheduler only processes COMPLETED
+     * dates, an incomplete punch must not remain
+     * "working" indefinitely.
+     *
+     * Mark it ABSENT.
+     *
+     * IMPORTANT:
+     * We intentionally DO NOT remove checkInTime.
+     *
+     * The original punch remains available for audit.
+     */
+    if (existing?.checkInTime && !existing?.checkOutTime) {
+      return {
+        action: 'update',
+
+        data: {
+          staffId: staff.uid,
+
+          rootId: this.getRootId(staff),
+
+          date: this.localDate(date),
+
+          status: 'absent',
+
+          attendanceType: null,
+
+          workingMinutes: 0,
+
+          /*
+           * Preserve the original check-in.
+           */
+          checkInTime: existing.checkInTime,
+
+          /*
+           * Explicitly do not create a fake checkout.
+           *
+           * checkOutTime remains absent.
+           */
+
+          /*
+           * Preserve historical shift.
+           */
+          ...(existing?.shiftSnapshot
+            ? {
+                shiftSnapshot: existing.shiftSnapshot,
+              }
+            : shift
+              ? {
+                  shiftSnapshot: shift,
+                }
+              : {}),
+
+          /*
+           * Preserve leave information if
+           * applicable.
+           */
+          ...(existing?.leaveRequestId
+            ? {
+                leaveRequestId: existing.leaveRequestId,
+              }
+            : {}),
+
+          ...(existing?.leaveTypeId
+            ? {
+                leaveTypeId: existing.leaveTypeId,
+              }
+            : {}),
+
+          ...(existing?.leaveDuration
+            ? {
+                leaveDuration: existing.leaveDuration,
+              }
+            : {}),
+
+          ...(existing?.leaveStatus
+            ? {
+                leaveStatus: existing.leaveStatus,
+              }
+            : {}),
+
+          /*
+           * Preserve original creation time.
+           */
+          ...(existing?.createdAt
+            ? {
+                createdAt: existing.createdAt,
+              }
+            : {}),
 
           updatedAt: FieldValue.serverTimestamp(),
         },
@@ -866,7 +926,7 @@ export class AttendanceSchedulerService {
       weeklyOff: Array.isArray(data.weeklyOff) ? data.weeklyOff : [],
 
       selfieCheckIn: data.selfieCheckIn === true,
-      
+
       selfieCheckOut: data.selfieCheckOut === true,
     };
   }

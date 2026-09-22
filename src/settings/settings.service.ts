@@ -256,15 +256,22 @@ export class SettingsService {
     }
 
     const user = await this.getUser(userId);
-
     const rootId = this.getRootId(user);
 
     const organizationRef = this.db.collection('organization').doc(rootId);
-
     const organizationSnap = await organizationRef.get();
 
+    // Create organization if it does not exist
     if (!organizationSnap.exists) {
-      throw new NotFoundException('Organization not found');
+      await organizationRef.set({
+        rootId,
+        name: user.organizationName || user.companyName || 'My Organization',
+        logo: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      this.logger.log(`Organization created during logo upload | rootId=${rootId}`);
     }
 
     const bucket = this.firebase.storage.bucket();
@@ -287,7 +294,6 @@ export class SettingsService {
 
     await organizationRef.update({
       logo,
-
       updatedAt: new Date(),
     });
 
@@ -295,7 +301,6 @@ export class SettingsService {
 
     return {
       success: true,
-
       logo,
     };
   }

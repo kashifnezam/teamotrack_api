@@ -235,9 +235,15 @@
                                 </td>
 
 
-                                <td>
-                                    ${leave.days ?? 0}
-                                </td>
+                               <td>
+                                  ${leave.days ?? 0} ${
+                                    leave.halfDay === 'second_half'
+                                      ? '(2nd)'
+                                      : leave.halfDay === 'first_half'
+                                        ? '(1st)'
+                                        : ''
+                                  }
+                              </td>
 
 
                                 <td>
@@ -467,8 +473,14 @@
 
 
                                 <td>
-                                    ${leave.days ?? 0}
-                                </td>
+                                  ${leave.days ?? 0} ${
+                                    leave.halfDay === 'second_half'
+                                      ? '(2nd)'
+                                      : leave.halfDay === 'first_half'
+                                        ? '(1st)'
+                                        : ''
+                                  }
+                              </td>
 
 
                                 <td>

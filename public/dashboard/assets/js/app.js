@@ -1209,6 +1209,7 @@ if (window.TeamoTrackApp) {
     const fullName = userData.fullName || userData.name || 'User';
 
     const role = userData.roleName || userData.role || 'Administrator';
+    const parentName = userData.parentName;
 
     /*
      * Generate initials.
@@ -1238,6 +1239,21 @@ if (window.TeamoTrackApp) {
     document.getElementById('headerUserRole')?.replaceChildren(document.createTextNode(role));
 
     document.getElementById('profileMenuUserRole')?.replaceChildren(document.createTextNode(role));
+    document.querySelector('.profileMenuUserRole')?.replaceChildren(document.createTextNode(role ?? ''));
+
+    const parentNameElement = document.querySelector('.parentName');
+
+    const reportingElement = document.querySelector('.profile-reporting');
+
+    if (parentNameElement && reportingElement) {
+      if (parentName) {
+        parentNameElement.replaceChildren(document.createTextNode(parentName));
+
+        reportingElement.classList.remove('d-none');
+      } else {
+        reportingElement.classList.add('d-none');
+      }
+    }
 
     /*
      * Avatars.

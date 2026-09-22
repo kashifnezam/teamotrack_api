@@ -171,7 +171,11 @@ export class AttendanceRegularizationService {
       /*
        * There is now one approval decision.
        *
-       * Manager or HR acting for that manager.
+       * IMPORTANT:
+       * approverId remains the actual Manager.
+       *
+       * HR can later act on behalf of this Manager,
+       * but HR is NOT stored as the approver.
        */
       approverId: parent.uid,
       approverName: parent.fullName ?? '',
@@ -268,6 +272,18 @@ export class AttendanceRegularizationService {
       throw new BadRequestException('Invalid hierarchy: rootId missing');
     }
 
+    /*
+     * We intentionally query all pending requests belonging
+     * to the same root and then apply authorization filtering.
+     *
+     * This allows:
+     *
+     * Manager → own executive requests
+     *
+     * HR      → executive requests of parent Manager
+     *
+     * Root    → all requests
+     */
     const snapshot = await this.db
       .collection('attendanceRegularizations')
       .where('rootId', '==', rootId)
@@ -449,6 +465,12 @@ export class AttendanceRegularizationService {
 
     /*
      * Manager / HR scope authorization.
+     *
+     * HR is allowed here only if:
+     *
+     * 1. HR has attendance.manage
+     * 2. Request belongs to an executive
+     * 3. Request approverId is HR's parent Manager
      */
     if (!this.canProcessRequest(approver, data)) {
       throw new ForbiddenException('You are not authorized to process this attendance regularization');
@@ -540,6 +562,9 @@ export class AttendanceRegularizationService {
       throw new BadRequestException('Attendance regularization is no longer pending');
     }
 
+    /*
+     * Manager / HR scope authorization.
+     */
     if (!this.canProcessRequest(approver, data)) {
       throw new ForbiddenException('You are not authorized to process this attendance regularization');
     }
@@ -660,18 +685,6 @@ export class AttendanceRegularizationService {
        * --------------------------------------------------------
        * CONFLICT PROTECTION
        * --------------------------------------------------------
-       *
-       * If attendance changed after the employee submitted
-       * the request, do not silently overwrite the newer data.
-       *
-       * Example:
-       *
-       * Employee submits regularization at 10:00.
-       * Employee later checks in at 10:30.
-       * Manager tries to regularize at 12:00.
-       *
-       * The manager must not unknowingly overwrite that
-       * newer attendance state.
        */
       const original = data.previousAttendance;
 
@@ -685,13 +698,6 @@ export class AttendanceRegularizationService {
        * --------------------------------------------------------
        * DETERMINE ATTENDANCE VALUES
        * --------------------------------------------------------
-       *
-       * IMPORTANT:
-       *
-       * We do NOT manufacture check-in/check-out times.
-       *
-       * The employee did not provide corrected punch times,
-       * and the manager is only deciding the attendance result.
        */
       let status: 'present' | 'absent';
 
@@ -735,6 +741,12 @@ export class AttendanceRegularizationService {
 
         requestedByRole: data.userRole ?? null,
 
+        /*
+         * This is the ACTUAL user who performed
+         * the decision.
+         *
+         * If HR performs it, approvedBy = HR uid.
+         */
         approvedBy: approver.uid,
 
         approvedByRole: approver.role ?? null,
@@ -745,23 +757,13 @@ export class AttendanceRegularizationService {
 
         attendanceStatus,
 
-        /*
-         * Record what attendance looked like before
-         * management regularized it.
-         */
         previous: this.serializeForHistory(current),
 
-        /*
-         * Record the final decision.
-         */
         resulting: {
           status,
 
           attendanceType,
 
-          /*
-           * We intentionally don't manufacture working minutes.
-           */
           workingMinutes: current.workingMinutes ?? null,
         },
 
@@ -802,10 +804,6 @@ export class AttendanceRegularizationService {
 
         regularizationReason: data.reason ?? '',
 
-        /*
-         * Keep the final decision explicitly available
-         * on attendance.
-         */
         regularizationAttendanceStatus: attendanceStatus,
 
         regularizationHistory: history.slice(-20),
@@ -817,13 +815,6 @@ export class AttendanceRegularizationService {
        * --------------------------------------------------------
        * IMPORTANT: DO NOT TOUCH CHECK-IN/CHECK-OUT
        * --------------------------------------------------------
-       *
-       * Existing punches, if any, remain exactly as they are.
-       *
-       * If they are missing, they remain missing.
-       *
-       * Regularization changes the attendance classification,
-       * not the historical punch data.
        */
 
       /*
@@ -864,10 +855,17 @@ export class AttendanceRegularizationService {
       return;
     }
 
+    /*
+     * Only Manager and HR can process
+     * non-root regularizations.
+     */
     if (!['manager', 'hr'].includes(user.role ?? '')) {
       throw new ForbiddenException('You are not authorized to manage attendance regularization');
     }
 
+    /*
+     * Both Manager and HR require attendance.manage.
+     */
     const permissions = await this.getPermissions(user.uid);
 
     if (!this.hasAttendanceManagePermission(permissions)) {
@@ -882,19 +880,51 @@ export class AttendanceRegularizationService {
   /*
    * Determines whether a manager/HR can process
    * a particular request.
+   *
+   * IMPORTANT:
+   *
+   * HR is NOT treated as a hierarchy node.
+   *
+   * HR acts on behalf of its parent Manager.
    */
   private canProcessRequest(requester: any, request: any): boolean {
     /*
-     * Root can process everything.
+     * ----------------------------------------------------------
+     * ROOT
+     * ----------------------------------------------------------
+     *
+     * Root can process all requests belonging
+     * to the same root/tenant.
      */
     if (this.isRoot(requester)) {
-      return true;
+      return request.rootId === this.getRootId(requester);
     }
 
     /*
-     * Request must belong to the same tenant.
+     * ----------------------------------------------------------
+     * TENANT ISOLATION
+     * ----------------------------------------------------------
      */
     if (request.rootId !== this.getRootId(requester)) {
+      return false;
+    }
+
+    /*
+     * ----------------------------------------------------------
+     * ONLY EXECUTIVE REQUESTS
+     * ----------------------------------------------------------
+     *
+     * Manager/HR should process regularizations
+     * raised by field executives only.
+     *
+     * This prevents:
+     *
+     * HR → HR requests
+     * HR → Manager requests
+     * Manager → Manager requests
+     * Manager → HR requests
+     */
+    if (!this.isFieldExecutiveRequest(request)) {
       return false;
     }
 
@@ -903,10 +933,11 @@ export class AttendanceRegularizationService {
      * MANAGER
      * ----------------------------------------------------------
      *
-     * Manager processes requests belonging to them.
+     * Manager processes field-executive requests
+     * where the stored parent/approver is this Manager.
      */
     if (requester.role === 'manager') {
-      return request.parentId === requester.uid;
+      return request.parentId === requester.uid && request.approverId === requester.uid;
     }
 
     /*
@@ -914,25 +945,68 @@ export class AttendanceRegularizationService {
      * HR
      * ----------------------------------------------------------
      *
-     * HR acts on behalf of its parent manager.
+     * HR acts on behalf of its parent Manager.
+     *
+     * Example:
+     *
+     * Manager A
+     *    |
+     *    +-- Executive
+     *    |
+     *    +-- HR A
+     *
+     * Executive request:
+     *
+     * parentId   = Manager A
+     * approverId = Manager A
+     *
+     * HR A:
+     *
+     * parentId = Manager A
+     *
+     * Therefore:
+     *
+     * request.approverId === requester.parentId
+     *
+     * HR never becomes the approval hierarchy node.
      */
-    if (requester.role === 'hr' && requester.parentId) {
-      return request.parentId === requester.parentId;
+    if (requester.role === 'hr') {
+      if (!requester.parentId) {
+        return false;
+      }
+
+      return request.parentId === requester.parentId && request.approverId === requester.parentId;
     }
 
     return false;
   }
 
+  /*
+   * Only field-executive requests are processable
+   * by Manager/HR.
+   */
+  private isFieldExecutiveRequest(request: any): boolean {
+    return (
+      String(request?.userRole ?? '')
+        .trim()
+        .toLowerCase() === 'field_executive'
+    );
+  }
+
   private canViewHistory(requester: any, request: any): boolean {
     /*
-     * Root sees everything.
+     * Root sees everything within its tenant.
      */
     if (this.isRoot(requester)) {
-      return true;
+      return request.rootId === this.getRootId(requester);
     }
 
     /*
-     * Manager/HR see their own processing scope.
+     * Manager/HR see only the same processing
+     * scope they are authorized to process.
+     *
+     * This also means HR cannot read processed
+     * Manager/HR regularizations.
      */
     return this.canProcessRequest(requester, request);
   }
@@ -972,13 +1046,6 @@ export class AttendanceRegularizationService {
   // ============================================================
 
   private attendanceStateMatches(current: any, original: any): boolean {
-    /*
-     * We intentionally compare the important attendance
-     * state only.
-     *
-     * Regularization itself should not trigger a conflict
-     * because it happens after this comparison.
-     */
     return (
       this.dateValue(current.checkInTime) === this.dateValue(original.checkInTime) &&
       this.dateValue(current.checkOutTime) === this.dateValue(original.checkOutTime) &&

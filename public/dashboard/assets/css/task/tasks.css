@@ -3,622 +3,1120 @@
 ========================================================== */
 
 .tasks-page {
-    padding: 24px 0;
-    min-height: calc(100vh - var(--header-height));
-    background: var(--bg-color);
+  padding: 24px 0;
+  min-height: calc(100vh - var(--header-height));
+  background: var(--bg-color);
 }
 
-
 /* ==========================================================
-   Header
+   HEADER
 ========================================================== */
 
 .page-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
 }
 
 .page-header h4 {
-    color: var(--text-primary);
-    font-weight: var(--fw-semibold);
+  color: var(--text-primary);
+  font-weight: var(--fw-semibold);
 }
 
 .task-page-subtitle,
 .task-modal-subtitle {
-    color: var(--text-secondary);
-    font-size: 12px;
+  color: var(--text-secondary);
+  font-size: 12px;
 }
 
 .task-modal-subtitle {
-    margin-top: 3px;
+  margin-top: 3px;
 }
 
+.task-actions {
+  display: flex;
+  gap: 8px;
+}
 
 /* ==========================================================
-   Filter
+   FILTER
 ========================================================== */
 
 .filter-card,
 .task-card {
-    background: var(--surface);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-sm);
-    margin-bottom: 18px;
+  background: var(--surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 18px;
 }
 
 .filter-card {
-    padding: 16px;
+  padding: 16px;
 }
 
 .search-box {
-    position: relative;
+  position: relative;
 }
 
 .search-box i {
-    position: absolute;
-    left: 13px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--text-secondary);
-    z-index: 2;
+  position: absolute;
+  left: 13px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-secondary);
+  z-index: 2;
 }
 
 .search-box input {
-    padding-left: 40px;
+  padding-left: 40px;
 }
 
 .task-count {
-    color: var(--text-secondary);
-    font-size: 13px;
+  color: var(--text-secondary);
+  font-size: 13px;
 }
 
 .task-count strong {
-    color: var(--text-primary);
+  color: var(--text-primary);
 }
 
-
 /* ==========================================================
-   Task Card
+   TASK CARD
 ========================================================== */
 
 .task-card {
-    overflow: hidden;
+  overflow: hidden;
 }
 
 .task-card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 12px;
-    padding: 16px 18px;
-    border-bottom: 1px solid var(--border-color);
-    color: var(--text-primary);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-primary);
 }
-
-.task-actions {
-    display: flex;
-    gap: 8px;
-}
-
 
 /* ==========================================================
-   Table
+   TABLE
 ========================================================== */
 
 .task-card .table-responsive {
-    max-height: calc(100vh - 300px);
+  max-height: calc(100vh - 300px);
 }
 
 .table {
-    margin: 0;
+  margin: 0;
 }
 
 .table th {
-    background: var(--surface-soft);
-    color: var(--text-secondary);
-    font-size: 12px;
-    font-weight: 600;
-    white-space: nowrap;
-    border-bottom: 1px solid var(--border-color);
+  background: var(--surface-soft);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .table td {
-    color: var(--text-primary);
-    font-size: 14px;
-    vertical-align: middle;
+  color: var(--text-primary);
+  font-size: 14px;
+  vertical-align: middle;
 }
 
 .table td,
 .table th {
-    padding: 13px 15px;
+  padding: 13px 15px;
 }
 
-
 /* ==========================================================
-   Task
+   TASK
 ========================================================== */
 
 .task-name {
-    color: var(--text-primary);
-    font-weight: var(--fw-semibold);
+  color: var(--text-primary);
+  font-weight: var(--fw-semibold);
 }
 
 .task-description {
-    max-width: 300px;
-    color: var(--text-secondary);
-    font-size: 12px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+  max-width: 300px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .task-created-by,
 .task-executive {
-    color: var(--text-primary);
-    font-weight: 500;
+  color: var(--text-primary);
+  font-weight: 500;
 }
 
 .task-created-by small,
 .task-executive small {
-    display: block;
-    margin-top: 2px;
-    color: var(--text-muted);
-    font-size: 11px;
+  display: block;
+  margin-top: 2px;
+  color: var(--text-muted);
+  font-size: 11px;
 }
 
 .task-time {
-    white-space: nowrap;
-    font-size: 13px;
+  white-space: nowrap;
+  font-size: 13px;
 }
 
-
 /* ==========================================================
-   Badges
+   BADGES
 ========================================================== */
 
 .priority-badge,
 .status-badge,
 .location-badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 5px 9px;
-    border-radius: 20px;
-    font-size: 11px;
-    font-weight: 600;
-    white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 9px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
-
 /* ==========================================================
-   Priority
+   PRIORITY
 ========================================================== */
 
 .priority-low {
-    background: rgba(34, 197, 94, .1);
-    color: #16a34a;
+  background: rgba(34, 197, 94, 0.1);
+  color: #16a34a;
 }
 
 .priority-medium {
-    background: rgba(245, 158, 11, .1);
-    color: #d97706;
+  background: rgba(245, 158, 11, 0.1);
+  color: #d97706;
 }
 
 .priority-high {
-    background: rgba(239, 68, 68, .1);
-    color: #dc2626;
+  background: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
 }
 
-
 /* ==========================================================
-   Status
+   STATUS
 ========================================================== */
 
 .status-pending {
-    background: rgba(107, 114, 128, .1);
-    color: #6b7280;
+  background: rgba(107, 114, 128, 0.1);
+  color: #6b7280;
 }
 
 .status-assigned {
-    background: rgba(37, 99, 235, .1);
-    color: #2563eb;
+  background: rgba(37, 99, 235, 0.1);
+  color: #2563eb;
 }
 
 .status-completed {
-    background: rgba(34, 197, 94, .1);
-    color: #16a34a;
+  background: rgba(34, 197, 94, 0.1);
+  color: #16a34a;
 }
 
 .status-cancelled {
-    background: rgba(107, 114, 128, .1);
-    color: #6b7280;
+  background: rgba(107, 114, 128, 0.1);
+  color: #6b7280;
 }
 
 .status-failed {
-    background: rgba(239, 68, 68, .1);
-    color: #dc2626;
+  background: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
 }
 
-
 /* ==========================================================
-   Location
+   LOCATION BADGE
 ========================================================== */
 
 .location-badge {
-    background: rgba(37, 99, 235, .08);
-    color: var(--primary);
+  background: rgba(37, 99, 235, 0.08);
+  color: var(--primary);
 }
 
-
 /* ==========================================================
-   Actions
+   ACTIONS
 ========================================================== */
 
 .action-btn {
-    width: 32px;
-    height: 32px;
-    padding: 0;
-    border: 0;
-    background: transparent;
-    border-radius: 7px;
-    color: var(--text-secondary);
-    transition: var(--transition-fast);
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  border-radius: 7px;
+  color: var(--text-secondary);
+  transition: var(--transition-fast);
 }
 
 .action-btn:hover {
-    background: rgba(37, 99, 235, .08);
-    color: var(--primary);
+  background: rgba(37, 99, 235, 0.08);
+  color: var(--primary);
 }
 
 .action-btn.text-danger:hover {
-    background: rgba(239, 68, 68, .08);
-    color: #dc2626 !important;
+  background: rgba(239, 68, 68, 0.08);
+  color: #dc2626 !important;
 }
 
-
 /* ==========================================================
-   Empty
+   EMPTY
 ========================================================== */
 
 .empty-state {
-    padding: 45px !important;
-    text-align: center;
-    color: var(--text-secondary);
+  padding: 45px !important;
+  text-align: center;
+  color: var(--text-secondary);
 }
 
 .empty-state i {
-    font-size: 26px;
-    opacity: .6;
+  font-size: 26px;
+  opacity: 0.6;
 }
 
-
 /* ==========================================================
-   Form
+   FORM
 ========================================================== */
 
 .modal-body label,
 .modal-body .form-label {
-    display: block;
-    margin-bottom: 6px;
-    color: var(--text-primary);
-    font-size: 12px;
-    font-weight: 600;
+  display: block;
+  margin-bottom: 6px;
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 600;
 }
 
 .task-form-hint {
-    margin-top: 6px;
-    color: var(--text-muted);
-    font-size: 11px;
+  margin-top: 6px;
+  color: var(--text-muted);
+  font-size: 11px;
 }
 
 .form-check-label {
-    margin-bottom: 0 !important;
-    font-size: 13px !important;
-    font-weight: 500 !important;
+  margin-bottom: 0 !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
 }
 
-
 /* ==========================================================
-   Modal
+   MODAL
 ========================================================== */
 
 .modal-content {
-    border: 0;
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-lg);
+  border: 0;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
 }
 
 .modal-header {
-    border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .modal-footer {
-    border-top: 1px solid var(--border-color);
+  border-top: 1px solid var(--border-color);
 }
 
+/* ==========================================================
+   EXECUTIVE PICKER
+========================================================== */
+
+.executive-picker {
+  position: relative;
+}
+
+.executive-search-input {
+  position: relative;
+}
+
+.executive-search-input > i:first-child {
+  position: absolute;
+  left: 13px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-secondary);
+  z-index: 2;
+}
+
+.executive-search-input input {
+  padding-left: 40px;
+  padding-right: 40px;
+}
+
+.executive-search-chevron {
+  position: absolute;
+  right: 13px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  pointer-events: none;
+  font-size: 11px;
+}
+
+.executive-options {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 5px);
+  z-index: 1090;
+  display: none;
+  max-height: 270px;
+  overflow-y: auto;
+  background: var(--surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+}
+
+.executive-options.show {
+  display: block;
+}
+
+.executive-option {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 0;
+  border-bottom: 1px solid var(--border-color);
+  background: transparent;
+  text-align: left;
+  transition: background 0.15s ease;
+}
+
+.executive-option:last-child {
+  border-bottom: 0;
+}
+
+.executive-option:hover,
+.executive-option.selected {
+  background: var(--surface-soft);
+}
+
+.executive-option-avatar,
+.selected-executive-avatar {
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 34px;
+  border-radius: 50%;
+  background: rgba(37, 99, 235, 0.1);
+  color: var(--primary);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.executive-option-info,
+.selected-executive-info {
+  min-width: 0;
+  flex: 1;
+}
+
+.executive-option-info strong,
+.selected-executive-info strong {
+  display: block;
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.executive-option-info small,
+.selected-executive-info small {
+  display: block;
+  margin-top: 2px;
+  color: var(--text-secondary);
+  font-size: 10px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.executive-option-check {
+  color: var(--primary);
+}
+
+.executive-empty {
+  padding: 14px;
+  color: var(--text-secondary);
+  text-align: center;
+  font-size: 12px;
+}
+
+.selected-executive {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 7px;
+  padding: 9px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--surface-soft);
+}
+
+.selected-executive-clear {
+  width: 28px;
+  height: 28px;
+  margin-left: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.selected-executive-clear:hover {
+  background: rgba(239, 68, 68, 0.08);
+  color: #dc2626;
+}
 
 /* ==========================================================
-   Map
+   GEOFENCE
+========================================================== */
+
+.geofence-toggle-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--surface-soft);
+}
+
+.geofence-toggle-icon {
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 38px;
+  border-radius: 10px;
+  background: rgba(37, 99, 235, 0.1);
+  color: var(--primary);
+}
+
+.geofence-toggle-title {
+  margin: 0 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+}
+
+.geofence-toggle-description {
+  margin-top: 2px;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+/* ==========================================================
+   LOCATION CONFIG
+========================================================== */
+
+.location-config-header {
+  margin-bottom: 12px;
+}
+
+.location-config-header h6 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.location-config-header p {
+  margin: 4px 0 0;
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+/* ==========================================================
+   LOCATION CARD
+========================================================== */
+
+.task-location-card {
+  padding: 16px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+
+.task-location-card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.task-location-card-header strong {
+  display: block;
+  color: var(--text-primary);
+  font-size: 13px;
+}
+
+.task-location-card-header small {
+  display: block;
+  margin-top: 2px;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.location-step-number {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 30px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* ==========================================================
+   LOCATION SEARCH
+========================================================== */
+
+.location-search-wrap {
+  position: relative;
+}
+
+.location-search-input {
+  position: relative;
+}
+
+.location-search-input > i {
+  position: absolute;
+  left: 13px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-secondary);
+  z-index: 2;
+}
+
+.location-search-input input {
+  padding-left: 39px;
+  padding-right: 42px;
+}
+
+.location-search-spinner {
+  position: absolute;
+  right: 13px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: none;
+  color: var(--primary);
+}
+
+.location-search-spinner.show {
+  display: block;
+}
+
+/* ==========================================================
+   LOCATION SUGGESTIONS
+========================================================== */
+
+.location-suggestions {
+  position: absolute;
+  top: calc(100% + 5px);
+  left: 0;
+  right: 0;
+  z-index: 1080;
+  display: none;
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+}
+
+.location-suggestions.show {
+  display: block;
+}
+
+.location-suggestion {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 11px 12px;
+  border: 0;
+  border-bottom: 1px solid var(--border-color);
+  background: transparent;
+  text-align: left;
+  transition: background 0.15s ease;
+}
+
+.location-suggestion:last-child {
+  border-bottom: 0;
+}
+
+.location-suggestion:hover,
+.location-suggestion.active {
+  background: var(--surface-soft);
+}
+
+.location-suggestion-icon {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 30px;
+  border-radius: 8px;
+  background: rgba(37, 99, 235, 0.08);
+  color: var(--primary);
+}
+
+.location-suggestion-content {
+  min-width: 0;
+  display: block;
+}
+
+.location-suggestion-content strong {
+  display: block;
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.location-suggestion-content small {
+  display: block;
+  margin-top: 2px;
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.location-search-loading,
+.location-search-empty {
+  padding: 13px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+/* ==========================================================
+   LOCATION DIVIDER
+========================================================== */
+
+.location-or {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 14px 0;
+  color: var(--text-muted);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.location-or::before,
+.location-or::after {
+  content: '';
+  height: 1px;
+  flex: 1;
+  background: var(--border-color);
+}
+
+/* ==========================================================
+   LOCATION SELECTED
+========================================================== */
+
+.location-selected {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  background: rgba(34, 197, 94, 0.08);
+  color: #16a34a;
+}
+
+.location-selected > i {
+  margin-top: 2px;
+}
+
+.location-selected strong {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.location-selected small {
+  display: block;
+  margin-top: 2px;
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+/* ==========================================================
+   MAP TOOLBAR
+========================================================== */
+
+.map-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 15px;
+  margin-bottom: 7px;
+  color: var(--text-muted);
+  font-size: 10px;
+}
+
+/* ==========================================================
+   MAP
 ========================================================== */
 
 .task-map {
-    width: 100%;
-    height: 250px;
-    border-radius: var(--radius-md);
-    overflow: hidden;
-    border: 1px solid var(--border-color);
+  position: relative;
+  width: 100%;
+  height: 310px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  background: #eef2f7;
 }
 
+.task-map .leaflet-container {
+  width: 100%;
+  height: 100%;
+}
+
+.task-map .leaflet-control-layers {
+  border: 0;
+  border-radius: 9px;
+  box-shadow: 0 3px 15px rgba(0, 0, 0, 0.14);
+}
+
+.task-map .leaflet-control-layers-toggle {
+  width: 36px;
+  height: 36px;
+  background-size: 19px 19px;
+}
+
+.task-map .leaflet-control-zoom {
+  border: 0;
+  border-radius: 9px;
+  overflow: hidden;
+  box-shadow: 0 3px 15px rgba(0, 0, 0, 0.14);
+}
+
+.task-map .leaflet-control-zoom a {
+  border: 0;
+}
 
 /* ==========================================================
-   Upload
+   LOCATION FOOTER
+========================================================== */
+
+.location-footer-hint {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 10px;
+  color: var(--text-muted);
+  font-size: 10px;
+}
+
+/* ==========================================================
+   INVALID COORDINATES
+========================================================== */
+
+.form-control.is-invalid {
+  background-image: none;
+}
+
+/* ==========================================================
+   UPLOAD
 ========================================================== */
 
 .upload-box {
-    padding: 35px;
-    text-align: center;
-    border: 2px dashed var(--border-color);
-    border-radius: var(--radius-lg);
+  padding: 35px;
+  text-align: center;
+  border: 2px dashed var(--border-color);
+  border-radius: var(--radius-lg);
 }
 
 .upload-box i {
-    font-size: 42px;
-    color: var(--primary);
+  font-size: 42px;
+  color: var(--primary);
 }
 
 .upload-box p {
-    color: var(--text-secondary);
-    font-size: 13px;
+  color: var(--text-secondary);
+  font-size: 13px;
 }
 
 .import-preview {
-    margin-top: 20px;
+  margin-top: 20px;
 }
 
 .import-row-error {
-    background: rgba(239, 68, 68, .06);
+  background: rgba(239, 68, 68, 0.06);
 }
 
 .import-row-valid {
-    background: rgba(34, 197, 94, .04);
+  background: rgba(34, 197, 94, 0.04);
 }
 
-
 /* ==========================================================
-   Task Details
+   DETAILS
 ========================================================== */
 
 .task-detail-subtitle {
-    color: var(--text-secondary);
-    font-size: 12px;
+  color: var(--text-secondary);
+  font-size: 12px;
 }
 
 .task-detail-top {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 14px;
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
 }
 
 .task-detail-description {
-    color: var(--text-secondary);
-    white-space: pre-line;
-    line-height: 1.6;
-    padding: 14px;
-    background: var(
-        --surface-secondary,
-        #f8fafc
-    );
-    border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  white-space: pre-line;
+  line-height: 1.6;
+  padding: 14px;
+  background: var(--surface-secondary, #f8fafc);
+  border-radius: var(--radius-md);
 }
 
 .detail-info {
-    height: 100%;
-    padding: 14px;
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-md);
+  height: 100%;
+  padding: 14px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
 }
 
 .detail-info span {
-    display: block;
-    color: var(--text-secondary);
-    font-size: 12px;
-    margin-bottom: 5px;
+  display: block;
+  color: var(--text-secondary);
+  font-size: 12px;
+  margin-bottom: 5px;
 }
 
 .detail-info strong {
-    display: block;
-    color: var(--text-primary);
-    font-size: 13px;
+  display: block;
+  color: var(--text-primary);
+  font-size: 13px;
 }
 
 .detail-section-title {
-    margin-bottom: 10px;
-    color: var(--text-primary);
-    font-size: 13px;
-    font-weight: 600;
+  margin-bottom: 10px;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .task-proof-section,
 .task-location-detail {
-    margin-top: 20px;
-    padding-top: 18px;
-    border-top: 1px solid var(--border-color);
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border-color);
 }
 
 .task-proof {
-    display: block;
-    width: 100%;
-    max-height: 420px;
-    object-fit: contain;
-    border-radius: var(--radius-md);
-    border: 1px solid var(--border-color);
-    background: #f8fafc;
+  display: block;
+  width: 100%;
+  max-height: 420px;
+  object-fit: contain;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  background: #f8fafc;
 }
 
-
 /* ==========================================================
-   Hierarchy
+   HIERARCHY
 ========================================================== */
 
 .hierarchy-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 4px 8px;
-    border-radius: 16px;
-    background: var(--surface-soft);
-    color: var(--text-secondary);
-    font-size: 11px;
-    font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 16px;
+  background: var(--surface-soft);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 600;
 }
 
 .hierarchy-badge i {
-    font-size: 11px;
+  font-size: 11px;
 }
 
 .hierarchy-info {
-    margin-top: 6px;
-    padding: 8px 10px;
-    border-radius: var(--radius-sm);
-    background: var(--surface-soft);
-    color: var(--text-secondary);
-    font-size: 11px;
+  margin-top: 6px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-soft);
+  color: var(--text-secondary);
+  font-size: 11px;
 }
 
-
 /* ==========================================================
-   Tablet
+   TABLET
 ========================================================== */
 
 @media (max-width: 992px) {
+  .tasks-page {
+    padding: 20px 0;
+  }
 
-    .tasks-page {
-        padding: 20px 0;
-    }
-
-    .task-card .table-responsive {
-        max-height: calc(100vh - 320px);
-    }
-
+  .task-card .table-responsive {
+    max-height: calc(100vh - 320px);
+  }
 }
 
-
 /* ==========================================================
-   Mobile
+   MOBILE
 ========================================================== */
 
 @media (max-width: 768px) {
+  .tasks-page {
+    padding: 16px 0;
+  }
 
-    .tasks-page {
-        padding: 16px 0;
-    }
+  .page-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 
-    .page-header {
-        align-items: flex-start;
-        flex-direction: column;
-    }
+  .task-page-subtitle {
+    margin-top: 3px;
+  }
 
-    .task-page-subtitle {
-        margin-top: 3px;
-    }
+  .task-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
 
-    .task-actions {
-        width: 100%;
-        flex-wrap: wrap;
-    }
+  .task-actions .btn {
+    flex: 1;
+    min-width: 110px;
+  }
 
-    .task-actions .btn {
-        flex: 1;
-        min-width: 110px;
-    }
+  .filter-card {
+    padding: 12px;
+  }
 
-    .filter-card {
-        padding: 12px;
-    }
+  .task-card .table-responsive {
+    max-height: none;
+  }
 
-    .task-card .table-responsive {
-        max-height: none;
-    }
+  .table {
+    min-width: 1100px;
+  }
 
-    .table {
-        min-width: 1100px;
-    }
+  .task-card-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+  }
 
-    .task-card-header {
-        align-items: flex-start;
-        flex-direction: column;
-        gap: 10px;
-    }
+  .task-description {
+    max-width: 180px;
+  }
 
-    .task-description {
-        max-width: 180px;
-    }
+  .task-map {
+    height: 250px;
+  }
 
-    .task-map {
-        height: 220px;
-    }
+  .task-proof {
+    max-height: 300px;
+  }
 
-    .task-proof {
-        max-height: 300px;
-    }
-
+  .geofence-toggle-card {
+    align-items: flex-start;
+  }
 }
 
-
 /* ==========================================================
-   Small Mobile
+   SMALL MOBILE
 ========================================================== */
 
 @media (max-width: 576px) {
+  .tasks-page {
+    padding: 12px 0;
+  }
 
-    .tasks-page {
-        padding: 12px 0;
-    }
+  .page-header h4 {
+    font-size: 18px;
+  }
 
-    .page-header h4 {
-        font-size: 18px;
-    }
+  .task-actions {
+    gap: 6px;
+  }
 
-    .task-actions {
-        gap: 6px;
-    }
+  .task-actions .btn {
+    padding: 8px 10px;
+    font-size: 12px;
+  }
 
-    .task-actions .btn {
-        padding: 8px 10px;
-        font-size: 12px;
-    }
+  .filter-card .row > div {
+    width: 100%;
+  }
 
-    .filter-card .row > div {
-        width: 100%;
-    }
+  .task-count {
+    display: block;
+    padding-top: 4px;
+    text-align: left;
+  }
 
-    .task-count {
-        display: block;
-        padding-top: 4px;
-        text-align: left;
-    }
+  .modal-dialog {
+    margin: 8px;
+  }
 
-    .modal-dialog {
-        margin: 10px;
-    }
+  .modal-body {
+    padding: 13px;
+  }
 
-    .modal-body {
-        padding: 15px;
-    }
+  .modal-footer {
+    padding: 12px 13px;
+  }
 
-    .modal-footer {
-        padding: 12px 15px;
-    }
+  .upload-box {
+    padding: 25px 15px;
+  }
 
-    .upload-box {
-        padding: 25px 15px;
-    }
+  .hierarchy-info {
+    max-width: 100%;
+  }
 
-    .hierarchy-info {
-        max-width: 100%;
-    }
+  .task-location-card {
+    padding: 12px;
+  }
 
+  .task-map {
+    height: 220px;
+  }
+
+  .map-toolbar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .location-suggestions {
+    position: absolute;
+  }
+
+  .executive-options {
+    max-height: 230px;
+  }
 }

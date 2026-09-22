@@ -1123,7 +1123,7 @@ export class ExecutivesService {
       const parentPermissions = await this.permissions(parent.uid);
 
       if (parentPermissions[permission] !== true) {
-        this.logger.warn(`Parent authority denied | parent=${parent.uid} permission=${permission}`);
+        this.logger.warn(`Parent authority denied | parent=${parent.uid} permission=${permission} parentPermissions[permission]`);
 
         throw new ForbiddenException('Parent authority denied');
       }
