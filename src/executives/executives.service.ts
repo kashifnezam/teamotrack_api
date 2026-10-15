@@ -508,11 +508,31 @@ export class ExecutivesService {
       await this.verifyManagerAccess(effectiveRequester, parentId);
     }
 
-    const authUser = await this.firebase.auth.createUser({
-      email: dto.email,
+    // CREATE FIREBASE AUTH USER
+    let authUser;
 
-      password: dto.password,
-    });
+    try {
+      authUser = await this.firebase.auth.createUser({
+        email: dto.email.trim().toLowerCase(),
+        password: dto.password,
+      });
+    } catch (error: any) {
+      if (error?.code === 'auth/email-already-exists') {
+        throw new BadRequestException(
+          'This email address is already registered. Please use a different email address.'
+        );
+      }
+
+      if (error?.code === 'auth/invalid-email') {
+        throw new BadRequestException('Please enter a valid email address.');
+      }
+
+      if (error?.code === 'auth/weak-password') {
+        throw new BadRequestException('The password does not meet the required security requirements.');
+      }
+
+      throw error;
+    }
 
     try {
       await this.db
@@ -1123,7 +1143,9 @@ export class ExecutivesService {
       const parentPermissions = await this.permissions(parent.uid);
 
       if (parentPermissions[permission] !== true) {
-        this.logger.warn(`Parent authority denied | parent=${parent.uid} permission=${permission} parentPermissions[permission]`);
+        this.logger.warn(
+          `Parent authority denied | parent=${parent.uid} permission=${permission} parentPermissions[permission]`
+        );
 
         throw new ForbiddenException('Parent authority denied');
       }
