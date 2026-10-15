@@ -1122,6 +1122,120 @@ export class TasksService {
   private serialize(data: any) {
     const date = (value: any) => value?.toDate?.() ?? value ?? null;
 
+    /*
+     * --------------------------------------------------
+     * NORMALIZE TASK PROOF
+     * --------------------------------------------------
+     *
+     * Current Flutter structure:
+     *
+     * proofUrls:
+     * [
+     *   "image-url-1",
+     *   "image-url-2"
+     * ]
+     *
+     * proofFileUrl:
+     *   "document-url"
+     *
+     * proofFileName:
+     *   "document.pdf"
+     *
+     * New backend/web structure:
+     *
+     * proofFiles:
+     * [
+     *   {
+     *     url,
+     *     name,
+     *     type,
+     *     size
+     *   }
+     * ]
+     *
+     * We normalize both structures into proofFiles.
+     */
+
+    let proofFiles: any[] = [];
+
+    // --------------------------------------------------
+    // NEW FORMAT
+    // --------------------------------------------------
+
+    if (Array.isArray(data.proofFiles)) {
+      proofFiles = data.proofFiles
+        .filter((file: any) => file && typeof file === 'object')
+        .map((file: any) => ({
+          url: String(file.url || '').trim(),
+
+          name: String(file.name || file.fileName || 'Attachment').trim(),
+
+          type: String(file.type || file.mimeType || '').trim(),
+
+          size: file.size !== undefined && file.size !== null ? Number(file.size) : null,
+        }))
+        .filter((file: any) => file.url);
+    }
+
+    // --------------------------------------------------
+    // OLD / FLUTTER IMAGE FORMAT
+    // --------------------------------------------------
+
+    if (Array.isArray(data.proofUrls)) {
+      for (const item of data.proofUrls) {
+        const url = String(item || '').trim();
+
+        if (!url) {
+          continue;
+        }
+
+        // Avoid duplicates.
+        if (proofFiles.some((file) => file.url === url)) {
+          continue;
+        }
+
+        proofFiles.push({
+          url,
+          name: this.getFileNameFromUrl(url),
+          type: this.getMimeTypeFromUrl(url),
+          size: null,
+        });
+      }
+    }
+
+    // --------------------------------------------------
+    // LEGACY SINGLE IMAGE
+    // --------------------------------------------------
+
+    const legacyProofUrl = String(data.proofUrl || '').trim();
+
+    if (legacyProofUrl && !proofFiles.some((file) => file.url === legacyProofUrl)) {
+      proofFiles.push({
+        url: legacyProofUrl,
+        name: this.getFileNameFromUrl(legacyProofUrl),
+        type: this.getMimeTypeFromUrl(legacyProofUrl),
+        size: null,
+      });
+    }
+
+    // --------------------------------------------------
+    // FLUTTER DOCUMENT
+    // --------------------------------------------------
+
+    const proofFileUrl = String(data.proofFileUrl || '').trim();
+
+    if (proofFileUrl && !proofFiles.some((file) => file.url === proofFileUrl)) {
+      proofFiles.push({
+        url: proofFileUrl,
+
+        name: String(data.proofFileName || '').trim() || this.getFileNameFromUrl(proofFileUrl),
+
+        type: this.getMimeTypeFromUrl(proofFileUrl),
+
+        size: null,
+      });
+    }
+
     return {
       ...data,
 
@@ -1136,6 +1250,105 @@ export class TasksService {
       startedAt: date(data.startedAt),
 
       completedAt: date(data.completedAt),
+
+      submittedAt: date(data.submittedAt),
+
+      /*
+       * IMPORTANT:
+       *
+       * Web always receives one consistent
+       * proofFiles array regardless of whether
+       * the task was submitted from:
+       *
+       * - Flutter
+       * - Web
+       * - API
+       */
+      proofFiles,
+
+      /*
+       * Keep old fields as well so existing
+       * clients continue working.
+       */
+      proofUrls: Array.isArray(data.proofUrls) ? data.proofUrls : [],
+
+      proofUrl: legacyProofUrl || null,
+
+      proofFileUrl: proofFileUrl || null,
+
+      proofFileName: String(data.proofFileName || '').trim() || null,
     };
+  }
+
+  // ==================================================
+  // FILE NAME FROM URL
+  // ==================================================
+
+  private getFileNameFromUrl(url: string): string {
+    try {
+      const cleanUrl = url.split('?')[0];
+
+      const lastPart = cleanUrl.split('/').pop() || '';
+
+      const decoded = decodeURIComponent(lastPart);
+
+      if (decoded.trim()) {
+        return decoded.trim();
+      }
+    } catch (_) {
+      // Ignore invalid URL encoding.
+    }
+
+    return 'Attachment';
+  }
+
+  // ==================================================
+  // MIME TYPE FROM URL
+  // ==================================================
+
+  private getMimeTypeFromUrl(url: string): string {
+    const cleanUrl = url.split('?')[0].toLowerCase();
+
+    if (cleanUrl.endsWith('.jpg') || cleanUrl.endsWith('.jpeg')) {
+      return 'image/jpeg';
+    }
+
+    if (cleanUrl.endsWith('.png')) {
+      return 'image/png';
+    }
+
+    if (cleanUrl.endsWith('.webp')) {
+      return 'image/webp';
+    }
+
+    if (cleanUrl.endsWith('.gif')) {
+      return 'image/gif';
+    }
+
+    if (cleanUrl.endsWith('.pdf')) {
+      return 'application/pdf';
+    }
+
+    if (cleanUrl.endsWith('.doc')) {
+      return 'application/msword';
+    }
+
+    if (cleanUrl.endsWith('.docx')) {
+      return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+    }
+
+    if (cleanUrl.endsWith('.xls')) {
+      return 'application/vnd.ms-excel';
+    }
+
+    if (cleanUrl.endsWith('.xlsx')) {
+      return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+    }
+
+    if (cleanUrl.endsWith('.zip')) {
+      return 'application/zip';
+    }
+
+    return '';
   }
 }

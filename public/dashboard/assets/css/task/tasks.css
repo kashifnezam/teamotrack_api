@@ -1,6 +1,6 @@
 /* ==========================================================
-   TeamoTrack Tasks
-========================================================== */
+   TEAMOTRACK TASKS
+   ========================================================== */
 
 .tasks-page {
   padding: 24px 0;
@@ -10,13 +10,31 @@
 
 /* ==========================================================
    HEADER
-========================================================== */
+   ========================================================== */
 
 .page-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 16px;
+}
+
+.page-title-row {
+  display: flex;
+  align-items: center;
   gap: 12px;
+}
+
+.page-title-icon {
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: rgba(37, 99, 235, 0.1);
+  color: var(--primary);
+  font-size: 19px;
 }
 
 .page-header h4 {
@@ -41,7 +59,7 @@
 
 /* ==========================================================
    FILTER
-========================================================== */
+   ========================================================== */
 
 .filter-card,
 .task-card {
@@ -84,7 +102,7 @@
 
 /* ==========================================================
    TASK CARD
-========================================================== */
+   ========================================================== */
 
 .task-card {
   overflow: hidden;
@@ -102,7 +120,7 @@
 
 /* ==========================================================
    TABLE
-========================================================== */
+   ========================================================== */
 
 .task-card .table-responsive {
   max-height: calc(100vh - 300px);
@@ -134,7 +152,7 @@
 
 /* ==========================================================
    TASK
-========================================================== */
+   ========================================================== */
 
 .task-name {
   color: var(--text-primary);
@@ -171,7 +189,7 @@
 
 /* ==========================================================
    BADGES
-========================================================== */
+   ========================================================== */
 
 .priority-badge,
 .status-badge,
@@ -188,7 +206,7 @@
 
 /* ==========================================================
    PRIORITY
-========================================================== */
+   ========================================================== */
 
 .priority-low {
   background: rgba(34, 197, 94, 0.1);
@@ -207,7 +225,7 @@
 
 /* ==========================================================
    STATUS
-========================================================== */
+   ========================================================== */
 
 .status-pending {
   background: rgba(107, 114, 128, 0.1);
@@ -235,8 +253,8 @@
 }
 
 /* ==========================================================
-   LOCATION BADGE
-========================================================== */
+   LOCATION
+   ========================================================== */
 
 .location-badge {
   background: rgba(37, 99, 235, 0.08);
@@ -244,8 +262,34 @@
 }
 
 /* ==========================================================
+   PROOF TABLE BADGE
+   ========================================================== */
+
+.task-proof-table-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 9px;
+  border-radius: 18px;
+  background: rgba(37, 99, 235, 0.08);
+  color: var(--primary);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.task-proof-table-badge.completed {
+  background: rgba(34, 197, 94, 0.09);
+  color: #16a34a;
+}
+
+.task-proof-table-badge.empty {
+  background: var(--surface-soft);
+  color: var(--text-muted);
+}
+
+/* ==========================================================
    ACTIONS
-========================================================== */
+   ========================================================== */
 
 .action-btn {
   width: 32px;
@@ -270,7 +314,7 @@
 
 /* ==========================================================
    EMPTY
-========================================================== */
+   ========================================================== */
 
 .empty-state {
   padding: 45px !important;
@@ -285,7 +329,7 @@
 
 /* ==========================================================
    FORM
-========================================================== */
+   ========================================================== */
 
 .modal-body label,
 .modal-body .form-label {
@@ -302,15 +346,9 @@
   font-size: 11px;
 }
 
-.form-check-label {
-  margin-bottom: 0 !important;
-  font-size: 13px !important;
-  font-weight: 500 !important;
-}
-
 /* ==========================================================
    MODAL
-========================================================== */
+   ========================================================== */
 
 .modal-content {
   border: 0;
@@ -328,7 +366,7 @@
 
 /* ==========================================================
    EXECUTIVE PICKER
-========================================================== */
+   ========================================================== */
 
 .executive-picker {
   position: relative;
@@ -483,7 +521,7 @@
 
 /* ==========================================================
    GEOFENCE
-========================================================== */
+   ========================================================== */
 
 .geofence-toggle-card {
   display: flex;
@@ -520,8 +558,8 @@
 }
 
 /* ==========================================================
-   LOCATION CONFIG
-========================================================== */
+   LOCATION
+   ========================================================== */
 
 .location-config-header {
   margin-bottom: 12px;
@@ -539,10 +577,6 @@
   color: var(--text-secondary);
   font-size: 11px;
 }
-
-/* ==========================================================
-   LOCATION CARD
-========================================================== */
 
 .task-location-card {
   padding: 16px;
@@ -585,10 +619,6 @@
   font-weight: 700;
 }
 
-/* ==========================================================
-   LOCATION SEARCH
-========================================================== */
-
 .location-search-wrap {
   position: relative;
 }
@@ -623,10 +653,6 @@
 .location-search-spinner.show {
   display: block;
 }
-
-/* ==========================================================
-   LOCATION SUGGESTIONS
-========================================================== */
 
 .location-suggestions {
   position: absolute;
@@ -707,10 +733,6 @@
   font-size: 12px;
 }
 
-/* ==========================================================
-   LOCATION DIVIDER
-========================================================== */
-
 .location-or {
   display: flex;
   align-items: center;
@@ -729,10 +751,6 @@
   flex: 1;
   background: var(--border-color);
 }
-
-/* ==========================================================
-   LOCATION SELECTED
-========================================================== */
 
 .location-selected {
   display: flex;
@@ -762,10 +780,6 @@
   font-size: 11px;
 }
 
-/* ==========================================================
-   MAP TOOLBAR
-========================================================== */
-
 .map-toolbar {
   display: flex;
   align-items: center;
@@ -776,10 +790,6 @@
   color: var(--text-muted);
   font-size: 10px;
 }
-
-/* ==========================================================
-   MAP
-========================================================== */
 
 .task-map {
   position: relative;
@@ -819,10 +829,6 @@
   border: 0;
 }
 
-/* ==========================================================
-   LOCATION FOOTER
-========================================================== */
-
 .location-footer-hint {
   display: flex;
   align-items: center;
@@ -832,17 +838,13 @@
   font-size: 10px;
 }
 
-/* ==========================================================
-   INVALID COORDINATES
-========================================================== */
-
 .form-control.is-invalid {
   background-image: none;
 }
 
 /* ==========================================================
    UPLOAD
-========================================================== */
+   ========================================================== */
 
 .upload-box {
   padding: 35px;
@@ -874,8 +876,26 @@
 }
 
 /* ==========================================================
-   DETAILS
-========================================================== */
+   TASK DETAILS
+   ========================================================== */
+
+.detail-title-row {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.detail-task-icon {
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: rgba(37, 99, 235, 0.1);
+  color: var(--primary);
+  font-size: 17px;
+}
 
 .task-detail-subtitle {
   color: var(--text-secondary);
@@ -911,45 +931,64 @@
   margin-bottom: 5px;
 }
 
+.detail-info span i {
+  margin-right: 4px;
+}
+
 .detail-info strong {
   display: block;
   color: var(--text-primary);
   font-size: 13px;
 }
 
-.detail-section-title {
-  margin-bottom: 10px;
-  color: var(--text-primary);
-  font-size: 13px;
-  font-weight: 600;
-}
+/* ==========================================================
+   DETAIL SECTIONS
+   ========================================================== */
 
 .task-proof-section,
 .task-location-detail {
-  margin-top: 20px;
-  padding-top: 18px;
+  margin-top: 22px;
+  padding-top: 20px;
   border-top: 1px solid var(--border-color);
 }
 
-.task-proof {
-  display: block;
-  width: 100%;
-  max-height: 420px;
-  object-fit: contain;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-color);
-  background: #f8fafc;
+.detail-section-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 700;
 }
 
-/* ==========================================================
-   HIERARCHY
-========================================================== */
-
-.hierarchy-badge {
+.detail-section-icon {
+  width: 28px;
+  height: 28px;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 4px 8px;
+  justify-content: center;
+  border-radius: 8px;
+  background: rgba(37, 99, 235, 0.09);
+  color: var(--primary);
+  font-size: 13px;
+}
+
+.proof-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 13px;
+}
+
+.proof-section-subtitle {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.proof-count {
+  flex-shrink: 0;
+  padding: 5px 9px;
   border-radius: 16px;
   background: var(--surface-soft);
   color: var(--text-secondary);
@@ -957,9 +996,341 @@
   font-weight: 600;
 }
 
-.hierarchy-badge i {
+/* ==========================================================
+   MULTIPLE PROOF GALLERY
+   ========================================================== */
+
+.task-proof-gallery {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+/* ==========================================================
+   IMAGE PROOF CARD
+   ========================================================== */
+
+.proof-file-card {
+  position: relative;
+  overflow: hidden;
+  min-width: 0;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--surface);
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    border-color 0.18s ease;
+}
+
+.proof-file-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(37, 99, 235, 0.25);
+  box-shadow: 0 8px 25px rgba(15, 23, 42, 0.09);
+}
+
+.proof-image-button {
+  display: block;
+  width: 100%;
+  height: 170px;
+  padding: 0;
+  border: 0;
+  background: var(--surface-soft);
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.proof-image-button img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  transition: transform 0.25s ease;
+}
+
+.proof-file-card:hover .proof-image-button img {
+  transform: scale(1.035);
+}
+
+.proof-image-overlay {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.72);
+  color: #fff;
+  font-size: 12px;
+  pointer-events: none;
+}
+
+/* ==========================================================
+   DOCUMENT CARD
+   ========================================================== */
+
+.proof-document-preview {
+  height: 170px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  text-align: center;
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.055), rgba(37, 99, 235, 0.015));
+}
+
+.proof-document-icon {
+  width: 58px;
+  height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 9px;
+  border-radius: 15px;
+  background: rgba(37, 99, 235, 0.1);
+  color: var(--primary);
+  font-size: 26px;
+}
+
+.proof-document-type {
+  color: var(--text-secondary);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* ==========================================================
+   PROOF FILE META
+   ========================================================== */
+
+.proof-file-meta {
+  min-width: 0;
+  padding: 10px 11px;
+  border-top: 1px solid var(--border-color);
+}
+
+.proof-file-name {
+  display: block;
+  color: var(--text-primary);
+  font-size: 11px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.proof-file-size {
+  margin-top: 3px;
+  color: var(--text-muted);
+  font-size: 10px;
+}
+
+.proof-file-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.proof-file-action {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 28px;
+  padding: 4px 7px;
+  border: 1px solid var(--border-color);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-size: 10px;
+  text-decoration: none;
+  transition: 0.15s ease;
+}
+
+.proof-file-action:hover {
+  border-color: rgba(37, 99, 235, 0.25);
+  background: rgba(37, 99, 235, 0.06);
+  color: var(--primary);
+}
+
+.proof-file-action.primary {
+  border-color: transparent;
+  background: rgba(37, 99, 235, 0.08);
+  color: var(--primary);
+}
+
+/* ==========================================================
+   NO PROOF
+   ========================================================== */
+
+.proof-empty {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 16px;
+  border: 1px dashed var(--border-color);
+  border-radius: 11px;
+  background: var(--surface-soft);
+}
+
+.proof-empty-icon {
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  background: rgba(107, 114, 128, 0.09);
+  color: var(--text-muted);
+}
+
+.proof-empty strong {
+  display: block;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.proof-empty span {
+  display: block;
+  margin-top: 2px;
+  color: var(--text-muted);
+  font-size: 10px;
+}
+
+/* ==========================================================
+   LOCATION DETAIL
+   ========================================================== */
+
+.location-detail-item {
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 9px;
+  color: var(--text-secondary);
   font-size: 11px;
 }
+
+/* ==========================================================
+   PROOF LIGHTBOX
+   ========================================================== */
+
+.proof-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 25px;
+}
+
+.proof-lightbox.show {
+  display: flex;
+}
+
+.proof-lightbox-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(2, 6, 23, 0.86);
+  backdrop-filter: blur(5px);
+}
+
+.proof-lightbox-content {
+  position: relative;
+  z-index: 1;
+  width: min(1100px, 100%);
+  height: min(850px, 92vh);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  background: #0f172a;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.4);
+}
+
+.proof-lightbox-toolbar {
+  min-height: 54px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.proof-lightbox-name {
+  min-width: 0;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.proof-lightbox-open {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 10px;
+  margin-right: 40px;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  font-size: 11px;
+  text-decoration: none;
+}
+
+.proof-lightbox-open:hover {
+  background: rgba(255, 255, 255, 0.17);
+  color: #fff;
+}
+
+.proof-lightbox-close {
+  position: absolute;
+  z-index: 3;
+  top: 9px;
+  right: 9px;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.78);
+  color: #fff;
+}
+
+.proof-lightbox-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  overflow: auto;
+}
+
+.proof-lightbox-body img {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: 7px;
+}
+
+/* ==========================================================
+   HIERARCHY
+   ========================================================== */
 
 .hierarchy-info {
   margin-top: 6px;
@@ -972,7 +1343,7 @@
 
 /* ==========================================================
    TABLET
-========================================================== */
+   ========================================================== */
 
 @media (max-width: 992px) {
   .tasks-page {
@@ -982,11 +1353,15 @@
   .task-card .table-responsive {
     max-height: calc(100vh - 320px);
   }
+
+  .task-proof-gallery {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 /* ==========================================================
    MOBILE
-========================================================== */
+   ========================================================== */
 
 @media (max-width: 768px) {
   .tasks-page {
@@ -996,10 +1371,6 @@
   .page-header {
     align-items: flex-start;
     flex-direction: column;
-  }
-
-  .task-page-subtitle {
-    margin-top: 3px;
   }
 
   .task-actions {
@@ -1021,7 +1392,7 @@
   }
 
   .table {
-    min-width: 1100px;
+    min-width: 1180px;
   }
 
   .task-card-header {
@@ -1038,18 +1409,31 @@
     height: 250px;
   }
 
-  .task-proof {
-    max-height: 300px;
-  }
-
   .geofence-toggle-card {
     align-items: flex-start;
+  }
+
+  .task-proof-gallery {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .proof-image-button,
+  .proof-document-preview {
+    height: 145px;
+  }
+
+  .proof-lightbox {
+    padding: 10px;
+  }
+
+  .proof-lightbox-content {
+    height: 94vh;
   }
 }
 
 /* ==========================================================
    SMALL MOBILE
-========================================================== */
+   ========================================================== */
 
 @media (max-width: 576px) {
   .tasks-page {
@@ -1058,6 +1442,11 @@
 
   .page-header h4 {
     font-size: 18px;
+  }
+
+  .page-title-icon {
+    width: 38px;
+    height: 38px;
   }
 
   .task-actions {
@@ -1118,5 +1507,22 @@
 
   .executive-options {
     max-height: 230px;
+  }
+
+  .task-proof-gallery {
+    grid-template-columns: 1fr;
+  }
+
+  .proof-image-button,
+  .proof-document-preview {
+    height: 190px;
+  }
+
+  .proof-section-header {
+    align-items: flex-start;
+  }
+
+  .proof-count {
+    margin-top: 2px;
   }
 }

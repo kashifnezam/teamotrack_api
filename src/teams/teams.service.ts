@@ -1,1326 +1,750 @@
-import {
-    BadRequestException,
-    Injectable,
-    Logger,
-    NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 
 import { FirebaseService } from '../firebase/firebase.service';
 import { TeamDto } from './dto/team.dto';
 
 @Injectable()
 export class TeamsService {
+  private readonly logger = new Logger(TeamsService.name);
 
-    private readonly logger =
-        new Logger(TeamsService.name);
+  constructor(private readonly firebase: FirebaseService) {}
 
-    constructor(
-        private readonly firebase: FirebaseService,
-    ) { }
+  private get db() {
+    return this.firebase.firestore;
+  }
 
-    private get db() {
-        return this.firebase.firestore;
-    }
+  // ==================================================
+  // GET ALL
+  // ==================================================
 
-    // ==================================================
-    // GET ALL
-    // ==================================================
+  async getAll(userId: string) {
+    const user = await this.getUser(userId);
 
-    async getAll(
-        userId: string,
-    ) {
+    const rootId = this.getRootId(user);
 
-        const user =
-            await this.getUser(userId);
+    const [teamSnap, userSnap, shiftSnap] = await Promise.all([
+      this.db.collection('teams').where('rootId', '==', rootId).get(),
 
-        const rootId =
-            this.getRootId(user);
+      this.db.collection('user').where('rootId', '==', rootId).get(),
 
-        const [
-            teamSnap,
-            userSnap,
-            shiftSnap,
-        ] = await Promise.all([
+      this.db.collection('shifts').where('rootId', '==', rootId).get(),
+    ]);
 
-            this.db
-                .collection('teams')
-                .where('rootId', '==', rootId)
-                .get(),
+    const users = userSnap.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    })) as any[];
 
-            this.db
-                .collection('user')
-                .where('rootId', '==', rootId)
-                .get(),
+    /*
+     * Managers/HR visible from
+     * requester's hierarchy.
+     */
+    const visibleUsers = this.getVisibleUsers(user, users);
 
-            this.db
-                .collection('shifts')
-                .where('rootId', '==', rootId)
-                .get(),
+    /*
+     * Visible manager IDs.
+     */
+    const visibleManagerIds = new Set(
+      visibleUsers.filter((item) => ['manager', 'child_manager'].includes(item.role)).map((item) => item.id)
+    );
 
-        ]);
+    /*
+     * Root:
+     *   all teams in root.
+     *
+     * Manager:
+     *   own teams +
+     *   descendant manager teams.
+     *
+     * HR / Executive:
+     *   no team management.
+     */
+    let teams = teamSnap.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    })) as any[];
 
-        const users =
-            userSnap.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data(),
-            })) as any[];
+    if (!this.isRoot(user)) {
+      if (user.role === 'hr' || user.role === 'field_executive') {
+        teams = [];
+      } else {
+        teams = teams.filter((team) => {
+          if (!team.leadId) {
+            return false;
+          }
 
-        /*
-         * Managers/HR visible from
-         * requester's hierarchy.
-         */
-        const visibleUsers =
-            this.getVisibleUsers(
-                user,
-                users,
-            );
-
-        /*
-         * Visible manager IDs.
-         */
-        const visibleManagerIds =
-            new Set(
-                visibleUsers
-                    .filter(item =>
-                        [
-                            'manager',
-                            'child_manager',
-                        ].includes(item.role),
-                    )
-                    .map(item => item.id),
-            );
-
-        /*
-         * Root:
-         *   all teams in root.
-         *
-         * Manager:
-         *   own teams +
-         *   descendant manager teams.
-         *
-         * HR / Executive:
-         *   no team management.
-         */
-        let teams =
-            teamSnap.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data(),
-            })) as any[];
-
-        if (!this.isRoot(user)) {
-
-            if (
-                user.role === 'hr' ||
-                user.role === 'field_executive'
-            ) {
-
-                teams = [];
-
-            } else {
-
-                teams =
-                    teams.filter(team => {
-
-                        if (!team.leadId) {
-                            return false;
-                        }
-
-                        return visibleManagerIds.has(
-                            team.leadId,
-                        );
-
-                    });
-
-            }
-
-        }
-
-        /*
-         * Executive counts.
-         */
-        const counts: Record<string, number> = {};
-
-        users.forEach(item => {
-
-            if (
-                item.role !==
-                'field_executive'
-            ) {
-                return;
-            }
-
-            /*
-             * Root sees all executives.
-             *
-             * Manager sees executives
-             * belonging to its hierarchy.
-             */
-            if (
-                !this.isRoot(user) &&
-                !this.isVisibleUser(
-                    item.id,
-                    visibleUsers,
-                )
-            ) {
-                return;
-            }
-
-            if (item.teamId) {
-
-                counts[item.teamId] =
-                    (counts[item.teamId] || 0) + 1;
-
-            }
-
+          return visibleManagerIds.has(team.leadId);
         });
-
-        /*
-         * Managers available as
-         * team leads.
-         */
-        const managers =
-            visibleUsers
-                .filter(item =>
-                    [
-                        'manager',
-                        'child_manager',
-                    ].includes(item.role),
-                )
-                .map(manager => ({
-
-                    id:
-                        manager.id,
-
-                    fullName:
-                        manager.fullName ?? '',
-
-                }));
-
-        return {
-
-            isRoot:
-                this.isRoot(user),
-                
-            teams:
-                teams.map(team => ({
-
-                    id:
-                        team.id,
-
-                    name:
-                        team.name ?? '',
-
-                    leadId:
-                        team.leadId ?? '',
-
-                    shiftId:
-                        team.shiftId ?? '',
-
-                    totalExecutives:
-                        counts[team.id] || 0,
-
-                })),
-
-            managers,
-
-            shifts:
-                shiftSnap.docs.map(doc => ({
-
-                    id:
-                        doc.id,
-
-                    name:
-                        doc.data().name ?? '',
-
-                })),
-
-        };
-
+      }
     }
 
+    /*
+     * Executive counts.
+     */
+    const counts: Record<string, number> = {};
 
-    // ==================================================
-    // CREATE
-    // ==================================================
+    users.forEach((item) => {
+      if (item.role !== 'field_executive') {
+        return;
+      }
 
-    async create(
-        userId: string,
-        dto: TeamDto,
-    ) {
+      /*
+       * Root sees all executives.
+       *
+       * Manager sees executives
+       * belonging to its hierarchy.
+       */
+      if (!this.isRoot(user) && !this.isVisibleUser(item.id, visibleUsers)) {
+        return;
+      }
 
-        const user =
-            await this.getUser(userId);
+      if (item.teamId) {
+        counts[item.teamId] = (counts[item.teamId] || 0) + 1;
+      }
+    });
 
-        await this.authorize(
-            user,
-            'team.create',
-        );
+    /*
+     * Managers available as
+     * team leads.
+     */
+    const managers = visibleUsers
+      .filter((item) => ['manager', 'child_manager'].includes(item.role))
+      .map((manager) => ({
+        id: manager.id,
 
-        const rootId =
-            this.getRootId(user);
+        fullName: manager.fullName ?? '',
+      }));
 
-        this.validate(dto);
+    return {
+      isRoot: this.isRoot(user),
 
+      teams: teams.map((team) => ({
+        id: team.id,
 
-        /*
-         * NON-ROOT MANAGERS MUST ALWAYS
-         * HAVE A TEAM LEAD.
-         *
-         * Only root can create an
-         * unassigned/root-owned team.
-         */
-        if (
-            !this.isRoot(user) &&
-            !dto.leadId
-        ) {
+        name: team.name ?? '',
 
-            throw new BadRequestException(
-                'Team manager is required',
-            );
+        leadId: team.leadId ?? '',
 
-        }
+        shiftId: team.shiftId ?? '',
 
+        totalExecutives: counts[team.id] || 0,
+      })),
 
-        /*
-         * Shift must belong to the
-         * same organization.
-         */
-        await this.verifyShift(
-            rootId,
-            dto.shiftId,
-        );
+      managers,
 
+      shifts: shiftSnap.docs.map((doc) => ({
+        id: doc.id,
 
-        /*
-         * Validate selected manager.
-         *
-         * For root:
-         *   any manager in same root.
-         *
-         * For manager:
-         *   self or descendant only.
-         */
-        if (dto.leadId) {
+        name: doc.data().name ?? '',
+      })),
+    };
+  }
 
-            await this.verifyManager(
-                user,
-                dto.leadId,
-            );
+  // ==================================================
+  // CREATE
+  // ==================================================
 
-        }
+  async create(userId: string, dto: TeamDto) {
+    const user = await this.getUser(userId);
 
+    await this.authorize(user, 'team.create');
 
-        const now =
-            new Date();
+    const rootId = this.getRootId(user);
 
+    this.validate(dto);
 
-        const ref =
-            await this.db
-                .collection('teams')
-                .add({
-
-                    name:
-                        dto.name.trim(),
-
-                    rootId,
-
-                    leadId:
-                        dto.leadId || null,
-
-                    shiftId:
-                        dto.shiftId || null,
-
-                    totalExecutives:
-                        0,
-
-                    activeToday:
-                        0,
-
-                    createdBy:
-                        userId,
-
-                    createdAt:
-                        now,
-
-                    updatedAt:
-                        now,
-
-                });
-
-
-        this.logger.log(
-            `Team created | id=${ref.id} | user=${userId} | lead=${dto.leadId || 'ROOT'}`,
-        );
-
-
-        return {
-            success: true,
-            id: ref.id,
-        };
-
+    /*
+     * NON-ROOT MANAGERS MUST ALWAYS
+     * HAVE A TEAM LEAD.
+     *
+     * Only root can create an
+     * unassigned/root-owned team.
+     */
+    if (!this.isRoot(user) && !dto.leadId) {
+      throw new BadRequestException('Team manager is required');
     }
 
-    // ==================================================
-    // UPDATE
-    // ==================================================
+    /*
+     * Shift must belong to the
+     * same organization.
+     */
+    await this.verifyShift(rootId, dto.shiftId);
 
-    // ==================================================
-    // UPDATE
-    // ==================================================
-
-    async update(
-        userId: string,
-        id: string,
-        dto: TeamDto,
-    ) {
-
-        const user =
-            await this.getUser(userId);
-
-        await this.authorize(
-            user,
-            'team.edit',
-        );
-
-        const rootId =
-            this.getRootId(user);
-
-        this.validate(dto);
-
-
-        const ref =
-            this.db
-                .collection('teams')
-                .doc(id);
-
-
-        const doc =
-            await ref.get();
-
-
-        if (
-            !doc.exists ||
-            doc.data()?.rootId !== rootId
-        ) {
-
-            throw new NotFoundException(
-                'Team not found',
-            );
-
-        }
-
-
-        const team =
-            doc.data()!;
-
-
-        /*
-         * Existing team must be inside
-         * requester's hierarchy.
-         */
-        if (!this.isRoot(user)) {
-
-            await this.verifyTeamAccess(
-                user,
-                team,
-            );
-
-        }
-
-
-        /*
-         * NON-ROOT MANAGERS CANNOT
-         * REMOVE THE TEAM LEAD.
-         */
-        if (
-            !this.isRoot(user) &&
-            !dto.leadId
-        ) {
-
-            throw new BadRequestException(
-                'Team manager is required',
-            );
-
-        }
-
-
-        /*
-         * Check whether lead is being changed.
-         */
-        const leadChanged =
-            (
-                dto.leadId || null
-            ) !== (
-                team.leadId || null
-            );
-
-
-        /*
-         * A team with executives cannot
-         * change its manager.
-         *
-         * This protects:
-         *
-         * Manager
-         *    ↓
-         * Team
-         *    ↓
-         * Executives
-         *
-         * from becoming inconsistent.
-         */
-        if (leadChanged) {
-
-            const executives =
-                await this.db
-                    .collection('user')
-                    .where(
-                        'rootId',
-                        '==',
-                        rootId,
-                    )
-                    .where(
-                        'role',
-                        '==',
-                        'field_executive',
-                    )
-                    .where(
-                        'teamId',
-                        '==',
-                        id,
-                    )
-                    .limit(1)
-                    .get();
-
-
-            if (!executives.empty) {
-
-                throw new BadRequestException(
-                    'Team manager cannot be changed while executives are assigned to this team',
-                );
-
-            }
-
-        }
-
-
-        /*
-         * Validate new shift.
-         */
-        await this.verifyShift(
-            rootId,
-            dto.shiftId,
-        );
-
-
-        /*
-         * Validate new manager.
-         */
-        if (dto.leadId) {
-
-            await this.verifyManager(
-                user,
-                dto.leadId,
-            );
-
-        }
-
-
-        await ref.update({
-
-            name:
-                dto.name.trim(),
-
-            leadId:
-                dto.leadId || null,
-
-            shiftId:
-                dto.shiftId || null,
-
-            updatedAt:
-                new Date(),
-
-        });
-
-
-        this.logger.log(
-            `Team updated | id=${id} | user=${userId} | lead=${dto.leadId || 'ROOT'}`,
-        );
-
-
-        return {
-            success: true,
-            id,
-        };
-
+    /*
+     * Validate selected manager.
+     *
+     * For root:
+     *   any manager in same root.
+     *
+     * For manager:
+     *   self or descendant only.
+     */
+    if (dto.leadId) {
+      await this.verifyManager(user, dto.leadId);
     }
 
-    // ==================================================
-    // DELETE
-    // ==================================================
+    const now = new Date();
 
-    async remove(
-        userId: string,
-        id: string,
-    ) {
+    const ref = await this.db.collection('teams').add({
+      name: dto.name.trim(),
 
-        const user =
-            await this.getUser(userId);
+      rootId,
 
-        await this.authorize(
-            user,
-            'team.delete',
-        );
+      leadId: dto.leadId || null,
 
-        const rootId =
-            this.getRootId(user);
+      shiftId: dto.shiftId || null,
 
-        const ref =
-            this.db
-                .collection('teams')
-                .doc(id);
+      totalExecutives: 0,
 
-        const team =
-            await ref.get();
+      activeToday: 0,
 
-        if (
-            !team.exists ||
-            team.data()?.rootId !== rootId
-        ) {
+      createdBy: userId,
 
-            throw new NotFoundException(
-                'Team not found',
-            );
+      createdAt: now,
 
-        }
+      updatedAt: now,
+    });
 
-        const teamData =
-            team.data()!;
+    this.logger.log(`Team created | id=${ref.id} | user=${userId} | lead=${dto.leadId || 'ROOT'}`);
 
-        /*
-         * Root can delete any team
-         * in its organization.
-         *
-         * Non-root manager can delete
-         * only teams in its hierarchy.
-         */
-        if (!this.isRoot(user)) {
+    return {
+      success: true,
+      id: ref.id,
+    };
+  }
 
-            await this.verifyTeamAccess(
-                user,
-                teamData,
-            );
+  // ==================================================
+  // UPDATE
+  // ==================================================
 
-        }
+  // ==================================================
+  // UPDATE
+  // ==================================================
 
-        /*
-         * Prevent deleting a team
-         * that still has executives.
-         */
-        const executives =
-            await this.db
-                .collection('user')
-                .where(
-                    'rootId',
-                    '==',
-                    rootId,
-                )
-                .where(
-                    'role',
-                    '==',
-                    'field_executive',
-                )
-                .where(
-                    'teamId',
-                    '==',
-                    id,
-                )
-                .limit(1)
-                .get();
+  async update(userId: string, id: string, dto: TeamDto) {
+    const user = await this.getUser(userId);
 
-        if (!executives.empty) {
+    await this.authorize(user, 'team.edit');
 
-            throw new BadRequestException(
-                'Executives are attached to this team',
-            );
+    const rootId = this.getRootId(user);
 
-        }
+    this.validate(dto);
 
-        await ref.delete();
+    const ref = this.db.collection('teams').doc(id);
 
-        this.logger.log(
-            `Team deleted | id=${id} | user=${userId}`,
-        );
+    const doc = await ref.get();
 
-        return {
-            success: true,
-            id,
-        };
-
+    if (!doc.exists || doc.data()?.rootId !== rootId) {
+      throw new NotFoundException('Team not found');
     }
 
-    // ==================================================
-    // TEAM ACCESS
-    // ==================================================
+    const team = doc.data()!;
 
-    private async verifyTeamAccess(
-        user: any,
-        team: any,
-    ) {
-
-        /*
-         * Team must belong to the
-         * requester's organization.
-         */
-        if (
-            team.rootId !==
-            this.getRootId(user)
-        ) {
-
-            throw new NotFoundException(
-                'Team not found',
-            );
-
-        }
-
-
-        /*
-         * A team without a manager is
-         * root-only.
-         *
-         * Non-root users cannot manage it.
-         */
-        if (!team.leadId) {
-
-            throw new NotFoundException(
-                'Team not found',
-            );
-
-        }
-
-
-        /*
-         * Requester must be:
-         *
-         * - team lead
-         * - ancestor of team lead
-         */
-        await this.verifyManager(
-            user,
-            team.leadId,
-        );
-
+    /*
+     * Existing team must be inside
+     * requester's hierarchy.
+     */
+    if (!this.isRoot(user)) {
+      await this.verifyTeamAccess(user, team);
     }
 
-    // ==================================================
-    // VERIFY MANAGER
-    // ==================================================
-
-    // ==================================================
-    // VERIFY MANAGER
-    // ==================================================
-
-    private async verifyManager(
-        user: any,
-        managerId: string,
-    ) {
-
-        if (!managerId) {
-
-            throw new BadRequestException(
-                'Team manager is required',
-            );
-
-        }
-
-
-        const manager =
-            await this.getUser(
-                managerId,
-            );
-
-
-        /*
-         * Only manager roles can
-         * lead a team.
-         *
-         * Root roles themselves are
-         * NOT valid team leads.
-         */
-        if (
-            ![
-                'manager',
-                'child_manager',
-            ].includes(
-                manager.role,
-            )
-        ) {
-
-            throw new BadRequestException(
-                'Invalid team manager',
-            );
-
-        }
-
-
-        /*
-         * Same organization.
-         */
-        if (
-            this.getRootId(user) !==
-            this.getRootId(manager)
-        ) {
-
-            throw new BadRequestException(
-                'Invalid team manager',
-            );
-
-        }
-
-
-        /*
-         * Root can select any normal
-         * manager inside the organization.
-         */
-        if (this.isRoot(user)) {
-
-            return;
-
-        }
-
-
-        /*
-         * Non-root manager can select:
-         *
-         * - itself
-         * - descendants
-         *
-         * NEVER root.
-         */
-        if (
-            manager.uid ===
-            user.uid
-        ) {
-
-            return;
-
-        }
-
-
-        await this.verifyDescendant(
-            user.uid,
-            manager.uid,
-        );
-
+    /*
+     * NON-ROOT MANAGERS CANNOT
+     * REMOVE THE TEAM LEAD.
+     */
+    if (!this.isRoot(user) && !dto.leadId) {
+      throw new BadRequestException('Team manager is required');
     }
 
-    // ==================================================
-    // VISIBLE USERS
-    // ==================================================
+    /*
+     * Check whether lead is being changed.
+     */
+    const leadChanged = (dto.leadId || null) !== (team.leadId || null);
 
-    private getVisibleUsers(
-        user: any,
-        users: any[],
-    ) {
+    /*
+     * A team with executives cannot
+     * change its manager.
+     *
+     * This protects:
+     *
+     * Manager
+     *    ↓
+     * Team
+     *    ↓
+     * Executives
+     *
+     * from becoming inconsistent.
+     */
+    if (leadChanged) {
+      const executives = await this.db
+        .collection('user')
+        .where('rootId', '==', rootId)
+        .where('role', '==', 'field_executive')
+        .where('teamId', '==', id)
+        .limit(1)
+        .get();
 
-        /*
-         * Root sees everybody
-         * inside the organization.
-         */
-        if (this.isRoot(user)) {
-            return users;
-        }
-
-
-        /*
-         * HR and executives do not
-         * manage teams.
-         */
-        if (
-            user.role === 'hr' ||
-            user.role === 'field_executive'
-        ) {
-
-            return [];
-
-        }
-
-
-        /*
-         * Normalize requester so it has
-         * the same `id` field as users
-         * loaded from Firestore.
-         */
-        const requester = {
-            ...user,
-            id: user.uid,
-        };
-
-
-        /*
-         * parentId -> children
-         */
-        const children =
-            new Map<string, any[]>();
-
-
-        for (const item of users) {
-
-            if (!item.parentId) {
-                continue;
-            }
-
-
-            if (
-                !children.has(
-                    item.parentId,
-                )
-            ) {
-
-                children.set(
-                    item.parentId,
-                    [],
-                );
-
-            }
-
-
-            children
-                .get(item.parentId)!
-                .push(item);
-
-        }
-
-
-        const result: any[] = [];
-
-
-        /*
-         * Include requester itself.
-         *
-         * This is important because a manager
-         * can have a team directly assigned
-         * to themselves.
-         */
-        result.push(requester);
-
-
-        /*
-         * Recursively collect descendants.
-         */
-        const walk =
-            (parentId: string) => {
-
-                for (
-                    const child
-                    of children.get(parentId) || []
-                ) {
-
-                    result.push(child);
-
-                    /*
-                     * Firestore document ID is
-                     * the normalized hierarchy ID.
-                     */
-                    walk(child.id);
-
-                }
-
-            };
-
-
-        walk(requester.id);
-
-
-        return result;
-
+      if (!executives.empty) {
+        throw new BadRequestException('Team manager cannot be changed while executives are assigned to this team');
+      }
     }
 
-    // ==================================================
-    // VISIBLE USER
-    // ==================================================
+    /*
+     * Validate new shift.
+     */
+    await this.verifyShift(rootId, dto.shiftId);
 
-    private isVisibleUser(
-        id: string,
-        users: any[],
-    ) {
-
-        return users.some(
-            item =>
-                item.id === id ||
-                item.uid === id,
-        );
-
+    /*
+     * Validate new manager.
+     */
+    if (dto.leadId) {
+      await this.verifyManager(user, dto.leadId);
     }
 
-    // ==================================================
-    // DESCENDANT
-    // ==================================================
+    await ref.update({
+      name: dto.name.trim(),
 
-    private async verifyDescendant(
-        parentId: string,
-        targetId: string,
-    ) {
+      leadId: dto.leadId || null,
 
-        if (
-            parentId === targetId
-        ) {
+      shiftId: dto.shiftId || null,
 
-            return;
+      updatedAt: new Date(),
+    });
 
-        }
+    this.logger.log(`Team updated | id=${id} | user=${userId} | lead=${dto.leadId || 'ROOT'}`);
 
-        const target =
-            await this.getUser(
-                targetId,
-            );
+    return {
+      success: true,
+      id,
+    };
+  }
 
-        let current =
-            target;
+  // ==================================================
+  // DELETE
+  // ==================================================
 
-        const visited =
-            new Set<string>();
+  async remove(userId: string, id: string) {
+    const user = await this.getUser(userId);
 
-        while (
-            current.parentId &&
-            !visited.has(current.uid)
-        ) {
+    await this.authorize(user, 'team.delete');
 
-            visited.add(
-                current.uid,
-            );
+    const rootId = this.getRootId(user);
 
-            /*
-             * Direct child.
-             */
-            if (
-                current.parentId ===
-                parentId
-            ) {
+    const ref = this.db.collection('teams').doc(id);
 
-                return;
+    const team = await ref.get();
 
-            }
-
-            current =
-                await this.getUser(
-                    current.parentId,
-                );
-
-        }
-
-        throw new NotFoundException(
-            'Manager not found',
-        );
-
+    if (!team.exists || team.data()?.rootId !== rootId) {
+      throw new NotFoundException('Team not found');
     }
 
-    // ==================================================
-    // AUTHORIZATION
-    // ==================================================
+    const teamData = team.data()!;
 
-    private async authorize(
-        user: any,
-        permission: string,
-    ) {
+    /*
+     * Root can delete any team
+     * in its organization.
+     *
+     * Non-root manager can delete
+     * only teams in its hierarchy.
+     */
+    if (!this.isRoot(user)) {
+      await this.verifyTeamAccess(user, teamData);
+    }
+
+    /*
+     * Prevent deleting a team
+     * that still has executives.
+     */
+    const executives = await this.db
+      .collection('user')
+      .where('rootId', '==', rootId)
+      .where('role', '==', 'field_executive')
+      .where('teamId', '==', id)
+      .limit(1)
+      .get();
+
+    if (!executives.empty) {
+      throw new BadRequestException('Executives are attached to this team');
+    }
+
+    await ref.delete();
+
+    this.logger.log(`Team deleted | id=${id} | user=${userId}`);
+
+    return {
+      success: true,
+      id,
+    };
+  }
+
+  // ==================================================
+  // TEAM ACCESS
+  // ==================================================
+
+  private async verifyTeamAccess(user: any, team: any) {
+    /*
+     * Team must belong to the
+     * requester's organization.
+     */
+    if (team.rootId !== this.getRootId(user)) {
+      throw new NotFoundException('Team not found');
+    }
+
+    /*
+     * A team without a manager is
+     * root-only.
+     *
+     * Non-root users cannot manage it.
+     */
+    if (!team.leadId) {
+      throw new NotFoundException('Team not found');
+    }
+
+    /*
+     * Requester must be:
+     *
+     * - team lead
+     * - ancestor of team lead
+     */
+    await this.verifyManager(user, team.leadId);
+  }
+
+  // ==================================================
+  // VERIFY MANAGER
+  // ==================================================
+
+  // ==================================================
+  // VERIFY MANAGER
+  // ==================================================
+
+  private async verifyManager(user: any, managerId: string) {
+    if (!managerId) {
+      throw new BadRequestException('Team manager is required');
+    }
+
+    const manager = await this.getUser(managerId);
+
+    /*
+     * Only manager roles can
+     * lead a team.
+     *
+     * Root roles themselves are
+     * NOT valid team leads.
+     */
+    if (!['manager', 'child_manager'].includes(manager.role)) {
+      throw new BadRequestException('Invalid team manager');
+    }
+
+    /*
+     * Same organization.
+     */
+    if (this.getRootId(user) !== this.getRootId(manager)) {
+      throw new BadRequestException('Invalid team manager');
+    }
+
+    /*
+     * Root can select any normal
+     * manager inside the organization.
+     */
+    if (this.isRoot(user)) {
+      return;
+    }
+
+    /*
+     * Non-root manager can select:
+     *
+     * - itself
+     * - descendants
+     *
+     * NEVER root.
+     */
+    if (manager.uid === user.uid) {
+      return;
+    }
+
+    await this.verifyDescendant(user.uid, manager.uid);
+  }
+
+  // ==================================================
+  // VISIBLE USERS
+  // ==================================================
+
+  private getVisibleUsers(user: any, users: any[]) {
+    /*
+     * Root sees everybody
+     * inside the organization.
+     */
+    if (this.isRoot(user)) {
+      return users;
+    }
+
+    /*
+     * HR and executives do not
+     * manage teams.
+     */
+    if (user.role === 'hr' || user.role === 'field_executive') {
+      return [];
+    }
+
+    /*
+     * Normalize requester so it has
+     * the same `id` field as users
+     * loaded from Firestore.
+     */
+    const requester = {
+      ...user,
+      id: user.uid,
+    };
+
+    /*
+     * parentId -> children
+     */
+    const children = new Map<string, any[]>();
+
+    for (const item of users) {
+      if (!item.parentId) {
+        continue;
+      }
+
+      if (!children.has(item.parentId)) {
+        children.set(item.parentId, []);
+      }
+
+      children.get(item.parentId)!.push(item);
+    }
+
+    const result: any[] = [];
+
+    /*
+     * Include requester itself.
+     *
+     * This is important because a manager
+     * can have a team directly assigned
+     * to themselves.
+     */
+    result.push(requester);
+
+    /*
+     * Recursively collect descendants.
+     */
+    const walk = (parentId: string) => {
+      for (const child of children.get(parentId) || []) {
+        result.push(child);
 
         /*
-         * Root roles have full authority.
+         * Firestore document ID is
+         * the normalized hierarchy ID.
          */
-        if (this.isRoot(user)) {
-            return;
-        }
+        walk(child.id);
+      }
+    };
 
-        /*
-         * HR cannot manage teams.
-         */
-        if (
-            user.role === 'hr'
-        ) {
+    walk(requester.id);
 
-            throw new BadRequestException(
-                'HR cannot manage teams',
-            );
+    return result;
+  }
 
-        }
+  // ==================================================
+  // VISIBLE USER
+  // ==================================================
 
-        /*
-         * Executives cannot manage teams.
-         */
-        if (
-            user.role ===
-            'field_executive'
-        ) {
+  private isVisibleUser(id: string, users: any[]) {
+    return users.some((item) => item.id === id || item.uid === id);
+  }
 
-            throw new BadRequestException(
-                'Executive has no management permission',
-            );
+  // ==================================================
+  // DESCENDANT
+  // ==================================================
 
-        }
-
-        /*
-         * Check own permission.
-         */
-        const permissions = await this.getPermissions(user.uid);
-
-        if (
-            permissions[permission] !== true
-        ) {
-
-            this.logger.log(
-                `Permission denied | user=${user.id}`,
-            );
-
-            throw new BadRequestException(
-                'Permission denied',
-            );
-
-        }
-
-        /*
-         * Every parent in the hierarchy
-         * must also authorize this action.
-         */
-        await this.verifyAuthorityChain(
-            user,
-            permission,
-        );
-
+  private async verifyDescendant(parentId: string, targetId: string) {
+    if (parentId === targetId) {
+      return;
     }
 
-    // ==================================================
-    // AUTHORITY CHAIN
-    // ==================================================
+    const target = await this.getUser(targetId);
 
-    private async verifyAuthorityChain(
-        user: any,
-        permission: string,
-    ) {
+    let current = target;
 
-        let current =
-            user;
+    const visited = new Set<string>();
 
-        const visited =
-            new Set<string>();
+    while (current.parentId && !visited.has(current.uid)) {
+      visited.add(current.uid);
 
-        while (
-            current.parentId &&
-            !visited.has(current.uid)
-        ) {
+      /*
+       * Direct child.
+       */
+      if (current.parentId === parentId) {
+        return;
+      }
 
-            visited.add(
-                current.uid,
-            );
-
-            const parent =
-                await this.getUser(
-                    current.parentId,
-                );
-
-            /*
-             * Parent must belong to
-             * same organization.
-             */
-            if (
-                this.getRootId(current) !==
-                this.getRootId(parent)
-            ) {
-
-                throw new BadRequestException(
-                    'Invalid hierarchy',
-                );
-
-            }
-
-            /*
-             * Root terminates the chain.
-             */
-            if (
-                this.isRoot(parent)
-            ) {
-
-                return;
-
-            }
-
-            const permissions =
-                await this.getPermissions(
-                    parent.uid,
-                );
-
-            /*
-             * Parent must authorize
-             * the same capability.
-             */
-            if (
-                permissions[permission] !== true
-            ) {
-
-                throw new BadRequestException(
-                    'Parent authority denied',
-                );
-
-            }
-
-            current =
-                parent;
-
-        }
-
+      current = await this.getUser(current.parentId);
     }
 
-    // ==================================================
-    // USER
-    // ==================================================
+    throw new NotFoundException('Manager not found');
+  }
 
-    private async getUser(
-        uid: string,
-    ) {
+  // ==================================================
+  // AUTHORIZATION
+  // ==================================================
 
-        const doc =
-            await this.db
-                .collection('user')
-                .doc(uid)
-                .get();
-
-        if (!doc.exists) {
-
-            throw new NotFoundException(
-                'User not found',
-            );
-
-        }
-
-        return {
-            id: doc.id,
-            uid: doc.id,
-            ...doc.data(),
-        } as any;
-
+  private async authorize(user: any, permission: string) {
+    /*
+     * Root roles have full authority.
+     */
+    if (this.isRoot(user)) {
+      return;
     }
 
-    // ==================================================
-    // PERMISSIONS
-    // ==================================================
-
-    private async getPermissions(
-        uid: string,
-    ) {
-
-        const doc =
-            await this.db
-                .collection('user')
-                .doc(uid)
-                .collection('settings')
-                .doc('permissions')
-                .get();
-
-        return doc.exists
-            ? doc.data() ?? {}
-            : {};
-
+    /*
+     * HR cannot manage teams.
+     */
+    if (user.role === 'hr') {
+      throw new BadRequestException('HR cannot manage teams');
     }
 
-    // ==================================================
-    // ROOT
-    // ==================================================
-
-    private isRoot(
-        user: any,
-    ) {
-
-        return [
-            'root',
-            'admin',
-            'root_manager',
-            'root_hr',
-        ].includes(
-            user.role,
-        );
-
+    /*
+     * Executives cannot manage teams.
+     */
+    if (user.role === 'field_executive') {
+      throw new BadRequestException('Executive has no management permission');
     }
 
-    private getRootId(
-        user: any,
-    ): string {
+    /*
+     * Check own permission.
+     */
+    const permissions = await this.getPermissions(user.uid);
 
-        if (this.isRoot(user)) {
+    if (permissions[permission] !== true) {
+      this.logger.log(`Permission denied | user=${user.id}`);
 
-            return (
-                user.rootId ||
-                user.uid
-            );
-
-        }
-
-        if (!user.rootId) {
-
-            throw new BadRequestException(
-                'Invalid hierarchy',
-            );
-
-        }
-
-        return user.rootId;
-
+      throw new BadRequestException('Permission denied');
     }
 
-    // ==================================================
-    // SHIFTS
-    // ==================================================
+    /*
+     * Every parent in the hierarchy
+     * must also authorize this action.
+     */
+    await this.verifyAuthorityChain(user, permission);
+  }
 
-    private async verifyShift(
-        rootId: string,
-        shiftId?: string,
-    ) {
+  // ==================================================
+  // AUTHORITY CHAIN
+  // ==================================================
 
-        if (!shiftId) {
-            return;
-        }
+  private async verifyAuthorityChain(user: any, permission: string) {
+    let current = user;
 
-        const doc =
-            await this.db
-                .collection('shifts')
-                .doc(shiftId)
-                .get();
+    const visited = new Set<string>();
 
-        if (
-            !doc.exists ||
-            doc.data()?.rootId !== rootId
-        ) {
+    while (current.parentId && !visited.has(current.uid)) {
+      visited.add(current.uid);
 
-            throw new BadRequestException(
-                'Invalid shift',
-            );
+      const parent = await this.getUser(current.parentId);
 
-        }
+      /*
+       * Parent must belong to
+       * same organization.
+       */
+      if (this.getRootId(current) !== this.getRootId(parent)) {
+        throw new BadRequestException('Invalid hierarchy');
+      }
 
+      /*
+       * Root terminates the chain.
+       */
+      if (this.isRoot(parent)) {
+        return;
+      }
+
+      const permissions = await this.getPermissions(parent.uid);
+
+      /*
+       * Parent must authorize
+       * the same capability.
+       */
+      if (permissions[permission] !== true) {
+        throw new BadRequestException('Parent authority denied');
+      }
+
+      current = parent;
+    }
+  }
+
+  // ==================================================
+  // USER
+  // ==================================================
+
+  private async getUser(uid: string) {
+    const doc = await this.db.collection('user').doc(uid).get();
+
+    if (!doc.exists) {
+      throw new NotFoundException('User not found');
     }
 
-    // ==================================================
-    // VALIDATION
-    // ==================================================
+    return {
+      id: doc.id,
+      uid: doc.id,
+      ...doc.data(),
+    } as any;
+  }
 
-    private validate(
-        dto: TeamDto,
-    ) {
+  // ==================================================
+  // PERMISSIONS
+  // ==================================================
 
-        if (!dto.name?.trim()) {
+  private async getPermissions(uid: string) {
+    const doc = await this.db.collection('user').doc(uid).collection('settings').doc('permissions').get();
 
-            throw new BadRequestException(
-                'Team name is required',
-            );
+    return doc.exists ? (doc.data() ?? {}) : {};
+  }
 
-        }
+  // ==================================================
+  // ROOT
+  // ==================================================
 
-        if (!dto.shiftId) {
+  private isRoot(user: any) {
+    return ['root', 'admin', 'root_manager', 'root_hr'].includes(user.role);
+  }
 
-            throw new BadRequestException(
-                'Shift policy is required',
-            );
-
-        }
-
+  private getRootId(user: any): string {
+    if (this.isRoot(user)) {
+      return user.rootId || user.uid;
     }
 
+    if (!user.rootId) {
+      throw new BadRequestException('Invalid hierarchy');
+    }
+
+    return user.rootId;
+  }
+
+  // ==================================================
+  // SHIFTS
+  // ==================================================
+
+  private async verifyShift(rootId: string, shiftId?: string) {
+    if (!shiftId) {
+      return;
+    }
+
+    const doc = await this.db.collection('shifts').doc(shiftId).get();
+
+    if (!doc.exists || doc.data()?.rootId !== rootId) {
+      throw new BadRequestException('Invalid shift');
+    }
+  }
+
+  // ==================================================
+  // VALIDATION
+  // ==================================================
+
+  private validate(dto: TeamDto) {
+    if (!dto.name?.trim()) {
+      throw new BadRequestException('Team name is required');
+    }
+
+    if (!dto.shiftId) {
+      throw new BadRequestException('Shift policy is required');
+    }
+  }
 }

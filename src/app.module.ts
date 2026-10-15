@@ -29,6 +29,9 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { HrDashboardModule } from './hr-dashboard/hr-dashboard.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { AttendanceRegularizationModule } from './attendance-regularization/attendance-regularization.module';
+import { ContactController } from './contact/contact.controller';
+import { ContactService } from './contact/contact.service';
+import { ContactModule } from './contact/contact.module';
 
 @Module({
   imports: [
@@ -100,8 +103,12 @@ import { AttendanceRegularizationModule } from './attendance-regularization/atte
     NotificationsModule,
 
     AttendanceRegularizationModule,
+
+    ContactModule,
   ],
 
-  controllers: [AppController],
+  controllers: [AppController, ContactController],
+
+  providers: [ContactService],
 })
 export class AppModule {}

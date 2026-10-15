@@ -20,10 +20,21 @@
 
   window.initializeManagersPage = async function () {
     AppAlert.loading('Initializing managers page...');
-    await Promise.all([ loadShifts(), loadManagers(), loadParentManagers() ]);
 
-    document.getElementById('staffSearch')?.addEventListener('input', renderManagers);
-    AppAlert.close();
+    try {
+      // Shift data MUST be ready before managers are rendered.
+      await loadShifts();
+
+      // Now load managers and parents.
+      await Promise.all([loadManagers(), loadParentManagers()]);
+
+      // Render only after BOTH managers and shifts are available.
+      renderManagers();
+
+      document.getElementById('staffSearch')?.addEventListener('input', renderManagers);
+    } finally {
+      AppAlert.close();
+    }
   };
 
   /* ======================================================

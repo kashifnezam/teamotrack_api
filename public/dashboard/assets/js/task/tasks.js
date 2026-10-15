@@ -1,28 +1,29 @@
 /* ==========================================================
    TeamoTrack Tasks
    Hierarchy-aware frontend
-   Location Search + Coordinates + Multi-layer Maps
-   Searchable Executive Assignment
-========================================================== */
+   Location Search + Coordinates + Maps
+   Multiple Task Proof Files
+   ========================================================== */
 
 (function () {
   'use strict';
 
   /* ==========================================================
-       STATE
-  ========================================================== */
+     STATE
+     ========================================================== */
 
   let tasks = [];
   let executives = [];
   let managers = [];
 
   let editingId = null;
-
   let currentMonth = new Date().toISOString().slice(0, 7);
 
+  let selectedExecutiveId = '';
+
   /* ==========================================================
-       MAP STATE
-  ========================================================== */
+     MAP STATE
+     ========================================================== */
 
   let startMap = null;
   let endMap = null;
@@ -38,11 +39,10 @@
   const LOCATION_ZOOM = 15;
 
   /* ==========================================================
-       LOCATION SEARCH
-  ========================================================== */
+     LOCATION SEARCH
+     ========================================================== */
 
   const PLACE_SEARCH_URL = 'https://photon.komoot.io/api/';
-
   const LOCATION_SEARCH_DEBOUNCE = 450;
   const LOCATION_SEARCH_LIMIT = 5;
 
@@ -61,7 +61,6 @@
       results: [],
       activeIndex: -1,
     },
-
     end: {
       results: [],
       activeIndex: -1,
@@ -69,31 +68,21 @@
   };
 
   /* ==========================================================
-       EXECUTIVE SEARCH STATE
-  ========================================================== */
-
-  let selectedExecutiveId = '';
-
-  /* ==========================================================
-       GOOGLE TEST LAYERS
-       
-       Keep this true only if you intentionally want these
-       Google tile endpoints in your current environment.
-
-       For production Google Maps integration, use Google's
-       supported Maps/Map Tiles API.
-  ========================================================== */
+     MAP LAYERS
+     ========================================================== */
 
   const ENABLE_GOOGLE_TEST_LAYERS = true;
 
   /* ==========================================================
-       INITIALIZE
-  ========================================================== */
+     INITIALIZE
+     ========================================================== */
 
   window.initializeTasksPage = async function () {
     const month = document.getElementById('monthFilter');
 
-    if (!month) return;
+    if (!month) {
+      return;
+    }
 
     month.value = currentMonth;
 
@@ -106,53 +95,30 @@
     document.getElementById('isGeofence')?.addEventListener('change', toggleLocation);
 
     initializeLocationInputs();
-
     initializeExecutivePicker();
-
     initializeTaskModalEvents();
 
     await loadTasks();
   };
 
   /* ==========================================================
-       MODAL EVENTS
-  ========================================================== */
+     MODAL EVENTS
+     ========================================================== */
 
   function initializeTaskModalEvents() {
     const modal = document.getElementById('taskModal');
 
-    if (!modal) return;
-
-    /*
-     * Bootstrap modal has finished opening.
-     *
-     * This is the correct point to tell Leaflet that its
-     * container dimensions are now available.
-     */
+    if (!modal) {
+      return;
+    }
 
     modal.addEventListener('shown.bs.modal', () => {
       refreshMaps();
 
-      /*
-       * Multiple refreshes help with:
-       *
-       * 1. Bootstrap transition
-       * 2. Browser layout calculation
-       * 3. Different desktop/window sizes
-       */
       setTimeout(refreshMaps, 50);
-
       setTimeout(refreshMaps, 200);
-
       setTimeout(refreshMaps, 500);
     });
-
-    /*
-     * When modal closes, completely reset transient UI.
-     *
-     * This prevents old location search results from
-     * appearing when Add Task is opened again.
-     */
 
     modal.addEventListener('hidden.bs.modal', () => {
       resetTransientTaskUI();
@@ -160,8 +126,8 @@
   }
 
   /* ==========================================================
-       WINDOW RESIZE
-  ========================================================== */
+     RESIZE
+     ========================================================== */
 
   let resizeTimer = null;
 
@@ -174,8 +140,8 @@
   });
 
   /* ==========================================================
-       MAP REFRESH
-  ========================================================== */
+     MAP REFRESH
+     ========================================================== */
 
   function refreshMaps() {
     if (startMap) {
@@ -194,8 +160,8 @@
   }
 
   /* ==========================================================
-       LOCATION INPUT INITIALIZATION
-  ========================================================== */
+     LOCATION INPUTS
+     ========================================================== */
 
   function initializeLocationInputs() {
     ['start', 'end'].forEach((type) => {
@@ -243,14 +209,12 @@
         });
       }
 
-      /*
-       * Use ONE delegated document listener for each
-       * location search area.
-       */
       document.addEventListener('click', (event) => {
         const container = document.getElementById(`${type}LocationSearchWrap`);
 
-        if (!container) return;
+        if (!container) {
+          return;
+        }
 
         if (!container.contains(event.target)) {
           hideLocationSuggestions(type);
@@ -260,13 +224,15 @@
   }
 
   /* ==========================================================
-       LOAD TASKS
-  ========================================================== */
+     LOAD TASKS
+     ========================================================== */
 
   async function loadTasks() {
     const value = document.getElementById('monthFilter')?.value;
 
-    if (!value) return;
+    if (!value) {
+      return;
+    }
 
     const [year, month] = value.split('-').map(Number);
 
@@ -275,7 +241,9 @@
 
       const data = await Api.get(`/tasks/data?year=${year}&month=${month}`);
 
-      if (!data) return;
+      if (!data) {
+        return;
+      }
 
       tasks = Array.isArray(data.tasks) ? data.tasks : [];
 
@@ -284,7 +252,6 @@
       managers = Array.isArray(data.managers) ? data.managers : [];
 
       populateExecutives();
-
       renderTasks();
 
       AppAlert.close();
@@ -298,24 +265,15 @@
   }
 
   /* ==========================================================
-       EXECUTIVES
-  ========================================================== */
+     EXECUTIVES
+     ========================================================== */
 
   function populateExecutives() {
-    /*
-     * Keep the old select populated too, if it exists.
-     *
-     * This provides backward compatibility with any code
-     * elsewhere that may still reference #assignedTo.
-     */
-
     const select = document.getElementById('assignedTo');
 
     if (select) {
       select.innerHTML = `
-        <option value="">
-          Unassigned
-        </option>
+        <option value="">Unassigned</option>
       `;
 
       executives.forEach((executive) => {
@@ -324,10 +282,10 @@
         select.insertAdjacentHTML(
           'beforeend',
           `
-              <option value="${escapeHtml(executive.id)}">
-                ${escapeHtml(name)}
-              </option>
-            `
+            <option value="${escapeHtml(executive.id)}">
+              ${escapeHtml(name)}
+            </option>
+          `
         );
       });
 
@@ -338,13 +296,17 @@
   }
 
   function getExecutive(id) {
-    if (!id) return null;
+    if (!id) {
+      return null;
+    }
 
     return executives.find((executive) => executive.id === id) || null;
   }
 
   function getManager(id) {
-    if (!id) return null;
+    if (!id) {
+      return null;
+    }
 
     return managers.find((manager) => manager.id === id) || null;
   }
@@ -370,8 +332,8 @@
   }
 
   /* ==========================================================
-       EXECUTIVE PICKER
-  ========================================================== */
+     EXECUTIVE PICKER
+     ========================================================== */
 
   function initializeExecutivePicker() {
     const input = document.getElementById('assignedToSearch');
@@ -448,11 +410,13 @@
     }
 
     dropdown.innerHTML = `
+
       <button
         type="button"
         class="executive-option executive-unassigned"
         data-executive-id=""
       >
+
         <span class="executive-option-avatar">
           <i class="bi bi-person"></i>
         </span>
@@ -461,6 +425,7 @@
           <strong>Unassigned</strong>
           <small>No executive assigned</small>
         </span>
+
       </button>
 
       ${filtered
@@ -474,49 +439,50 @@
           const selected = selectedExecutiveId === executive.id;
 
           return `
-              <button
-                type="button"
-                class="
-                  executive-option
-                  ${selected ? 'selected' : ''}
-                "
-                data-executive-id="${escapeHtml(executive.id)}"
-              >
+          <button
+            type="button"
+            class="
+              executive-option
+              ${selected ? 'selected' : ''}
+            "
+            data-executive-id="${escapeHtml(executive.id)}"
+          >
 
-                <span class="executive-option-avatar">
-                  ${escapeHtml(initials)}
-                </span>
+            <span class="executive-option-avatar">
+              ${escapeHtml(initials)}
+            </span>
 
-                <span class="executive-option-info">
+            <span class="executive-option-info">
 
-                  <strong>
-                    ${escapeHtml(name)}
-                  </strong>
+              <strong>
+                ${escapeHtml(name)}
+              </strong>
 
-                  ${
-                    email
-                      ? `
-                        <small>
-                          ${escapeHtml(email)}
-                        </small>
-                      `
-                      : ''
-                  }
+              ${
+                email
+                  ? `
+                    <small>
+                      ${escapeHtml(email)}
+                    </small>
+                  `
+                  : ''
+              }
 
-                </span>
+            </span>
 
-                ${
-                  selected
-                    ? `
-                      <i class="bi bi-check2 executive-option-check"></i>
-                    `
-                    : ''
-                }
+            ${
+              selected
+                ? `
+                  <i class="bi bi-check2 executive-option-check"></i>
+                `
+                : ''
+            }
 
-              </button>
-            `;
+          </button>
+        `;
         })
         .join('')}
+
     `;
 
     dropdown.querySelectorAll('[data-executive-id]').forEach((button) => {
@@ -529,19 +495,11 @@
   }
 
   function openExecutivePicker() {
-    const dropdown = document.getElementById('executiveOptions');
-
-    if (!dropdown) return;
-
-    dropdown.classList.add('show');
+    document.getElementById('executiveOptions')?.classList.add('show');
   }
 
   function closeExecutivePicker() {
-    const dropdown = document.getElementById('executiveOptions');
-
-    if (!dropdown) return;
-
-    dropdown.classList.remove('show');
+    document.getElementById('executiveOptions')?.classList.remove('show');
   }
 
   function selectExecutive(id) {
@@ -559,15 +517,12 @@
       hidden.value = selectedExecutiveId;
     }
 
-    if (input) {
-      input.value = executive ? '' : '';
-    }
-
     if (selectedDisplay) {
       if (executive) {
         const name = executive.fullName || executive.email || 'Unknown';
 
         selectedDisplay.innerHTML = `
+
           <span class="selected-executive-avatar">
             ${escapeHtml(getInitials(name))}
           </span>
@@ -592,17 +547,17 @@
 
           <button
             type="button"
-            id="clearAssignedExecutive"
             class="selected-executive-clear"
             title="Remove assignment"
           >
             <i class="bi bi-x"></i>
           </button>
+
         `;
 
         selectedDisplay.classList.remove('d-none');
 
-        selectedDisplay.querySelector('#clearAssignedExecutive')?.addEventListener('click', (event) => {
+        selectedDisplay.querySelector('.selected-executive-clear')?.addEventListener('click', (event) => {
           event.preventDefault();
           event.stopPropagation();
 
@@ -610,7 +565,6 @@
         });
       } else {
         selectedDisplay.innerHTML = '';
-
         selectedDisplay.classList.add('d-none');
       }
     }
@@ -622,15 +576,7 @@
     }
 
     closeExecutivePicker();
-
     renderExecutiveOptions();
-
-    /*
-     * Keep old select synchronized.
-     */
-    if (hidden) {
-      hidden.value = selectedExecutiveId;
-    }
   }
 
   function clearAssignedExecutive() {
@@ -654,7 +600,6 @@
 
     if (selectedDisplay) {
       selectedDisplay.innerHTML = '';
-
       selectedDisplay.classList.add('d-none');
     }
 
@@ -664,7 +609,6 @@
   function handleExecutiveKeyboard(event) {
     if (event.key === 'Escape') {
       closeExecutivePicker();
-
       return;
     }
 
@@ -675,7 +619,6 @@
 
       if (dropdown?.classList.contains('show') && first) {
         event.preventDefault();
-
         first.click();
       }
     }
@@ -692,8 +635,8 @@
   }
 
   /* ==========================================================
-       FILTER
-  ========================================================== */
+     FILTER
+     ========================================================== */
 
   function renderTasks() {
     const search = document.getElementById('searchInput')?.value.trim().toLowerCase() || '';
@@ -741,19 +684,214 @@
   }
 
   /* ==========================================================
-       TABLE
-  ========================================================== */
+     PROOF NORMALIZATION
+     ========================================================== */
+
+  function getTaskProofFiles(task) {
+    const files = [];
+
+    /*
+     * New backend structure:
+     *
+     * proofFiles: [
+     *   {
+     *     url,
+     *     name,
+     *     type,
+     *     size
+     *   }
+     * ]
+     */
+
+    if (Array.isArray(task?.proofFiles)) {
+      task.proofFiles.forEach((file) => {
+        if (!file) {
+          return;
+        }
+
+        const url = String(file.url || '').trim();
+
+        if (!url) {
+          return;
+        }
+
+        files.push({
+          url,
+          name: String(file.name || getFileNameFromUrl(url) || 'Attachment'),
+          type: String(file.type || '').trim(),
+          size: normalizeFileSize(file.size),
+        });
+      });
+    }
+
+    /*
+     * Legacy compatibility.
+     *
+     * Old records may only have proofUrl.
+     */
+
+    if (!files.length && task?.proofUrl) {
+      const url = String(task.proofUrl).trim();
+
+      if (url) {
+        files.push({
+          url,
+          name: getFileNameFromUrl(url) || 'Task proof',
+          type: guessFileType(url),
+          size: null,
+        });
+      }
+    }
+
+    return files;
+  }
+
+  function normalizeFileSize(value) {
+    if (value === null || value === undefined || value === '') {
+      return null;
+    }
+
+    const size = Number(value);
+
+    return Number.isFinite(size) && size >= 0 ? size : null;
+  }
+
+  function getFileNameFromUrl(url) {
+    try {
+      const clean = String(url).split('?')[0].split('#')[0];
+
+      const parts = clean.split('/');
+
+      return decodeURIComponent(parts[parts.length - 1] || '');
+    } catch (_) {
+      return '';
+    }
+  }
+
+  function guessFileType(url) {
+    const name = getFileNameFromUrl(url).toLowerCase();
+
+    if (/\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i.test(name)) {
+      return 'image/*';
+    }
+
+    if (/\.pdf$/i.test(name)) {
+      return 'application/pdf';
+    }
+
+    if (/\.(doc|docx)$/i.test(name)) {
+      return 'application/msword';
+    }
+
+    if (/\.(xls|xlsx)$/i.test(name)) {
+      return 'application/vnd.ms-excel';
+    }
+
+    if (/\.(zip|rar|7z)$/i.test(name)) {
+      return 'application/zip';
+    }
+
+    return '';
+  }
+
+  function isImageFile(file) {
+    const type = String(file?.type || '').toLowerCase();
+
+    const name = String(file?.name || '').toLowerCase();
+
+    return type.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i.test(name);
+  }
+
+  function getFileIcon(file) {
+    const type = String(file?.type || '').toLowerCase();
+
+    const name = String(file?.name || '').toLowerCase();
+
+    if (type === 'application/pdf' || /\.pdf$/i.test(name)) {
+      return 'bi-file-earmark-pdf';
+    }
+
+    if (type.includes('word') || /\.(doc|docx)$/i.test(name)) {
+      return 'bi-file-earmark-word';
+    }
+
+    if (type.includes('excel') || type.includes('spreadsheet') || /\.(xls|xlsx|csv)$/i.test(name)) {
+      return 'bi-file-earmark-spreadsheet';
+    }
+
+    if (type.includes('zip') || /\.(zip|rar|7z)$/i.test(name)) {
+      return 'bi-file-earmark-zip';
+    }
+
+    if (type.startsWith('text/') || /\.txt$/i.test(name)) {
+      return 'bi-file-earmark-text';
+    }
+
+    return 'bi-file-earmark';
+  }
+
+  function getFileTypeLabel(file) {
+    const name = String(file?.name || '').toLowerCase();
+
+    if (/\.pdf$/i.test(name)) {
+      return 'PDF DOCUMENT';
+    }
+
+    if (/\.(doc|docx)$/i.test(name)) {
+      return 'WORD DOCUMENT';
+    }
+
+    if (/\.(xls|xlsx|csv)$/i.test(name)) {
+      return 'SPREADSHEET';
+    }
+
+    if (/\.(zip|rar|7z)$/i.test(name)) {
+      return 'ARCHIVE';
+    }
+
+    if (isImageFile(file)) {
+      return 'IMAGE';
+    }
+
+    return 'DOCUMENT';
+  }
+
+  function formatFileSize(bytes) {
+    if (bytes === null || bytes === undefined || !Number.isFinite(Number(bytes))) {
+      return '';
+    }
+
+    const value = Number(bytes);
+
+    if (value === 0) {
+      return '0 B';
+    }
+
+    const units = ['B', 'KB', 'MB', 'GB'];
+
+    const index = Math.min(Math.floor(Math.log(value) / Math.log(1024)), units.length - 1);
+
+    const size = value / Math.pow(1024, index);
+
+    return `${size < 10 && index > 0 ? size.toFixed(1) : Math.round(size)} ${units[index]}`;
+  }
+
+  /* ==========================================================
+     TABLE
+     ========================================================== */
 
   function renderTaskRows(list) {
     const tbody = document.getElementById('taskTable');
 
-    if (!tbody) return;
+    if (!tbody) {
+      return;
+    }
 
     if (!list.length) {
       tbody.innerHTML = `
         <tr>
           <td
-            colspan="8"
+            colspan="9"
             class="empty-state"
           >
             <i class="bi bi-inbox"></i>
@@ -761,6 +899,7 @@
             <div class="mt-2">
               No tasks found
             </div>
+
           </td>
         </tr>
       `;
@@ -782,184 +921,223 @@
 
         const locked = ['completed', 'cancelled', 'failed'].includes(status);
 
+        const proofFiles = getTaskProofFiles(task);
+
         return `
-              <tr>
 
-                <td>
+          <tr>
 
-                  <div class="task-name">
-                    ${escapeHtml(task.title || 'Untitled')}
-                  </div>
+            <!-- TASK -->
+            <td>
 
-                  <div class="task-description">
-                    ${escapeHtml(task.description || '')}
-                  </div>
+              <div class="task-name">
+                ${escapeHtml(task.title || 'Untitled')}
+              </div>
 
-                </td>
+              <div class="task-description">
+                ${escapeHtml(task.description || '')}
+              </div>
 
-
-                <td>
-
-                  ${
-                    executive
-                      ? `
-                        <div class="task-executive">
-                          ${escapeHtml(executiveName)}
-                        </div>
-
-                        ${
-                          executive.email
-                            ? `
-                              <small>
-                                ${escapeHtml(executive.email)}
-                              </small>
-                            `
-                            : ''
-                        }
-                      `
-                      : `
-                        <span class="text-muted">
-                          Unassigned
-                        </span>
-                      `
-                  }
-
-                </td>
+            </td>
 
 
-                <td>
+            <!-- EXECUTIVE -->
+            <td>
 
-                  <div class="task-created-by">
-                    ${escapeHtml(createdBy)}
-                  </div>
+              ${
+                executive
+                  ? `
 
-                  ${
-                    task.createdBy
-                      ? `
-                        <small>
-                          Creator
-                        </small>
-                      `
-                      : ''
-                  }
+                    <div class="task-executive">
+                      ${escapeHtml(executiveName)}
+                    </div>
 
-                </td>
+                    ${
+                      executive.email
+                        ? `
+                          <small>
+                            ${escapeHtml(executive.email)}
+                          </small>
+                        `
+                        : ''
+                    }
 
+                  `
+                  : `
+                    <span class="text-muted">
+                      Unassigned
+                    </span>
+                  `
+              }
 
-                <td>
-
-                  <div class="task-time">
-                    ${formatDateTime(task.startDate)}
-                  </div>
-
-                  <small class="text-muted">
-                    ${formatDateTime(task.endDate)}
-                  </small>
-
-                </td>
-
-
-                <td>
-
-                  <span
-                    class="
-                      priority-badge
-                      priority-${priority}
-                    "
-                  >
-                    ${escapeHtml(task.priority || 'Medium')}
-                  </span>
-
-                </td>
+            </td>
 
 
-                <td>
+            <!-- CREATED BY -->
+            <td>
 
-                  ${
-                    task.isGeofence
-                      ? `
-                        <span class="location-badge">
-                          <i class="bi bi-geo-alt me-1"></i>
-                          Geofence
-                        </span>
-                      `
-                      : `
-                        <span class="text-muted">
-                          None
-                        </span>
-                      `
-                  }
+              <div class="task-created-by">
+                ${escapeHtml(createdBy)}
+              </div>
 
-                </td>
+              ${
+                task.createdBy
+                  ? `
+                    <small>
+                      Creator
+                    </small>
+                  `
+                  : ''
+              }
 
-
-                <td>
-
-                  <span
-                    class="
-                      status-badge
-                      status-${status}
-                    "
-                  >
-                    ${formatStatus(status)}
-                  </span>
-
-                </td>
+            </td>
 
 
-                <td class="text-end">
+            <!-- SCHEDULE -->
+            <td>
 
-                  <button
-                    type="button"
-                    class="action-btn"
-                    title="View"
-                    onclick="openTaskDetails('${escapeHtml(task.id)}')"
-                  >
-                    <i class="bi bi-eye"></i>
-                  </button>
+              <div class="task-time">
+                ${formatDateTime(task.startDate)}
+              </div>
 
+              <small class="text-muted">
+                ${formatDateTime(task.endDate)}
+              </small>
 
-                  ${
-                    locked
-                      ? ''
-                      : `
-                        <button
-                          type="button"
-                          class="action-btn"
-                          title="Edit"
-                          onclick="editTask('${escapeHtml(task.id)}')"
-                        >
-                          <i class="bi bi-pencil"></i>
-                        </button>
-                      `
-                  }
+            </td>
 
 
-                  <button
-                    type="button"
-                    class="action-btn text-danger"
-                    title="Delete"
-                    onclick="deleteTask('${escapeHtml(task.id)}')"
-                  >
-                    <i class="bi bi-trash"></i>
-                  </button>
+            <!-- PRIORITY -->
+            <td>
 
-                </td>
+              <span
+                class="
+                  priority-badge
+                  priority-${priority}
+                "
+              >
+                ${escapeHtml(task.priority || 'Medium')}
+              </span>
 
-              </tr>
-            `;
+            </td>
+
+
+            <!-- LOCATION -->
+            <td>
+
+              ${
+                task.isGeofence
+                  ? `
+                    <span class="location-badge">
+                      <i class="bi bi-geo-alt me-1"></i>
+                      Geofence
+                    </span>
+                  `
+                  : `
+                    <span class="text-muted">
+                      None
+                    </span>
+                  `
+              }
+
+            </td>
+
+
+            <!-- STATUS -->
+            <td>
+
+              <span
+                class="
+                  status-badge
+                  status-${escapeHtml(status)}
+                "
+              >
+                ${formatStatus(status)}
+              </span>
+
+            </td>
+
+
+            <!-- PROOF -->
+            <td>
+
+              ${
+                proofFiles.length
+                  ? `
+                    <span class="task-proof-table-badge completed">
+                      <i class="bi bi-paperclip"></i>
+                      ${proofFiles.length}
+                      ${proofFiles.length === 1 ? 'file' : 'files'}
+                    </span>
+                  `
+                  : `
+                    <span class="task-proof-table-badge empty">
+                      <i class="bi bi-paperclip"></i>
+                      No proof
+                    </span>
+                  `
+              }
+
+            </td>
+
+
+            <!-- ACTIONS -->
+            <td class="text-end">
+
+              <button
+                type="button"
+                class="action-btn"
+                title="View"
+                onclick="openTaskDetails('${escapeHtml(task.id)}')"
+              >
+                <i class="bi bi-eye"></i>
+              </button>
+
+
+              ${
+                locked
+                  ? ''
+                  : `
+                    <button
+                      type="button"
+                      class="action-btn"
+                      title="Edit"
+                      onclick="editTask('${escapeHtml(task.id)}')"
+                    >
+                      <i class="bi bi-pencil"></i>
+                    </button>
+                  `
+              }
+
+
+              <button
+                type="button"
+                class="action-btn text-danger"
+                title="Delete"
+                onclick="deleteTask('${escapeHtml(task.id)}')"
+              >
+                <i class="bi bi-trash"></i>
+              </button>
+
+            </td>
+
+          </tr>
+
+        `;
       })
       .join('');
   }
 
   /* ==========================================================
-       DETAILS
-  ========================================================== */
+     TASK DETAILS
+     ========================================================== */
 
   function openTaskDetails(id) {
     const task = tasks.find((item) => item.id === id);
 
-    if (!task) return;
+    if (!task) {
+      return;
+    }
 
     const executive = getExecutive(task.assignedTo);
 
@@ -975,6 +1153,7 @@
 
     if (detailExecutive) {
       detailExecutive.innerHTML = `
+
         <div>
           <i class="bi bi-person me-1"></i>
 
@@ -990,6 +1169,7 @@
           ${escapeHtml(createdBy)}
 
         </div>
+
       `;
     }
 
@@ -1021,25 +1201,15 @@
 
     setText('detailCompletionDuration', formatDuration(task.startedAt, task.completedAt));
 
-    const proofSection = document.getElementById('detailProofSection');
+    /*
+     * MULTIPLE PROOF FILES
+     */
 
-    const proof = document.getElementById('detailProof');
+    renderTaskProof(task);
 
-    const proofLink = document.getElementById('detailProofLink');
-
-    if (task.proofUrl) {
-      proof.src = task.proofUrl;
-
-      proofLink.href = task.proofUrl;
-
-      proofSection.classList.remove('d-none');
-    } else {
-      proof.removeAttribute('src');
-
-      proofLink.href = '#';
-
-      proofSection.classList.add('d-none');
-    }
+    /*
+     * LOCATIONS
+     */
 
     const locationSection = document.getElementById('detailLocationSection');
 
@@ -1054,26 +1224,340 @@
         task.endLocation?.address ? `End: ${task.endLocation.address}` : 'End location not available'
       );
 
-      locationSection.classList.remove('d-none');
+      locationSection?.classList.remove('d-none');
     } else {
-      locationSection.classList.add('d-none');
+      locationSection?.classList.add('d-none');
     }
 
     bootstrap.Modal.getOrCreateInstance(document.getElementById('taskDetailsModal')).show();
   }
 
   /* ==========================================================
-       OPEN TASK MODAL
-  ========================================================== */
+     RENDER MULTIPLE PROOF FILES
+     ========================================================== */
+
+  function renderTaskProof(task) {
+    const section = document.getElementById('detailProofSection');
+
+    const gallery = document.getElementById('detailProofGallery');
+
+    const count = document.getElementById('detailProofCount');
+
+    if (!section || !gallery) {
+      return;
+    }
+
+    const files = getTaskProofFiles(task);
+
+    gallery.innerHTML = '';
+
+    if (!files.length) {
+      section.classList.remove('d-none');
+
+      if (count) {
+        count.textContent = 'No files';
+      }
+
+      gallery.innerHTML = `
+
+        <div class="proof-empty">
+
+          <div class="proof-empty-icon">
+            <i class="bi bi-paperclip"></i>
+          </div>
+
+          <div>
+
+            <strong>
+              No completion proof submitted
+            </strong>
+
+            <span>
+              This task does not contain any uploaded proof files.
+            </span>
+
+          </div>
+
+        </div>
+
+      `;
+
+      return;
+    }
+
+    section.classList.remove('d-none');
+
+    if (count) {
+      count.textContent = `${files.length} ${files.length === 1 ? 'file' : 'files'}`;
+    }
+
+    gallery.innerHTML = files.map((file, index) => renderProofFileCard(file, index)).join('');
+  }
+
+  /* ==========================================================
+     PROOF CARD
+     ========================================================== */
+
+  function renderProofFileCard(file, index) {
+    const safeUrl = escapeHtml(file.url);
+
+    const safeName = escapeHtml(file.name || `Attachment ${index + 1}`);
+
+    const size = file.size !== null ? formatFileSize(file.size) : '';
+
+    const image = isImageFile(file);
+
+    if (image) {
+      return `
+
+        <div class="proof-file-card">
+
+          <div class="proof-image-overlay">
+            <i class="bi bi-arrows-fullscreen"></i>
+          </div>
+
+          <button
+            type="button"
+            class="proof-image-button"
+            onclick="openProofLightbox(
+              ${escapeJsString(file.url)},
+              ${escapeJsString(file.name)}
+            )"
+            title="Preview ${safeName}"
+          >
+
+            <img
+              src="${safeUrl}"
+              alt="${safeName}"
+              loading="lazy"
+              onerror="handleProofImageError(this)"
+            />
+
+          </button>
+
+
+          <div class="proof-file-meta">
+
+            <span
+              class="proof-file-name"
+              title="${safeName}"
+            >
+              ${safeName}
+            </span>
+
+            ${
+              size
+                ? `
+                  <div class="proof-file-size">
+                    ${size}
+                  </div>
+                `
+                : `
+                  <div class="proof-file-size">
+                    Image
+                  </div>
+                `
+            }
+
+
+            <div class="proof-file-actions">
+
+              <button
+                type="button"
+                class="proof-file-action primary"
+                onclick="openProofLightbox(
+                  ${escapeJsString(file.url)},
+                  ${escapeJsString(file.name)}
+                )"
+              >
+                <i class="bi bi-eye"></i>
+                Preview
+              </button>
+
+              <a
+                class="proof-file-action"
+                href="${safeUrl}"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <i class="bi bi-box-arrow-up-right"></i>
+                Open
+              </a>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      `;
+    }
+
+    return `
+
+      <div class="proof-file-card">
+
+        <div class="proof-document-preview">
+
+          <div class="proof-document-icon">
+            <i class="bi ${getFileIcon(file)}"></i>
+          </div>
+
+          <div class="proof-document-type">
+            ${escapeHtml(getFileTypeLabel(file))}
+          </div>
+
+        </div>
+
+
+        <div class="proof-file-meta">
+
+          <span
+            class="proof-file-name"
+            title="${safeName}"
+          >
+            ${safeName}
+          </span>
+
+          <div class="proof-file-size">
+            ${size || 'Document'}
+          </div>
+
+
+          <div class="proof-file-actions">
+
+            <a
+              class="proof-file-action primary"
+              href="${safeUrl}"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <i class="bi bi-eye"></i>
+              Open
+            </a>
+
+            <a
+              class="proof-file-action"
+              href="${safeUrl}"
+              target="_blank"
+              rel="noopener noreferrer"
+              download
+            >
+              <i class="bi bi-download"></i>
+              Download
+            </a>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    `;
+  }
+
+  /* ==========================================================
+     PROOF IMAGE ERROR
+     ========================================================== */
+
+  function handleProofImageError(image) {
+    if (!image) {
+      return;
+    }
+
+    image.style.display = 'none';
+
+    const parent = image.closest('.proof-image-button');
+
+    if (!parent) {
+      return;
+    }
+
+    parent.innerHTML = `
+
+      <div class="proof-document-preview">
+
+        <div class="proof-document-icon">
+          <i class="bi bi-file-earmark-image"></i>
+        </div>
+
+        <div class="proof-document-type">
+          IMAGE PREVIEW UNAVAILABLE
+        </div>
+
+      </div>
+
+    `;
+  }
+
+  /* ==========================================================
+     PROOF LIGHTBOX
+     ========================================================== */
+
+  function openProofLightbox(url, name) {
+    const lightbox = document.getElementById('proofLightbox');
+
+    const image = document.getElementById('proofLightboxImage');
+
+    const title = document.getElementById('proofLightboxName');
+
+    const open = document.getElementById('proofLightboxOpen');
+
+    if (!lightbox || !image) {
+      return;
+    }
+
+    image.src = url || '';
+
+    image.alt = name || 'Task proof';
+
+    if (title) {
+      title.textContent = name || 'Task proof';
+    }
+
+    if (open) {
+      open.href = url || '#';
+    }
+
+    lightbox.classList.add('show');
+    lightbox.setAttribute('aria-hidden', 'false');
+
+    document.body.classList.add('overflow-hidden');
+  }
+
+  function closeProofLightbox() {
+    const lightbox = document.getElementById('proofLightbox');
+
+    const image = document.getElementById('proofLightboxImage');
+
+    if (!lightbox) {
+      return;
+    }
+
+    lightbox.classList.remove('show');
+
+    lightbox.setAttribute('aria-hidden', 'true');
+
+    if (image) {
+      image.src = '';
+    }
+
+    document.body.classList.remove('overflow-hidden');
+  }
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+      closeProofLightbox();
+    }
+  });
+
+  /* ==========================================================
+     OPEN TASK MODAL
+     ========================================================== */
 
   function openTaskModal(id = null) {
     editingId = id;
 
-    /*
-     * Always reset transient UI before opening.
-     *
-     * This fixes stale search results from previous modal.
-     */
     resetTransientTaskUI();
 
     document.getElementById('modalTitle').textContent = id ? 'Edit Task' : 'Add Task';
@@ -1108,13 +1592,15 @@
   }
 
   /* ==========================================================
-       EDIT
-  ========================================================== */
+     EDIT
+     ========================================================== */
 
   function editTask(id) {
     const task = tasks.find((item) => item.id === id);
 
-    if (!task) return;
+    if (!task) {
+      return;
+    }
 
     if (['completed', 'cancelled', 'failed'].includes(task.status)) {
       AppAlert.warning('This task can no longer be edited');
@@ -1142,9 +1628,6 @@
 
     document.getElementById('endDate').value = toDateTimeLocal(task.endDate);
 
-    /*
-     * Existing assignment.
-     */
     selectedExecutiveId = task.assignedTo || '';
 
     selectExecutive(selectedExecutiveId);
@@ -1161,8 +1644,8 @@
   }
 
   /* ==========================================================
-       SAVE
-  ========================================================== */
+     SAVE
+     ========================================================== */
 
   async function saveTask() {
     const title = document.getElementById('taskTitle').value.trim();
@@ -1196,7 +1679,6 @@
     const isGeofence = document.getElementById('isGeofence').checked;
 
     let startLocation = null;
-
     let endLocation = null;
 
     if (isGeofence) {
@@ -1240,7 +1722,9 @@
 
       const data = editingId ? await Api.patch(`/tasks/${editingId}`, body) : await Api.post('/tasks', body);
 
-      if (!data) return;
+      if (!data) {
+        return;
+      }
 
       AppAlert.close();
 
@@ -1261,20 +1745,24 @@
   }
 
   /* ==========================================================
-       DELETE
-  ========================================================== */
+     DELETE
+     ========================================================== */
 
   async function deleteTask(id) {
     const task = tasks.find((item) => item.id === id);
 
-    if (!task) return;
+    if (!task) {
+      return;
+    }
 
     const confirmed = await AppAlert.confirm(
       'Delete Task',
       'Are you sure you want to delete this task? This action cannot be undone.'
     );
 
-    if (!confirmed) return;
+    if (!confirmed) {
+      return;
+    }
 
     try {
       AppAlert.loading('Deleting task...');
@@ -1296,8 +1784,8 @@
   }
 
   /* ==========================================================
-       LOCATION TOGGLE
-  ========================================================== */
+     LOCATION TOGGLE
+     ========================================================== */
 
   function toggleLocation() {
     const checkbox = document.getElementById('isGeofence');
@@ -1320,8 +1808,8 @@
   }
 
   /* ==========================================================
-       MAP INITIALIZATION
-  ========================================================== */
+     MAP INITIALIZATION
+     ========================================================== */
 
   function initializeMaps() {
     if (typeof L === 'undefined') {
@@ -1329,10 +1817,6 @@
 
       return;
     }
-
-    /*
-     * START MAP
-     */
 
     if (!startMap) {
       startMap = L.map('startMap', {
@@ -1354,10 +1838,6 @@
         setMarker('start', event.latlng.lat, event.latlng.lng, true);
       });
     }
-
-    /*
-     * END MAP
-     */
 
     if (!endMap) {
       endMap = L.map('endMap', {
@@ -1384,8 +1864,8 @@
   }
 
   /* ==========================================================
-       MAP TILE LAYERS
-  ========================================================== */
+     MAP LAYERS
+     ========================================================== */
 
   function createMapLayers() {
     const layers = {};
@@ -1441,13 +1921,15 @@
   }
 
   /* ==========================================================
-       MARKER
-  ========================================================== */
+     MARKER
+     ========================================================== */
 
   function setMarker(type, lat, lng, updateAddress = false) {
     const map = type === 'start' ? startMap : endMap;
 
-    if (!map) return;
+    if (!map) {
+      return;
+    }
 
     const marker = type === 'start' ? startMarker : endMarker;
 
@@ -1483,11 +1965,13 @@
   }
 
   /* ==========================================================
-       SET LOCATION
-  ========================================================== */
+     SET LOCATION
+     ========================================================== */
 
   function setLocation(type, location) {
-    if (!location) return;
+    if (!location) {
+      return;
+    }
 
     const lat = Number(location.lat);
 
@@ -1506,11 +1990,11 @@
     const searchInput = document.getElementById(`${type}LocationSearch`);
 
     if (latInput) {
-      latInput.value = Number(lat).toFixed(6);
+      latInput.value = lat.toFixed(6);
     }
 
     if (lngInput) {
-      lngInput.value = Number(lng).toFixed(6);
+      lngInput.value = lng.toFixed(6);
     }
 
     if (addressInput) {
@@ -1524,7 +2008,9 @@
     setTimeout(() => {
       const map = type === 'start' ? startMap : endMap;
 
-      if (!map) return;
+      if (!map) {
+        return;
+      }
 
       setMarker(type, lat, lng);
 
@@ -1543,8 +2029,8 @@
   }
 
   /* ==========================================================
-       GET LOCATION
-  ========================================================== */
+     GET LOCATION
+     ========================================================== */
 
   function getLocation(type) {
     return {
@@ -1569,15 +2055,17 @@
   }
 
   /* ==========================================================
-       LOCATION SEARCH
-  ========================================================== */
+     LOCATION SEARCH
+     ========================================================== */
 
   function debounceLocationSearch(type) {
     clearTimeout(locationSearchTimers[type]);
 
     const input = document.getElementById(`${type}LocationSearch`);
 
-    if (!input) return;
+    if (!input) {
+      return;
+    }
 
     const query = input.value.trim();
 
@@ -1614,9 +2102,7 @@
 
       const response = await fetch(url.toString(), {
         method: 'GET',
-
         signal: controller.signal,
-
         headers: {
           Accept: 'application/json',
         },
@@ -1632,9 +2118,6 @@
         ? data.features.slice(0, LOCATION_SEARCH_LIMIT).map(normalizePhotonResult).filter(Boolean)
         : [];
 
-      /*
-       * Ignore stale responses.
-       */
       const currentQuery = document.getElementById(`${type}LocationSearch`)?.value.trim();
 
       if (currentQuery !== query) {
@@ -1698,22 +2181,27 @@
   }
 
   /* ==========================================================
-       LOCATION SUGGESTIONS
-  ========================================================== */
+     LOCATION SUGGESTIONS
+     ========================================================== */
 
   function renderLocationSuggestions(type, errorMessage = '') {
     const dropdown = document.getElementById(`${type}LocationSuggestions`);
 
-    if (!dropdown) return;
+    if (!dropdown) {
+      return;
+    }
 
     if (errorMessage) {
       dropdown.innerHTML = `
+
         <div class="location-search-empty">
+
           <i class="bi bi-exclamation-circle me-1"></i>
 
           ${escapeHtml(errorMessage)}
 
         </div>
+
       `;
 
       dropdown.classList.add('show');
@@ -1725,10 +2213,15 @@
 
     if (!results.length) {
       dropdown.innerHTML = `
+
         <div class="location-search-empty">
+
           <i class="bi bi-search me-1"></i>
+
           No locations found
+
         </div>
+
       `;
 
       dropdown.classList.add('show');
@@ -1739,33 +2232,35 @@
     dropdown.innerHTML = results
       .map(
         (result, index) => `
-            <button
-              type="button"
-              class="
-                location-suggestion
-                ${locationSearchState[type].activeIndex === index ? 'active' : ''}
-              "
-              data-location-index="${index}"
-            >
 
-              <span class="location-suggestion-icon">
-                <i class="bi bi-geo-alt"></i>
-              </span>
+          <button
+            type="button"
+            class="
+              location-suggestion
+              ${locationSearchState[type].activeIndex === index ? 'active' : ''}
+            "
+            data-location-index="${index}"
+          >
 
-              <span class="location-suggestion-content">
+            <span class="location-suggestion-icon">
+              <i class="bi bi-geo-alt"></i>
+            </span>
 
-                <strong>
-                  ${escapeHtml(result.name)}
-                </strong>
+            <span class="location-suggestion-content">
 
-                <small>
-                  ${escapeHtml(result.address)}
-                </small>
+              <strong>
+                ${escapeHtml(result.name)}
+              </strong>
 
-              </span>
+              <small>
+                ${escapeHtml(result.address)}
+              </small>
 
-            </button>
-          `
+            </span>
+
+          </button>
+
+        `
       )
       .join('');
 
@@ -1783,15 +2278,16 @@
   function showLocationSearchLoading(type) {
     const spinner = document.getElementById(`${type}LocationSpinner`);
 
-    if (spinner) {
-      spinner.classList.add('show');
-    }
+    spinner?.classList.add('show');
 
     const dropdown = document.getElementById(`${type}LocationSuggestions`);
 
-    if (!dropdown) return;
+    if (!dropdown) {
+      return;
+    }
 
     dropdown.innerHTML = `
+
       <div class="location-search-loading">
 
         <span
@@ -1801,43 +2297,36 @@
         Searching locations...
 
       </div>
+
     `;
 
     dropdown.classList.add('show');
   }
 
   function hideLocationSearchLoading(type) {
-    const spinner = document.getElementById(`${type}LocationSpinner`);
-
-    if (spinner) {
-      spinner.classList.remove('show');
-    }
+    document.getElementById(`${type}LocationSpinner`)?.classList.remove('show');
   }
 
   function hideLocationSuggestions(type) {
-    const dropdown = document.getElementById(`${type}LocationSuggestions`);
-
-    if (!dropdown) return;
-
-    dropdown.classList.remove('show');
+    document.getElementById(`${type}LocationSuggestions`)?.classList.remove('show');
 
     locationSearchState[type].activeIndex = -1;
   }
 
   /* ==========================================================
-       SELECT LOCATION SUGGESTION
-  ========================================================== */
+     SELECT LOCATION
+     ========================================================== */
 
   function selectLocationSuggestion(type, index) {
     const result = locationSearchState[type].results[index];
 
-    if (!result) return;
+    if (!result) {
+      return;
+    }
 
     setLocation(type, {
       address: result.address,
-
       lat: result.lat,
-
       lng: result.lng,
     });
 
@@ -1861,9 +2350,12 @@
   function showLocationSelected(type, result) {
     const selected = document.getElementById(`${type}LocationSelected`);
 
-    if (!selected) return;
+    if (!selected) {
+      return;
+    }
 
     selected.innerHTML = `
+
       <i class="bi bi-check-circle-fill"></i>
 
       <span>
@@ -1877,14 +2369,15 @@
         </small>
 
       </span>
+
     `;
 
     selected.classList.remove('d-none');
   }
 
   /* ==========================================================
-       LOCATION KEYBOARD
-  ========================================================== */
+     LOCATION KEYBOARD
+     ========================================================== */
 
   function handleSuggestionKeyboard(type, event) {
     const state = locationSearchState[type];
@@ -1927,8 +2420,8 @@
   }
 
   /* ==========================================================
-       COORDINATES
-  ========================================================== */
+     COORDINATES
+     ========================================================== */
 
   function validateCoordinateInput(type) {
     const lat = Number(document.getElementById(`${type}Lat`)?.value);
@@ -1977,9 +2470,12 @@
   function showCoordinatesSelected(type, lat, lng) {
     const selected = document.getElementById(`${type}LocationSelected`);
 
-    if (!selected) return;
+    if (!selected) {
+      return;
+    }
 
     selected.innerHTML = `
+
       <i class="bi bi-check-circle-fill"></i>
 
       <span>
@@ -1994,14 +2490,15 @@
         </small>
 
       </span>
+
     `;
 
     selected.classList.remove('d-none');
   }
 
   /* ==========================================================
-       CLEAR LOCATIONS
-  ========================================================== */
+     CLEAR LOCATIONS
+     ========================================================== */
 
   function clearLocations() {
     ['startLat', 'startLng', 'endLat', 'endLng', 'startAddress', 'endAddress'].forEach((id) => {
@@ -2052,20 +2549,16 @@
       endMarker = null;
     }
 
-    if (startMap) {
-      startMap.setView(DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM);
-    }
+    startMap?.setView(DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM);
 
-    if (endMap) {
-      endMap.setView(DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM);
-    }
+    endMap?.setView(DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM);
 
     refreshMaps();
   }
 
   /* ==========================================================
-       CANCEL SEARCH
-  ========================================================== */
+     CANCEL LOCATION SEARCH
+     ========================================================== */
 
   function cancelLocationSearch(type) {
     clearTimeout(locationSearchTimers[type]);
@@ -2080,20 +2573,13 @@
   }
 
   /* ==========================================================
-       RESET TRANSIENT MODAL UI
-  ========================================================== */
+     RESET MODAL UI
+     ========================================================== */
 
   function resetTransientTaskUI() {
-    /*
-     * Cancel both location searches.
-     */
     cancelLocationSearch('start');
-
     cancelLocationSearch('end');
 
-    /*
-     * Clear location search state.
-     */
     ['start', 'end'].forEach((type) => {
       locationSearchState[type].results = [];
 
@@ -2104,9 +2590,6 @@
       hideLocationSearchLoading(type);
     });
 
-    /*
-     * Clear visible search fields.
-     */
     ['startLocationSearch', 'endLocationSearch'].forEach((id) => {
       const input = document.getElementById(id);
 
@@ -2115,9 +2598,6 @@
       }
     });
 
-    /*
-     * Clear selected location indicators.
-     */
     ['startLocationSelected', 'endLocationSelected'].forEach((id) => {
       const element = document.getElementById(id);
 
@@ -2128,9 +2608,6 @@
       }
     });
 
-    /*
-     * Reset executive search.
-     */
     selectedExecutiveId = '';
 
     const executiveSearch = document.getElementById('assignedToSearch');
@@ -2151,9 +2628,6 @@
 
     closeExecutivePicker();
 
-    /*
-     * Synchronize old hidden/select value.
-     */
     const assignedTo = document.getElementById('assignedTo');
 
     if (assignedTo) {
@@ -2162,8 +2636,8 @@
   }
 
   /* ==========================================================
-       BULK IMPORT
-  ========================================================== */
+     BULK IMPORT
+     ========================================================== */
 
   function openImportModal() {
     document.getElementById('excelFile').value = '';
@@ -2186,7 +2660,9 @@
   });
 
   async function validateExcel(file) {
-    if (!file) return;
+    if (!file) {
+      return;
+    }
 
     AppAlert.loading('Reading Excel file...');
 
@@ -2335,77 +2811,79 @@
         const ok = !row.errors.length;
 
         return `
-              <tr
-                class="${ok ? 'import-row-valid' : 'import-row-error'}"
-              >
 
-                <td>
-                  ${row.row}
-                </td>
+            <tr
+              class="${ok ? 'import-row-valid' : 'import-row-error'}"
+            >
 
-                <td>
-                  ${
-                    row.email
-                      ? escapeHtml(row.email)
-                      : `
-                        <span class="text-muted">
-                          Unassigned
-                        </span>
-                      `
-                  }
-                </td>
+              <td>
+                ${row.row}
+              </td>
 
-                <td>
-                  ${escapeHtml(row.title)}
-                </td>
+              <td>
+                ${
+                  row.email
+                    ? escapeHtml(row.email)
+                    : `
+                      <span class="text-muted">
+                        Unassigned
+                      </span>
+                    `
+                }
+              </td>
 
-                <td>
-                  ${escapeHtml(row.priority)}
-                </td>
+              <td>
+                ${escapeHtml(row.title)}
+              </td>
 
-                <td>
-                  ${formatDateTime(row.start)}
-                </td>
+              <td>
+                ${escapeHtml(row.priority)}
+              </td>
 
-                <td>
-                  ${formatDateTime(row.end)}
-                </td>
+              <td>
+                ${formatDateTime(row.start)}
+              </td>
 
-                <td>
-                  ${row.isGeofence ? 'Geofence' : 'None'}
-                </td>
+              <td>
+                ${formatDateTime(row.end)}
+              </td>
 
-                <td>
-                  ${
-                    ok
-                      ? `
-                        <span class="text-success">
-                          Valid
-                        </span>
-                      `
-                      : `
-                        <span class="text-danger">
-                          ${escapeHtml(row.errors.join(', '))}
-                        </span>
-                      `
-                  }
-                </td>
+              <td>
+                ${row.isGeofence ? 'Geofence' : 'None'}
+              </td>
 
-                <td>
+              <td>
+                ${
+                  ok
+                    ? `
+                      <span class="text-success">
+                        Valid
+                      </span>
+                    `
+                    : `
+                      <span class="text-danger">
+                        ${escapeHtml(row.errors.join(', '))}
+                      </span>
+                    `
+                }
+              </td>
 
-                  <button
-                    type="button"
-                    class="action-btn"
-                    title="Edit"
-                    onclick="editImportedTask(${row.row})"
-                  >
-                    <i class="bi bi-pencil"></i>
-                  </button>
+              <td>
 
-                </td>
+                <button
+                  type="button"
+                  class="action-btn"
+                  title="Edit"
+                  onclick="editImportedTask(${row.row})"
+                >
+                  <i class="bi bi-pencil"></i>
+                </button>
 
-              </tr>
-            `;
+              </td>
+
+            </tr>
+
+          `;
       })
       .join('');
 
@@ -2419,7 +2897,9 @@
   function editImportedTask(rowNumber) {
     const row = (window.importResults || []).find((item) => item.row === rowNumber);
 
-    if (!row) return;
+    if (!row) {
+      return;
+    }
 
     openTaskModal();
 
@@ -2498,15 +2978,13 @@
     } catch (error) {
       AppAlert.close();
 
-      console.error('Task import failed:', error);
-
       AppAlert.error(error.message || 'Task import failed');
     }
   }
 
   /* ==========================================================
-       TEMPLATE
-  ========================================================== */
+     TEMPLATE
+     ========================================================== */
 
   function downloadTemplate(event) {
     event?.preventDefault();
@@ -2586,24 +3064,6 @@
         { wch: 45 },
       ];
 
-      headers.forEach((_, column) => {
-        const cell =
-          taskSheet[
-            XLSX.utils.encode_cell({
-              r: 0,
-              c: column,
-            })
-          ];
-
-        if (cell) {
-          cell.s = {
-            font: {
-              bold: true,
-            },
-          };
-        }
-      });
-
       taskSheet['!freeze'] = {
         xSplit: 0,
         ySplit: 1,
@@ -2621,7 +3081,11 @@
 
       const executiveSheet = XLSX.utils.aoa_to_sheet(executiveRows);
 
-      executiveSheet['!cols'] = [{ wch: 35 }];
+      executiveSheet['!cols'] = [
+        {
+          wch: 35,
+        },
+      ];
 
       executiveSheet['!freeze'] = {
         xSplit: 0,
@@ -2632,7 +3096,11 @@
 
       const prioritySheet = XLSX.utils.aoa_to_sheet([['Allowed Priority Values'], ['Low'], ['Medium'], ['High']]);
 
-      prioritySheet['!cols'] = [{ wch: 30 }];
+      prioritySheet['!cols'] = [
+        {
+          wch: 30,
+        },
+      ];
 
       XLSX.utils.book_append_sheet(workbook, prioritySheet, 'Priority_Values');
 
@@ -2647,8 +3115,8 @@
   }
 
   /* ==========================================================
-       HELPERS
-  ========================================================== */
+     HELPERS
+     ========================================================== */
 
   function setText(id, value) {
     const element = document.getElementById(id);
@@ -2665,7 +3133,9 @@
   }
 
   function formatDateTime(value) {
-    if (!value) return '-';
+    if (!value) {
+      return '-';
+    }
 
     let date;
 
@@ -2681,13 +3151,9 @@
 
     return date.toLocaleString('en-IN', {
       day: '2-digit',
-
       month: 'short',
-
       year: 'numeric',
-
       hour: '2-digit',
-
       minute: '2-digit',
     });
   }
@@ -2731,7 +3197,9 @@
   }
 
   function toDateTimeLocal(value) {
-    if (!value) return '';
+    if (!value) {
+      return '';
+    }
 
     const date = new Date(value);
 
@@ -2763,7 +3231,17 @@
       return null;
     }
 
-    const result = new Date(Number(date[2]), Number(date[1]) - 1, Number(date[0]), Number(time[0]), Number(time[1]));
+    const result = new Date(
+      Number(date[2]),
+
+      Number(date[1]) - 1,
+
+      Number(date[0]),
+
+      Number(time[0]),
+
+      Number(time[1])
+    );
 
     return Number.isNaN(result.getTime()) ? null : result;
   }
@@ -2771,15 +3249,31 @@
   function escapeHtml(value) {
     return String(value ?? '')
       .replaceAll('&', '&amp;')
+
       .replaceAll('<', '&lt;')
+
       .replaceAll('>', '&gt;')
+
       .replaceAll('"', '&quot;')
+
       .replaceAll("'", '&#039;');
   }
 
+  /*
+   * Safe JS string for inline onclick handlers.
+   */
+
+  function escapeJsString(value) {
+    return `'${String(value ?? '')
+      .replaceAll('\\', '\\\\')
+      .replaceAll("'", "\\'")
+      .replaceAll('\n', '\\n')
+      .replaceAll('\r', '\\r')}'`;
+  }
+
   /* ==========================================================
-       GLOBAL HANDLERS
-  ========================================================== */
+     GLOBAL HANDLERS
+     ========================================================== */
 
   window.openTaskDetails = openTaskDetails;
 
@@ -2798,4 +3292,10 @@
   window.downloadTemplate = downloadTemplate;
 
   window.editImportedTask = editImportedTask;
+
+  window.openProofLightbox = openProofLightbox;
+
+  window.closeProofLightbox = closeProofLightbox;
+
+  window.handleProofImageError = handleProofImageError;
 })();

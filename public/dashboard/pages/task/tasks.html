@@ -1,16 +1,22 @@
 <!-- =========================================================
      TEAMOTRACK TASKS
-========================================================= -->
+     ========================================================= -->
 
 <section class="tasks-page p-3">
   <div class="container-fluid">
     <!-- HEADER -->
-
     <div class="page-header mb-3">
       <div>
-        <h4 class="mb-1">Tasks</h4>
+        <div class="page-title-row">
+          <div class="page-title-icon">
+            <i class="bi bi-check2-square"></i>
+          </div>
 
-        <div class="task-page-subtitle">Manage and assign tasks within your hierarchy.</div>
+          <div>
+            <h4 class="mb-1">Tasks</h4>
+            <div class="task-page-subtitle">Manage, assign and review workforce tasks.</div>
+          </div>
+        </div>
       </div>
 
       <div class="task-actions">
@@ -32,7 +38,6 @@
     </div>
 
     <!-- FILTER -->
-
     <div class="filter-card">
       <div class="row g-2 align-items-center">
         <div class="col-lg-4 col-md-6">
@@ -56,25 +61,19 @@
         <div class="col-lg-3 col-md-3">
           <select id="statusFilter" class="form-select">
             <option value="">All Tasks</option>
-
             <option value="assigned_to">Assigned Executive</option>
-
             <option value="unassigned">Unassigned</option>
-
             <option value="pending">Pending</option>
-
+            <option value="assigned">Assigned</option>
             <option value="completed">Completed</option>
-
             <option value="cancelled">Cancelled</option>
-
             <option value="failed">Failed</option>
           </select>
         </div>
 
         <div class="col-lg-3 text-lg-end">
           <span class="task-count">
-            <strong id="taskCount"> 0 </strong>
-
+            <strong id="taskCount">0</strong>
             Tasks
           </span>
         </div>
@@ -82,15 +81,13 @@
     </div>
 
     <!-- TASK LIST -->
-
     <div class="task-card">
       <div class="task-card-header">
         <div>
-          <strong> Task List </strong>
+          <strong>Task List</strong>
 
           <div class="hierarchy-info">
             <i class="bi bi-diagram-3 me-1"></i>
-
             Tasks and executives are restricted by your management hierarchy.
           </div>
         </div>
@@ -101,26 +98,20 @@
           <thead>
             <tr>
               <th>Task</th>
-
               <th>Executive</th>
-
               <th>Created By</th>
-
               <th>Schedule</th>
-
               <th>Priority</th>
-
               <th>Location</th>
-
               <th>Status</th>
-
+              <th>Proof</th>
               <th class="text-end">Actions</th>
             </tr>
           </thead>
 
           <tbody id="taskTable">
             <tr>
-              <td colspan="8" class="empty-state">Loading tasks...</td>
+              <td colspan="9" class="empty-state">Loading tasks...</td>
             </tr>
           </tbody>
         </table>
@@ -131,7 +122,7 @@
 
 <!-- =========================================================
      TASK MODAL
-========================================================= -->
+     ========================================================= -->
 
 <div class="modal fade" id="taskModal" tabindex="-1">
   <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
@@ -153,7 +144,6 @@
 
         <div class="row g-3">
           <!-- TITLE -->
-
           <div class="col-md-6">
             <label class="form-label" for="taskTitle"> Title </label>
 
@@ -161,21 +151,17 @@
           </div>
 
           <!-- PRIORITY -->
-
           <div class="col-md-6">
             <label class="form-label" for="priority"> Priority </label>
 
             <select id="priority" class="form-select">
               <option value="Low">Low</option>
-
               <option value="Medium" selected>Medium</option>
-
               <option value="High">High</option>
             </select>
           </div>
 
           <!-- DESCRIPTION -->
-
           <div class="col-12">
             <label class="form-label" for="description"> Description </label>
 
@@ -183,7 +169,6 @@
           </div>
 
           <!-- START -->
-
           <div class="col-md-6">
             <label class="form-label" for="startDate"> Start </label>
 
@@ -191,30 +176,20 @@
           </div>
 
           <!-- END -->
-
           <div class="col-md-6">
             <label class="form-label" for="endDate"> End </label>
 
             <input id="endDate" type="datetime-local" class="form-control" />
           </div>
 
-          <!-- =================================================
-               SEARCHABLE EXECUTIVE
-          ================================================= -->
-
+          <!-- EXECUTIVE -->
           <div class="col-12">
             <label class="form-label" for="assignedToSearch"> Assign Executive </label>
 
             <div id="executivePicker" class="executive-picker">
-              <!-- Existing ID retained for compatibility -->
-
               <input type="hidden" id="assignedTo" value="" />
 
-              <!-- Selected executive -->
-
               <div id="selectedExecutive" class="selected-executive d-none"></div>
-
-              <!-- Search -->
 
               <div class="executive-search-input">
                 <i class="bi bi-search"></i>
@@ -230,22 +205,16 @@
                 <i class="bi bi-chevron-down executive-search-chevron"></i>
               </div>
 
-              <!-- Dropdown -->
-
               <div id="executiveOptions" class="executive-options"></div>
             </div>
 
             <div class="task-form-hint">
               <i class="bi bi-diagram-3 me-1"></i>
-
               Only executives available in your hierarchy are shown.
             </div>
           </div>
 
-          <!-- =================================================
-               GEOFENCE
-          ================================================= -->
-
+          <!-- GEOFENCE -->
           <div class="col-12">
             <div class="geofence-toggle-card">
               <div class="geofence-toggle-icon">
@@ -264,16 +233,12 @@
             </div>
           </div>
 
-          <!-- =================================================
-               LOCATION
-          ================================================= -->
-
+          <!-- LOCATION -->
           <div id="locationSection" class="col-12 d-none">
             <div class="location-config-header">
               <div>
                 <h6>
                   <i class="bi bi-geo-alt-fill me-1"></i>
-
                   Task Location
                 </h6>
 
@@ -281,18 +246,14 @@
               </div>
             </div>
 
-            <!-- =================================================
-                 START LOCATION
-            ================================================= -->
-
+            <!-- START LOCATION -->
             <div class="task-location-card">
               <div class="task-location-card-header">
                 <div class="location-step-number">1</div>
 
                 <div>
-                  <strong> Start Location </strong>
-
-                  <small> Where the task begins </small>
+                  <strong>Start Location</strong>
+                  <small>Where the task begins</small>
                 </div>
               </div>
 
@@ -319,7 +280,7 @@
               </div>
 
               <div class="location-or">
-                <span> OR ENTER COORDINATES </span>
+                <span>OR ENTER COORDINATES</span>
               </div>
 
               <div class="row g-2">
@@ -341,13 +302,11 @@
               <div class="map-toolbar">
                 <span>
                   <i class="bi bi-hand-index-thumb me-1"></i>
-
                   Click on the map to place the marker
                 </span>
 
                 <span>
                   <i class="bi bi-layers me-1"></i>
-
                   Use the layers button to change map
                 </span>
               </div>
@@ -359,18 +318,14 @@
               <input id="startAddress" class="form-control" placeholder="Selected address" />
             </div>
 
-            <!-- =================================================
-                 END LOCATION
-            ================================================= -->
-
+            <!-- END LOCATION -->
             <div class="task-location-card mt-3">
               <div class="task-location-card-header">
                 <div class="location-step-number">2</div>
 
                 <div>
-                  <strong> End Location </strong>
-
-                  <small> Where the task ends </small>
+                  <strong>End Location</strong>
+                  <small>Where the task ends</small>
                 </div>
               </div>
 
@@ -397,7 +352,7 @@
               </div>
 
               <div class="location-or">
-                <span> OR ENTER COORDINATES </span>
+                <span>OR ENTER COORDINATES</span>
               </div>
 
               <div class="row g-2">
@@ -419,13 +374,11 @@
               <div class="map-toolbar">
                 <span>
                   <i class="bi bi-hand-index-thumb me-1"></i>
-
                   Click on the map to place the marker
                 </span>
 
                 <span>
                   <i class="bi bi-layers me-1"></i>
-
                   Use the layers button to change map
                 </span>
               </div>
@@ -439,7 +392,6 @@
 
             <div class="location-footer-hint">
               <i class="bi bi-info-circle me-1"></i>
-
               You can use any combination of search, coordinates, or map selection.
             </div>
           </div>
@@ -457,36 +409,46 @@
 
 <!-- =========================================================
      TASK DETAILS
-========================================================= -->
+     ========================================================= -->
 
 <div class="modal fade" id="taskDetailsModal" tabindex="-1">
-  <div class="modal-dialog modal-lg modal-dialog-centered">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
     <div class="modal-content">
       <div class="modal-header">
         <div>
-          <h5 class="modal-title" id="detailTitle">Task Details</h5>
+          <div class="detail-title-row">
+            <div class="detail-task-icon">
+              <i class="bi bi-clipboard-check"></i>
+            </div>
 
-          <div class="task-detail-subtitle" id="detailExecutive"></div>
+            <div>
+              <h5 class="modal-title" id="detailTitle">Task Details</h5>
+
+              <div class="task-detail-subtitle" id="detailExecutive"></div>
+            </div>
+          </div>
         </div>
 
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
 
       <div class="modal-body">
+        <!-- STATUS -->
         <div class="task-detail-top">
           <span id="detailStatus" class="status-badge"></span>
 
           <span id="detailPriority" class="priority-badge"></span>
         </div>
 
+        <!-- DESCRIPTION -->
         <div class="task-detail-description" id="detailDescription"></div>
 
+        <!-- TIMELINE / INFO -->
         <div class="row g-3 mt-1">
           <div class="col-md-6">
             <div class="detail-info">
               <span>
                 <i class="bi bi-calendar-event"></i>
-
                 Scheduled Start
               </span>
 
@@ -498,7 +460,6 @@
             <div class="detail-info">
               <span>
                 <i class="bi bi-calendar-check"></i>
-
                 Scheduled End
               </span>
 
@@ -510,7 +471,6 @@
             <div class="detail-info">
               <span>
                 <i class="bi bi-play-circle"></i>
-
                 Started At
               </span>
 
@@ -522,7 +482,6 @@
             <div class="detail-info">
               <span>
                 <i class="bi bi-check-circle"></i>
-
                 Completed At
               </span>
 
@@ -534,7 +493,6 @@
             <div class="detail-info">
               <span>
                 <i class="bi bi-stopwatch"></i>
-
                 Completion Duration
               </span>
 
@@ -543,32 +501,43 @@
           </div>
         </div>
 
-        <!-- PROOF -->
+        <!-- =====================================================
+             MULTIPLE COMPLETION PROOF
+             ===================================================== -->
 
         <div id="detailProofSection" class="task-proof-section d-none">
-          <div class="detail-section-title">
-            <i class="bi bi-image me-1"></i>
+          <div class="proof-section-header">
+            <div>
+              <div class="detail-section-title mb-1">
+                <span class="detail-section-icon">
+                  <i class="bi bi-paperclip"></i>
+                </span>
 
-            Completion Proof
+                Completion Proof
+              </div>
+
+              <div id="detailProofSubtitle" class="proof-section-subtitle">Files submitted by the executive.</div>
+            </div>
+
+            <div id="detailProofCount" class="proof-count">0 files</div>
           </div>
 
-          <a id="detailProofLink" href="#" target="_blank" rel="noopener">
-            <img id="detailProof" class="task-proof" alt="Task completion proof" />
-          </a>
+          <div id="detailProofGallery" class="task-proof-gallery"></div>
         </div>
 
         <!-- LOCATION -->
-
         <div id="detailLocationSection" class="task-location-detail d-none">
           <div class="detail-section-title">
-            <i class="bi bi-geo-alt me-1"></i>
+            <span class="detail-section-icon">
+              <i class="bi bi-geo-alt"></i>
+            </span>
 
             Task Locations
           </div>
 
-          <div id="detailStartAddress" class="small text-muted"></div>
+          <div id="detailStartAddress" class="location-detail-item"></div>
 
-          <div id="detailEndAddress" class="small text-muted mt-1"></div>
+          <div id="detailEndAddress" class="location-detail-item mt-2"></div>
         </div>
       </div>
 
@@ -580,8 +549,35 @@
 </div>
 
 <!-- =========================================================
+     PROOF IMAGE LIGHTBOX
+     ========================================================= -->
+
+<div class="proof-lightbox" id="proofLightbox" aria-hidden="true">
+  <div class="proof-lightbox-backdrop" onclick="closeProofLightbox()"></div>
+
+  <div class="proof-lightbox-content">
+    <button type="button" class="proof-lightbox-close" onclick="closeProofLightbox()" aria-label="Close">
+      <i class="bi bi-x-lg"></i>
+    </button>
+
+    <div class="proof-lightbox-toolbar">
+      <div id="proofLightboxName" class="proof-lightbox-name">Preview</div>
+
+      <a id="proofLightboxOpen" class="proof-lightbox-open" href="#" target="_blank" rel="noopener noreferrer">
+        <i class="bi bi-box-arrow-up-right"></i>
+        Open
+      </a>
+    </div>
+
+    <div class="proof-lightbox-body">
+      <img id="proofLightboxImage" src="" alt="Task proof preview" />
+    </div>
+  </div>
+</div>
+
+<!-- =========================================================
      IMPORT MODAL
-========================================================= -->
+     ========================================================= -->
 
 <div class="modal fade" id="importModal" tabindex="-1">
   <div class="modal-dialog modal-xl modal-dialog-centered">
@@ -613,21 +609,13 @@
               <thead>
                 <tr>
                   <th>Row</th>
-
                   <th>Email</th>
-
                   <th>Title</th>
-
                   <th>Priority</th>
-
                   <th>Start</th>
-
                   <th>End</th>
-
                   <th>Location</th>
-
                   <th>Validation</th>
-
                   <th></th>
                 </tr>
               </thead>
